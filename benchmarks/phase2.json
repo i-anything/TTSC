@@ -1,0 +1,40 @@
+{
+  "metrics": {
+    "efficiency": 0.6285,
+    "hit_rate_at_10": 0.77,
+    "mrr": 0.406222,
+    "mttc": 4.715,
+    "recommended_technical_score": 0.632567
+  },
+  "record_id": "phase2",
+  "sample_count": 200,
+  "scenario_metrics": {
+    "boundary": {
+      "hit_rate_at_10": 0.7,
+      "mrr": 0.320119,
+      "mttc": 5.5,
+      "sample_count": 10
+    },
+    "browsing": {
+      "hit_rate_at_10": 0.825,
+      "mrr": 0.457138,
+      "mttc": 4.0375,
+      "sample_count": 80
+    },
+    "buying": {
+      "hit_rate_at_10": 0.7,
+      "mrr": 0.320025,
+      "mttc": 5.1,
+      "sample_count": 80
+    },
+    "intent_override": {
+      "hit_rate_at_10": 0.833333,
+      "mrr": 0.529008,
+      "mttc": 5.233333,
+      "sample_count": 30
+    }
+  },
+  "schema_version": 1,
+  "source_document": "docs/phase2_results.json",
+  "system": "phase2-clarification-v1"
+}

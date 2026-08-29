@@ -1,0 +1,192 @@
+{
+  "agent_version": "phase5-stagnation-aware-slate-v1",
+  "decision": "adopted",
+  "evaluation": {
+    "date": "2026-08-29",
+    "command": "python -m scripts.run_exploration_ablations --verify-determinism --output results-phase5-slate-final.json",
+    "verification_command": "python -m evaluator.local_evaluator --output results-phase5.json",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14",
+    "public_samples": 200,
+    "onnx_threads": 1,
+    "external_api_calls": 0,
+    "new_model_calls": 0,
+    "new_embedding_calls": 0,
+    "persistent_catalog_copy": false,
+    "runtime_versions": {
+      "numpy": "2.2.6",
+      "onnxruntime": "1.23.2",
+      "tokenizers": "0.22.1"
+    }
+  },
+  "strategy": {
+    "name": "stagnation_aware_slate",
+    "input": "complete successful Stage-A ordering of the current fused union",
+    "ranking_signature": [
+      "intent version",
+      "rendered dense query",
+      "rendered lexical query",
+      "route weights",
+      "active requirement value/source/attribute",
+      "exclusions",
+      "ranking policy",
+      "complete ranked pool",
+      "requested result count"
+    ],
+    "changed_signature": "reset shown IDs and return the first ranked window",
+    "unchanged_signature": "return unseen candidates in rank order before deterministic repeat backfill",
+    "override_policy": "increment intent version so post-override recommendations reset even when rendered text is equal",
+    "failure_policy": "return the exact Phase 4 Top-K order without changing cursor state",
+    "bounds": {
+      "ranked_candidates": 200,
+      "shown_ids": 200,
+      "active_signatures_per_session": 1
+    },
+    "labels_or_profiles_used": false,
+    "new_retrieval_or_model_work": false
+  },
+  "metrics": {
+    "hit_rate_at_10": 0.99,
+    "mrr": 0.52223,
+    "mttc": 3.07,
+    "efficiency": 0.793,
+    "recommended_technical_score": 0.810269
+  },
+  "scenario_metrics": {
+    "boundary": {
+      "sample_count": 10,
+      "hit_rate_at_10": 0.9,
+      "mrr": 0.385952,
+      "mttc": 4.3
+    },
+    "browsing": {
+      "sample_count": 80,
+      "hit_rate_at_10": 1.0,
+      "mrr": 0.513219,
+      "mttc": 2.5625
+    },
+    "buying": {
+      "sample_count": 80,
+      "hit_rate_at_10": 0.9875,
+      "mrr": 0.46,
+      "mttc": 2.9
+    },
+    "intent_override": {
+      "sample_count": 30,
+      "hit_rate_at_10": 1.0,
+      "mrr": 0.757632,
+      "mttc": 4.466667
+    }
+  },
+  "phase4_comparator": {
+    "hit_rate_at_10": 0.885,
+    "mrr": 0.514109,
+    "mttc": 3.695,
+    "efficiency": 0.7305,
+    "recommended_technical_score": 0.742833
+  },
+  "absolute_change": {
+    "hit_rate_at_10": 0.105,
+    "mrr": 0.008121,
+    "mttc": -0.625,
+    "efficiency": 0.0625,
+    "recommended_technical_score": 0.067436
+  },
+  "scenario_hit_change": {
+    "boundary": 2,
+    "browsing": 8,
+    "buying": 8,
+    "intent_override": 3
+  },
+  "paired_safety_audit": {
+    "both_hit": 177,
+    "rescued_hit": 21,
+    "regressed_hit": 0,
+    "both_miss": 2,
+    "rank_improved_among_both_hit": 2,
+    "rank_same_among_both_hit": 163,
+    "rank_worsened_among_both_hit": 12,
+    "interpretation": "No incumbent hit was lost. Some sessions found the target earlier on a deeper slate at a lower within-slate rank; this explains the buying-scenario MRR decrease while overall MRR and MTTC improve."
+  },
+  "health": {
+    "baseline_turns": 716,
+    "candidate_turns": 612,
+    "repeat_candidate_turns": 612,
+    "bm25_faults": 0,
+    "dense_faults": 0,
+    "fallback_turns": 0,
+    "reranking_attempts": 612,
+    "reranking_successes": 612,
+    "reranking_failures": 0,
+    "reranking_unavailable_skips": 0,
+    "slate_attempts": 612,
+    "slate_successes": 612,
+    "slate_failures": 0,
+    "slate_initializations": 200,
+    "slate_ranking_resets": 271,
+    "stagnant_turns": 141,
+    "unseen_products_selected_on_stagnant_turns": 1410,
+    "repeat_backfills": 0
+  },
+  "latency": {
+    "baseline_wall_seconds": 18.186693,
+    "candidate_wall_seconds": 15.129639,
+    "repeat_candidate_wall_seconds": 15.105816,
+    "maximum_wall_ratio": 0.831907,
+    "baseline_warm_p95_ms": 43.992421,
+    "candidate_warm_p95_ms": 44.2425,
+    "repeat_candidate_warm_p95_ms": 44.262896,
+    "maximum_warm_p95_ratio": 1.006148
+  },
+  "decision_gate": {
+    "baseline_metrics_match_phase4": true,
+    "technical_score_gain_at_least_0_01": true,
+    "hit_rate_at_least_0_91": true,
+    "mrr_at_least_0_514109": true,
+    "mttc_at_most_3_695": true,
+    "no_scenario_loses_a_hit": true,
+    "no_incumbent_hit_regressions": true,
+    "wall_time_ratio_at_most_1_15": true,
+    "warm_p95_ratio_at_most_1_15": true,
+    "route_faults_are_zero": true,
+    "reranker_faults_are_zero": true,
+    "slate_faults_are_zero": true,
+    "fallback_turns_are_zero": true,
+    "repeated_evaluator_payloads_are_identical": true,
+    "independent_verification_matches": true,
+    "adopt": true
+  },
+  "verification": {
+    "unit_tests_passed": 147,
+    "candidate_evaluator_payload_equal_on_replay": true,
+    "independent_entry_point_matches_candidate": true
+  },
+  "reproducibility": {
+    "catalog_sha256": "da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67",
+    "public_set_sha256": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+    "evaluator_sha256": "79a5ea06f9a1b8c5036f30efa85dc1f36b8f6b06eb8feb8f545dfa767bc45564",
+    "model_manifest_sha256": "f1130079f60555f7e35dc84344a33cd8e9afdcb4743c42afc94fb42b3991fd76",
+    "index_manifest_sha256": "c9b7291004d6ef78473b24886899ea51f427fc2e179c8216c8e8b65f6cf929b2",
+    "experiment_contract_sha256": "4c7f95cb57b9420c0a3356fed9a5482fe1fad279656644bb58d5fc4ec65423f9",
+    "ablation_result_sha256": "aac88687fcc85b7bb4017f5aae8d0ee747ca6aa3a1227f25bef85191e7d598d3",
+    "verification_result_sha256": "dacbbb59de90d6096a3406ce8ff3693d553f4e54ca4a664ea2797ab1bfbce386",
+    "ablation_service_sha256": "c9d6a1af4830faccfd4c4acc6617a104cb7b2fd50fead7f7b3332cd4e60d58c8",
+    "promoted_service_sha256": "49ddbe4a4888cef61bd5d26f6513b9679b2e9f3989a2a195900802a0dda64dd2",
+    "slate_policy_sha256": "bb13addadcd73e8c112981c2bff9b99ee4c5aacdea3ae38a40f69239d23f8809",
+    "source_sha256": {
+      "conversational_search/intent.py": "79f557ae8446aa85f36c1fcbf987f780d099f84d33d4dc982d11c141b121aab9",
+      "conversational_search/questions.py": "900a0a129b12e5a9628cea845dd5e9dd859395d1c8d745b4ccef987ac4964cfd",
+      "conversational_search/ranking.py": "495d2e6beafc2abd60f21cf92f0327c734d4b5722131dcfbf54c1c48036ddca2",
+      "conversational_search/retrieval.py": "4b9a826e6579845b56d52b5a3eae87513647a64c11de25a18f2796f5996b54d2",
+      "conversational_search/service.py": "49ddbe4a4888cef61bd5d26f6513b9679b2e9f3989a2a195900802a0dda64dd2",
+      "conversational_search/slates.py": "bb13addadcd73e8c112981c2bff9b99ee4c5aacdea3ae38a40f69239d23f8809",
+      "conversational_search/strategy.py": "7f62efb080c19ecf6ded2d54ac960874daafb39ff7444553f7f1fcc2e07de9d0",
+      "preprocessing/encoder.py": "8cf3f00fac5e473a4cb0001bac2462d228ec6b1359199e6c3ea5cdb17ce3ea5c",
+      "requirements-runtime.txt": "db8bcb738aa8a27746b78473e7ba0806b9ddb03011917a82285ee7ca0e9523b5",
+      "scripts/run_exploration_ablations.py": "f5e9c95f8cb5ed08265356b3aaa49791d8e0b2a19413d996a9c580278627ba7b",
+      "starter/agent.py": "e661179798a99130a5b57eb9f195958d9a145435dd8a27caf669c77292a70e2b",
+      "starter/dense.py": "013defff58a9aac956af70ee282c1653d44692309d0131d105514f27aa882ed5"
+    },
+    "linux_x86_64_validation": "pending"
+  }
+}

@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "experiment_id": "phase8-candidate-separation-question-value-v1",
+  "candidate": "phase8-candidate-grounded-question-policy-v1",
+  "baseline": "phase7-exact-ranking-reuse-v1",
+  "status": "predeclared_before_implementation_or_public_evaluation",
+  "purpose": "Improve clarification value with bounded evidence from the current successful candidate pool, without changing intent parsing, retrieval, ranking, slate selection, or exact-reuse orchestration.",
+  "non_overfit_boundary": {
+    "allowed_development_inputs": [
+      "source code and documented contracts",
+      "catalog field schema and individual synthetic catalog records",
+      "generic attribute semantics",
+      "synthetic intent states, candidate partitions, and failures",
+      "aggregate frozen Phase 7 metrics"
+    ],
+    "forbidden_design_or_policy_inputs": [
+      "public or hidden sample rows",
+      "sample IDs or scenario labels",
+      "targets, target ranks, hit outcomes, or simulator state",
+      "user profiles",
+      "public answer, miss, attribute, cache, or scenario distributions",
+      "catalog-frequency-derived weights or thresholds",
+      "evaluator-specific intent-card or answer-classification heuristics",
+      "turn-specific or scenario-specific rules",
+      "multiple candidate formulas followed by public-set selection"
+    ],
+    "one_shot_rule": "Freeze the sole formula, constants, tests, sources, and implementation lock before one public comparison. If any gate fails, retain Phase 7 and do not tune Phase 8 from public misses.",
+    "manual_failure_inspection": false,
+    "labels_profiles_or_outcomes_used_during_design": false
+  },
+  "frozen_components": {
+    "intent_policy": "robust intent reducer v1",
+    "question_incumbent": "conservative-early-other-v1",
+    "fusion_policy": "completeness_adaptive",
+    "retrieval_routes": "BM25 Top-100 plus BGE-small dense Top-100",
+    "ranking_policy": "deterministic Stage-A v1",
+    "slate_policy": "stagnation-aware v1",
+    "orchestration_policy": "exact ranking reuse v1",
+    "model_and_index": "Phase 7 BGE-small-en-v1.5 runtime and 384-dimensional index",
+    "official_evaluator": "evaluator/local_evaluator.py"
+  },
+  "candidate_change": {
+    "scope": "question selection only, plus an immutable compact catalog-facet side index",
+    "incumbent_first": "Compute the exact incumbent choice before considering candidate evidence and return it on every guard or failure.",
+    "candidate_source": "At most the first 64 IDs of a complete, successful, pre-slate Stage-A ranking. Never use the displayed slate, fallback output, partial ranking, target membership, labels, profiles, or outcomes.",
+    "ordinary_recommendation_invariant": "Question selection occurs after the frozen recommendation computation and cannot alter current-turn ordered recommendations.",
+    "new_model_api_embedding_route_rerank_or_document_calls": 0,
+    "calibration_claim": "Candidate separation is a deterministic diversity-and-coverage heuristic, not expected information gain, an answerability probability, ranking confidence, or success probability."
+  },
+  "facet_contract": {
+    "attributes_in_fixed_order": [
+      "feature",
+      "material",
+      "color",
+      "style",
+      "size",
+      "use_case"
+    ],
+    "representation": "One row-major unsigned 32-bit code per catalog row and attribute; zero means missing and positive codes are collision-free equality classes interned deterministically in catalog order.",
+    "retained_raw_values": false,
+    "builder_maps": "Transient value-to-code maps are discarded after the single catalog pass.",
+    "maximum_value_characters": 256,
+    "maximum_detail_nodes_per_product": 256,
+    "normalization": "NFC Unicode, control-character removal, whitespace collapse, and case folding; attribute-specific fixed aliases only.",
+    "extraction": {
+      "feature": "First explicit special-feature detail, otherwise the first normalized features-list item.",
+      "material": "First exact material, material-type, fabric-type, outer-material, inner-material, or sole-material detail; otherwise a fixed generic material lexicon over bounded title/features/description text.",
+      "color": "First exact color detail; otherwise a fixed generic color lexicon over bounded title/features/description text, with grey canonicalized to gray.",
+      "style": "First exact style, fit, pattern, closure, neck, sleeve, or theme detail.",
+      "size": "First exact size, size-name, shoe-size, or apparel-size detail; package/product dimensions and generic operational measurements are excluded.",
+      "use_case": "First exact recommended-use, specific-use, occasion, sport-type, or sport detail."
+    },
+    "multiple_values": "A product contributes at most one canonical signature per attribute. Conflicting or extra values are not multiplied into evidence.",
+    "malformed_input": "Malformed or oversized facet metadata becomes missing and never affects catalog loading, retrieval, ranking, or recommendations.",
+    "forbidden_facet_sources": [
+      "product IDs",
+      "model numbers",
+      "prices or arbitrary numbers",
+      "package or product dimensions",
+      "ratings",
+      "unbounded marketing n-grams",
+      "queries, messages, profiles, targets, labels, or outcomes"
+    ],
+    "retained_code_bytes_maximum": 1572864
+  },
+  "evidence_contract": {
+    "candidate_limit": 64,
+    "per_value_support_minimum": 2,
+    "coverage_rule": "After singleton values are removed, supported_candidate_count * 2 must be at least candidate_count.",
+    "per_attribute_summary": [
+      "supported candidate count",
+      "distinct supported value count",
+      "dominant supported value count",
+      "integer separating-pair numerator"
+    ],
+    "formula": "For supported value counts c_v and C=sum(c_v), S=C^2-sum(c_v^2). S is the ordered-pair count for two candidates that both expose repeat-supported values and have different values.",
+    "eligibility": "At least two supported values, majority supported coverage, and S greater than zero.",
+    "selection": "Choose the eligible unresolved attribute with maximum S; exact ties use incumbent priority.",
+    "floating_point_thresholds": false,
+    "raw_values_ids_text_or_scores_in_summary": false
+  },
+  "priority_barriers": {
+    "initial_comparable_block": [
+      "feature",
+      "material",
+      "color"
+    ],
+    "open_ended_barrier": "When other is the incumbent, return other exactly and do not let numeric evidence leapfrog it.",
+    "later_comparable_block": [
+      "style",
+      "size",
+      "use_case"
+    ],
+    "final_barrier": "Budget remains the exact incumbent fallback and receives no fabricated price evidence.",
+    "unsupported_new_questions": [
+      "category",
+      "brand"
+    ],
+    "interruption_rule": "An unresolved interrupted question is returned before candidate evidence.",
+    "resolved_rule": "Resolved, no-preference, and previously asked attributes remain ineligible exactly as in the incumbent."
+  },
+  "runtime_and_failure_contract": {
+    "search": "Use evidence only after both frozen routes are ok or empty, fallback is false, candidate documents are complete, Stage-A succeeds, and the entire ranking is normalized and unique.",
+    "reuse": "Use the exact cached pre-slate ranked IDs and recompute only bounded integer counters from the immutable facet-code store; do not fetch documents or retain a second session cache.",
+    "skip": "For top_k at or below zero, turn 10, or an empty ranked pool, do not request facet evidence.",
+    "exact_fallback_conditions": [
+      "unsupported retriever",
+      "missing or malformed summary",
+      "sparse, unanimous, or zero-separation evidence",
+      "retrieval exception, route fault, or fallback",
+      "document failure or incomplete documents",
+      "reranker skip, failure, or partial result",
+      "facet extraction or lookup failure",
+      "turn 10 or non-positive top_k"
+    ],
+    "persistent_question_summary_cache": false,
+    "aggregate_telemetry_only": true,
+    "strictly_sequential_model_execution": true,
+    "onnx_threads": 1
+  },
+  "synthetic_confirmation": {
+    "pool_sizes": [
+      0,
+      1,
+      2,
+      10,
+      63,
+      64
+    ],
+    "partitions": [
+      "all missing",
+      "unanimous",
+      "balanced binary",
+      "skewed binary",
+      "balanced and skewed three-way",
+      "all singleton",
+      "minority coverage",
+      "exact majority boundary",
+      "exact cross-attribute tie",
+      "one-integer near tie"
+    ],
+    "extractor_cells": [
+      "nested exact detail keys",
+      "case, whitespace, Unicode, and grey aliases",
+      "multiple and conflicting values",
+      "false-positive detail keys",
+      "package dimensions and model numbers",
+      "long and malformed metadata",
+      "deterministic catalog replay"
+    ],
+    "state_cells": [
+      "vague initial intent",
+      "existing requirement",
+      "clarification answer",
+      "explicit no preference",
+      "already asked attribute",
+      "interrupted override",
+      "ordinary override",
+      "all resolved",
+      "other and budget barriers",
+      "turn 10"
+    ],
+    "integration_cells": [
+      "fresh search and exact reuse",
+      "pre-slate pool rather than displayed page",
+      "same ranking with advancing question history",
+      "changed ranking dependency",
+      "reset and interleaved sessions",
+      "top_k zero",
+      "unsupported and faulting facet backends"
+    ],
+    "required_fallback_equivalence": [
+      "ask_attribute",
+      "message",
+      "ordered recommendations",
+      "usage",
+      "IntentState",
+      "SlateState",
+      "retrieval, reranking, and candidate-document call counts"
+    ],
+    "required_changed-question_invariant": "Current-turn ordered recommendations equal the incumbent exactly."
+  },
+  "execution": {
+    "order": "contract, implementation, synthetic tests, complete unit suite, implementation lock, one unlabeled backend warm-up, Phase 8 candidate, Phase 7 comparator, exact Phase 8 replay, then independent starter.Agent verification",
+    "fresh_agent_state_per_variant": true,
+    "shared_immutable_retrieval_backend": true,
+    "candidate_before_baseline_after_only_unlabeled_warmup": true,
+    "parallelism": "strictly sequential for all model and evaluator work",
+    "onnx_threads": 1,
+    "external_api_calls": 0
+  },
+  "promotion_gate": {
+    "phase7_comparator_exact": {
+      "hit_rate_at_10": 0.99,
+      "mrr": 0.52223,
+      "mttc": 3.07,
+      "recommended_technical_score": 0.810269
+    },
+    "candidate_hit_rate_at_10_minimum": 0.99,
+    "candidate_mrr_minimum": 0.52223,
+    "candidate_mttc_maximum": 3.07,
+    "candidate_technical_score_strictly_greater_than": 0.810269,
+    "mrr_or_mttc_strictly_improves": true,
+    "automated_incumbent_hit_to_candidate_miss_count": 0,
+    "scenario_metrics": "publish as aggregate diagnostics only; do not use small public subgroups as tuning or promotion vetoes",
+    "candidate_replay_exact": true,
+    "independent_starter_matches_candidate": true,
+    "synthetic_invariants_all_pass": true,
+    "selector_route_reranker_slate_and_cache_faults": 0,
+    "additional_model_api_embedding_route_rerank_or_document_calls": 0,
+    "retained_facet_code_bytes_maximum": 1572864,
+    "maximum_candidate_wall_time_ratio": 1.05,
+    "maximum_candidate_warm_p95_latency_ratio": 1.1,
+    "aggregate_publication_contains_per_session_or_sensitive_data": false
+  },
+  "publication": {
+    "implementation_lock": "docs/phase8_implementation_lock.json",
+    "raw_result": "gitignored results-phase8-question-value.json",
+    "result_document_if_promoted": "docs/phase8_results.json",
+    "official_record_if_promoted": "benchmarks/phase8.json",
+    "aggregate_diagnostic_if_promoted": "benchmarks/diagnostics/phase8-candidate-question-value.json",
+    "rejection_record_if_not_promoted": "docs/phase8_results.json",
+    "append_only": true
+  }
+}

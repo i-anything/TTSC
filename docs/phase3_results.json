@@ -1,0 +1,150 @@
+{
+  "agent_version": "phase3-completeness-adaptive-rrf-v1",
+  "decision": "adopted",
+  "evaluation": {
+    "date": "2026-08-29",
+    "command": "python -m scripts.run_fusion_ablations --policies equal completeness_adaptive --output results-phase3-fusion.json",
+    "verification_command": "python -m evaluator.local_evaluator --output results-phase3.json",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14",
+    "public_samples": 200,
+    "onnx_threads": 1,
+    "external_api_calls": 0,
+    "runtime_versions": {
+      "numpy": "2.2.6",
+      "onnxruntime": "1.23.2",
+      "tokenizers": "0.22.1"
+    },
+    "candidate_wall_seconds": 17.982
+  },
+  "strategy": {
+    "name": "completeness_adaptive",
+    "strong_requirement_sources": [
+      "initial_explicit",
+      "answer",
+      "override"
+    ],
+    "weak_requirement_sources": [
+      "initial_tentative",
+      "free_text"
+    ],
+    "completeness": "clip((strong_requirements + 0.5 * weak_requirements) / 3, 0, 1)",
+    "bm25_weight": "0.4 + 0.2 * completeness",
+    "dense_weight": "1 - bm25_weight",
+    "route_weight_bounds": [
+      0.4,
+      0.6
+    ]
+  },
+  "metrics": {
+    "hit_rate_at_10": 0.775,
+    "mrr": 0.433784,
+    "mttc": 4.725,
+    "efficiency": 0.6275,
+    "recommended_technical_score": 0.643135
+  },
+  "scenario_metrics": {
+    "boundary": {
+      "sample_count": 10,
+      "hit_rate_at_10": 0.7,
+      "mrr": 0.422619,
+      "mttc": 5.7
+    },
+    "browsing": {
+      "sample_count": 80,
+      "hit_rate_at_10": 0.8125,
+      "mrr": 0.471066,
+      "mttc": 4.2125
+    },
+    "buying": {
+      "sample_count": 80,
+      "hit_rate_at_10": 0.725,
+      "mrr": 0.350759,
+      "mttc": 4.925
+    },
+    "intent_override": {
+      "sample_count": 30,
+      "hit_rate_at_10": 0.833333,
+      "mrr": 0.559484,
+      "mttc": 5.233333
+    }
+  },
+  "phase2_equal_rrf_comparator": {
+    "hit_rate_at_10": 0.77,
+    "mrr": 0.406222,
+    "mttc": 4.715,
+    "efficiency": 0.6285,
+    "recommended_technical_score": 0.632567
+  },
+  "absolute_change": {
+    "hit_rate_at_10": 0.005,
+    "mrr": 0.027562,
+    "mttc": 0.01,
+    "efficiency": -0.001,
+    "recommended_technical_score": 0.010568
+  },
+  "scenario_hit_change": {
+    "boundary": 0,
+    "browsing": -1,
+    "buying": 2,
+    "intent_override": 0
+  },
+  "route_health": {
+    "equal": {
+      "bm25_ok_turns": 897,
+      "dense_ok_turns": 897,
+      "fallback_turns": 0
+    },
+    "completeness_adaptive": {
+      "bm25_ok_turns": 900,
+      "dense_ok_turns": 900,
+      "fallback_turns": 0
+    }
+  },
+  "decision_gate": {
+    "technical_score_gain_at_least_0_005": true,
+    "hit_rate_at_least_0_77": true,
+    "mrr_at_least_0_406222": true,
+    "no_scenario_loses_more_than_one_hit": true,
+    "route_faults_are_zero": true,
+    "repeated_evaluator_payloads_are_identical": true,
+    "adopt": true
+  },
+  "diagnostic_evidence": {
+    "source": "benchmarks/diagnostics/phase2-pinned-retrieval-loss-waterfall.json",
+    "observation_unit": "eligible reached turn under production output stopping",
+    "category_only_recall_at_10": {
+      "bm25": 0.019417,
+      "dense": 0.097087
+    },
+    "complete_intent_recall_at_10": {
+      "bm25": 0.555556,
+      "dense": 0.047619
+    },
+    "equal_rrf_bm25_top10_losses": 200,
+    "equal_rrf_dense_top10_rescues": 13
+  },
+  "reproducibility": {
+    "catalog_sha256": "da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67",
+    "public_set_sha256": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+    "evaluator_sha256": "79a5ea06f9a1b8c5036f30efa85dc1f36b8f6b06eb8feb8f545dfa767bc45564",
+    "model_manifest_sha256": "f1130079f60555f7e35dc84344a33cd8e9afdcb4743c42afc94fb42b3991fd76",
+    "index_manifest_sha256": "c9b7291004d6ef78473b24886899ea51f427fc2e179c8216c8e8b65f6cf929b2",
+    "ablation_result_sha256": "57a111b5e01d6623ff5937ea89288d393d7f2e623a4797bf4a385dd77e23ffb2",
+    "verification_result_sha256": "2ef3133cd44236f8650cd295cd53a4140bcf0941447ac6757cf19aa5af445ca4",
+    "source_sha256": {
+      "conversational_search/intent.py": "ad72fe3d15d827909a9602bb0e76ea6d605ebba82a53a93e8a62450d0d94dfe3",
+      "conversational_search/questions.py": "900a0a129b12e5a9628cea845dd5e9dd859395d1c8d745b4ccef987ac4964cfd",
+      "conversational_search/retrieval.py": "d9818e1d337f958588b90556caeb61865384138b1615fb5dea1f809ba31b6af4",
+      "conversational_search/service.py": "b4f15638d6902f70b193efa870e8d3593e87f53b52b82c5cc77dbc24b1dba41e",
+      "conversational_search/strategy.py": "7f62efb080c19ecf6ded2d54ac960874daafb39ff7444553f7f1fcc2e07de9d0",
+      "preprocessing/encoder.py": "8cf3f00fac5e473a4cb0001bac2462d228ec6b1359199e6c3ea5cdb17ce3ea5c",
+      "requirements-runtime.txt": "db8bcb738aa8a27746b78473e7ba0806b9ddb03011917a82285ee7ca0e9523b5",
+      "scripts/run_fusion_ablations.py": "870bdb25a27520c45f88b75c48e56eb11a929918e10a641e216b2fac868f0e92",
+      "starter/agent.py": "e661179798a99130a5b57eb9f195958d9a145435dd8a27caf669c77292a70e2b",
+      "starter/dense.py": "013defff58a9aac956af70ee282c1653d44692309d0131d105514f27aa882ed5"
+    },
+    "promoted_service_sha256": "a4f41545472b2f81e4a7a70b68151d72ee9b9609559b815270c932a16178aaeb",
+    "linux_x86_64_validation": "pending"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "metrics": {
+    "efficiency": 0.793,
+    "hit_rate_at_10": 0.99,
+    "mrr": 0.52223,
+    "mttc": 3.07,
+    "recommended_technical_score": 0.810269
+  },
+  "record_id": "phase7",
+  "sample_count": 200,
+  "scenario_metrics": {
+    "boundary": {
+      "hit_rate_at_10": 0.9,
+      "mrr": 0.385952,
+      "mttc": 4.3,
+      "sample_count": 10
+    },
+    "browsing": {
+      "hit_rate_at_10": 1.0,
+      "mrr": 0.513219,
+      "mttc": 2.5625,
+      "sample_count": 80
+    },
+    "buying": {
+      "hit_rate_at_10": 0.9875,
+      "mrr": 0.46,
+      "mttc": 2.9,
+      "sample_count": 80
+    },
+    "intent_override": {
+      "hit_rate_at_10": 1.0,
+      "mrr": 0.757632,
+      "mttc": 4.466667,
+      "sample_count": 30
+    }
+  },
+  "schema_version": 1,
+  "source_document": "docs/phase7_results.json",
+  "system": "phase7-exact-ranking-reuse-v1"
+}

@@ -1,0 +1,3796 @@
+{
+  "audit": "retrieval-loss-waterfall-v1",
+  "by_evidence_completeness": {
+    "0.000000": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.003506,
+        "recall_at_10": 0.019417,
+        "recall_at_100": 0.359223,
+        "recall_at_10_given_ok": 0.019417,
+        "recall_at_50": 0.184466
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.027951,
+        "recall_at_10": 0.097087,
+        "recall_at_100": 0.466019,
+        "recall_at_10_given_ok": 0.097087,
+        "recall_at_50": 0.31068
+      },
+      "eligible_observations": 103,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 167.213592,
+        "mrr_at_10": 0.017819,
+        "recall_at_10": 0.106796,
+        "recall_at_100": 0.38835,
+        "recall_at_200": 0.582524,
+        "recall_at_50": 0.262136,
+        "union_recall": 0.582524
+      },
+      "mean_route_jaccard": 0.207208,
+      "oracle": {
+        "either_route_at_10": 0.106796,
+        "either_route_at_100": 0.582524,
+        "either_route_at_50": 0.378641
+      },
+      "output": {
+        "mrr_at_10": 0.017819,
+        "recall_at_10": 0.106796
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 103
+        },
+        "dense": {
+          "ok": 103
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 1,
+        "agreement_lost": 0,
+        "bm25_lost": 1,
+        "bm25_rescue": 0,
+        "deep_rrf_promotion": 4,
+        "dense_lost": 3,
+        "dense_rescue": 6,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 43,
+        "union_not_promoted": 45
+      }
+    },
+    "0.166667": {
+      "bm25": {
+        "mean_candidate_count": 0.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.0,
+        "recall_at_10_given_ok": 0.0,
+        "recall_at_50": 0.0
+      },
+      "dense": {
+        "mean_candidate_count": 0.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.0,
+        "recall_at_10_given_ok": 0.0,
+        "recall_at_50": 0.0
+      },
+      "eligible_observations": 0,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 0.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.0,
+        "recall_at_200": 0.0,
+        "recall_at_50": 0.0,
+        "union_recall": 0.0
+      },
+      "mean_route_jaccard": 0.0,
+      "oracle": {
+        "either_route_at_10": 0.0,
+        "either_route_at_100": 0.0,
+        "either_route_at_50": 0.0
+      },
+      "output": {
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0
+      },
+      "route_status_counts": {
+        "bm25": {},
+        "dense": {}
+      },
+      "waterfall_counts": {
+        "agreement_kept": 0,
+        "agreement_lost": 0,
+        "bm25_lost": 0,
+        "bm25_rescue": 0,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 0,
+        "union_not_promoted": 0
+      }
+    },
+    "0.333333": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.186907,
+        "recall_at_10": 0.321782,
+        "recall_at_100": 0.70297,
+        "recall_at_10_given_ok": 0.321782,
+        "recall_at_50": 0.564356
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.105483,
+        "recall_at_10": 0.207921,
+        "recall_at_100": 0.50495,
+        "recall_at_10_given_ok": 0.207921,
+        "recall_at_50": 0.39604
+      },
+      "eligible_observations": 202,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 166.445545,
+        "mrr_at_10": 0.144193,
+        "recall_at_10": 0.277228,
+        "recall_at_100": 0.688119,
+        "recall_at_200": 0.772277,
+        "recall_at_50": 0.529703,
+        "union_recall": 0.772277
+      },
+      "mean_route_jaccard": 0.212945,
+      "oracle": {
+        "either_route_at_10": 0.371287,
+        "either_route_at_100": 0.772277,
+        "either_route_at_50": 0.623762
+      },
+      "output": {
+        "mrr_at_10": 0.144193,
+        "recall_at_10": 0.277228
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 202
+        },
+        "dense": {
+          "ok": 202
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 32,
+        "agreement_lost": 0,
+        "bm25_lost": 18,
+        "bm25_rescue": 15,
+        "deep_rrf_promotion": 3,
+        "dense_lost": 4,
+        "dense_rescue": 6,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 46,
+        "union_not_promoted": 78
+      }
+    },
+    "0.500000": {
+      "bm25": {
+        "mean_candidate_count": 0.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.0,
+        "recall_at_10_given_ok": 0.0,
+        "recall_at_50": 0.0
+      },
+      "dense": {
+        "mean_candidate_count": 0.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.0,
+        "recall_at_10_given_ok": 0.0,
+        "recall_at_50": 0.0
+      },
+      "eligible_observations": 0,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 0.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.0,
+        "recall_at_200": 0.0,
+        "recall_at_50": 0.0,
+        "union_recall": 0.0
+      },
+      "mean_route_jaccard": 0.0,
+      "oracle": {
+        "either_route_at_10": 0.0,
+        "either_route_at_100": 0.0,
+        "either_route_at_50": 0.0
+      },
+      "output": {
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0
+      },
+      "route_status_counts": {
+        "bm25": {},
+        "dense": {}
+      },
+      "waterfall_counts": {
+        "agreement_kept": 0,
+        "agreement_lost": 0,
+        "bm25_lost": 0,
+        "bm25_rescue": 0,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 0,
+        "union_not_promoted": 0
+      }
+    },
+    "0.666667": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.303997,
+        "recall_at_10": 0.473282,
+        "recall_at_100": 0.946565,
+        "recall_at_10_given_ok": 0.473282,
+        "recall_at_50": 0.847328
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.083408,
+        "recall_at_10": 0.114504,
+        "recall_at_100": 0.381679,
+        "recall_at_10_given_ok": 0.114504,
+        "recall_at_50": 0.305344
+      },
+      "eligible_observations": 262,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 171.847328,
+        "mrr_at_10": 0.130145,
+        "recall_at_10": 0.209924,
+        "recall_at_100": 0.900763,
+        "recall_at_200": 0.950382,
+        "recall_at_50": 0.790076,
+        "union_recall": 0.950382
+      },
+      "mean_route_jaccard": 0.17209,
+      "oracle": {
+        "either_route_at_10": 0.477099,
+        "either_route_at_100": 0.950382,
+        "either_route_at_50": 0.866412
+      },
+      "output": {
+        "mrr_at_10": 0.130145,
+        "recall_at_10": 0.209924
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 262
+        },
+        "dense": {
+          "ok": 262
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 29,
+        "agreement_lost": 0,
+        "bm25_lost": 71,
+        "bm25_rescue": 24,
+        "deep_rrf_promotion": 1,
+        "dense_lost": 0,
+        "dense_rescue": 1,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 13,
+        "union_not_promoted": 123
+      }
+    },
+    "0.833333": {
+      "bm25": {
+        "mean_candidate_count": 0.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.0,
+        "recall_at_10_given_ok": 0.0,
+        "recall_at_50": 0.0
+      },
+      "dense": {
+        "mean_candidate_count": 0.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.0,
+        "recall_at_10_given_ok": 0.0,
+        "recall_at_50": 0.0
+      },
+      "eligible_observations": 0,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 0.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.0,
+        "recall_at_200": 0.0,
+        "recall_at_50": 0.0,
+        "union_recall": 0.0
+      },
+      "mean_route_jaccard": 0.0,
+      "oracle": {
+        "either_route_at_10": 0.0,
+        "either_route_at_100": 0.0,
+        "either_route_at_50": 0.0
+      },
+      "output": {
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0
+      },
+      "route_status_counts": {
+        "bm25": {},
+        "dense": {}
+      },
+      "waterfall_counts": {
+        "agreement_kept": 0,
+        "agreement_lost": 0,
+        "bm25_lost": 0,
+        "bm25_rescue": 0,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 0,
+        "union_not_promoted": 0
+      }
+    },
+    "1.000000": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.405571,
+        "recall_at_10": 0.555556,
+        "recall_at_100": 0.964286,
+        "recall_at_10_given_ok": 0.555556,
+        "recall_at_50": 0.829365
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.026069,
+        "recall_at_10": 0.047619,
+        "recall_at_100": 0.297619,
+        "recall_at_10_given_ok": 0.047619,
+        "recall_at_50": 0.206349
+      },
+      "eligible_observations": 252,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 169.456349,
+        "mrr_at_10": 0.064223,
+        "recall_at_10": 0.126984,
+        "recall_at_100": 0.829365,
+        "recall_at_200": 0.964286,
+        "recall_at_50": 0.77381,
+        "union_recall": 0.964286
+      },
+      "mean_route_jaccard": 0.189949,
+      "oracle": {
+        "either_route_at_10": 0.555556,
+        "either_route_at_100": 0.964286,
+        "either_route_at_50": 0.829365
+      },
+      "output": {
+        "mrr_at_10": 0.064223,
+        "recall_at_10": 0.126984
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 252
+        },
+        "dense": {
+          "ok": 252
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 12,
+        "agreement_lost": 0,
+        "bm25_lost": 110,
+        "bm25_rescue": 18,
+        "deep_rrf_promotion": 2,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 9,
+        "union_not_promoted": 101
+      }
+    }
+  },
+  "by_scenario": {
+    "boundary": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.223558,
+        "recall_at_10": 0.25,
+        "recall_at_100": 0.576923,
+        "recall_at_10_given_ok": 0.25,
+        "recall_at_50": 0.480769
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.060897,
+        "recall_at_10": 0.096154,
+        "recall_at_100": 0.211538,
+        "recall_at_10_given_ok": 0.096154,
+        "recall_at_50": 0.134615
+      },
+      "eligible_observations": 52,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 174.807692,
+        "mrr_at_10": 0.061561,
+        "recall_at_10": 0.134615,
+        "recall_at_100": 0.519231,
+        "recall_at_200": 0.615385,
+        "recall_at_50": 0.442308,
+        "union_recall": 0.615385
+      },
+      "mean_route_jaccard": 0.152256,
+      "oracle": {
+        "either_route_at_10": 0.288462,
+        "either_route_at_100": 0.615385,
+        "either_route_at_50": 0.480769
+      },
+      "output": {
+        "mrr_at_10": 0.061561,
+        "recall_at_10": 0.134615
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 52
+        },
+        "dense": {
+          "ok": 52
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 3,
+        "agreement_lost": 0,
+        "bm25_lost": 8,
+        "bm25_rescue": 2,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 2,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 20,
+        "union_not_promoted": 17
+      }
+    },
+    "browsing": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.206167,
+        "recall_at_10": 0.365696,
+        "recall_at_100": 0.786408,
+        "recall_at_10_given_ok": 0.365696,
+        "recall_at_50": 0.679612
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.074977,
+        "recall_at_10": 0.139159,
+        "recall_at_100": 0.514563,
+        "recall_at_10_given_ok": 0.139159,
+        "recall_at_50": 0.385113
+      },
+      "eligible_observations": 309,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 167.501618,
+        "mrr_at_10": 0.118353,
+        "recall_at_10": 0.213592,
+        "recall_at_100": 0.76699,
+        "recall_at_200": 0.860841,
+        "recall_at_50": 0.673139,
+        "union_recall": 0.860841
+      },
+      "mean_route_jaccard": 0.204678,
+      "oracle": {
+        "either_route_at_10": 0.398058,
+        "either_route_at_100": 0.860841,
+        "either_route_at_50": 0.754045
+      },
+      "output": {
+        "mrr_at_10": 0.118353,
+        "recall_at_10": 0.213592
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 309
+        },
+        "dense": {
+          "ok": 309
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 33,
+        "agreement_lost": 0,
+        "bm25_lost": 61,
+        "bm25_rescue": 19,
+        "deep_rrf_promotion": 7,
+        "dense_lost": 3,
+        "dense_rescue": 7,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 43,
+        "union_not_promoted": 136
+      }
+    },
+    "buying": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.314268,
+        "recall_at_10": 0.450521,
+        "recall_at_100": 0.856771,
+        "recall_at_10_given_ok": 0.450521,
+        "recall_at_50": 0.710938
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.041068,
+        "recall_at_10": 0.083333,
+        "recall_at_100": 0.294271,
+        "recall_at_10_given_ok": 0.083333,
+        "recall_at_50": 0.21875
+      },
+      "eligible_observations": 384,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 170.117188,
+        "mrr_at_10": 0.066672,
+        "recall_at_10": 0.145833,
+        "recall_at_100": 0.768229,
+        "recall_at_200": 0.882812,
+        "recall_at_50": 0.669271,
+        "union_recall": 0.882812
+      },
+      "mean_route_jaccard": 0.185008,
+      "oracle": {
+        "either_route_at_10": 0.471354,
+        "either_route_at_100": 0.882812,
+        "either_route_at_50": 0.739583
+      },
+      "output": {
+        "mrr_at_10": 0.066672,
+        "recall_at_10": 0.145833
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 384
+        },
+        "dense": {
+          "ok": 384
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 24,
+        "agreement_lost": 0,
+        "bm25_lost": 124,
+        "bm25_rescue": 25,
+        "deep_rrf_promotion": 3,
+        "dense_lost": 4,
+        "dense_rescue": 4,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 45,
+        "union_not_promoted": 155
+      }
+    },
+    "intent_override": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.323756,
+        "recall_at_10": 0.432432,
+        "recall_at_100": 0.918919,
+        "recall_at_10_given_ok": 0.432432,
+        "recall_at_50": 0.756757
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.141946,
+        "recall_at_10": 0.189189,
+        "recall_at_100": 0.567568,
+        "recall_at_10_given_ok": 0.189189,
+        "recall_at_50": 0.459459
+      },
+      "eligible_observations": 74,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 167.554054,
+        "mrr_at_10": 0.214463,
+        "recall_at_10": 0.337838,
+        "recall_at_100": 0.878378,
+        "recall_at_200": 0.959459,
+        "recall_at_50": 0.648649,
+        "union_recall": 0.959459
+      },
+      "mean_route_jaccard": 0.20414,
+      "oracle": {
+        "either_route_at_10": 0.432432,
+        "either_route_at_100": 0.959459,
+        "either_route_at_50": 0.797297
+      },
+      "output": {
+        "mrr_at_10": 0.214463,
+        "recall_at_10": 0.337838
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 74
+        },
+        "dense": {
+          "ok": 74
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 14,
+        "agreement_lost": 0,
+        "bm25_lost": 7,
+        "bm25_rescue": 11,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 3,
+        "union_not_promoted": 39
+      }
+    }
+  },
+  "by_scenario_turn": {
+    "boundary": {
+      "1": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.4,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.3
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.116667,
+          "recall_at_10": 0.2,
+          "recall_at_100": 0.4,
+          "recall_at_10_given_ok": 0.2,
+          "recall_at_50": 0.2
+        },
+        "eligible_observations": 10,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 168.9,
+          "mrr_at_10": 0.026786,
+          "recall_at_10": 0.2,
+          "recall_at_100": 0.3,
+          "recall_at_200": 0.5,
+          "recall_at_50": 0.3,
+          "union_recall": 0.5
+        },
+        "mean_route_jaccard": 0.19653,
+        "oracle": {
+          "either_route_at_10": 0.2,
+          "either_route_at_100": 0.5,
+          "either_route_at_50": 0.3
+        },
+        "output": {
+          "mrr_at_10": 0.026786,
+          "recall_at_10": 0.2
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 10
+          },
+          "dense": {
+            "ok": 10
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 0,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 2,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 5,
+          "union_not_promoted": 3
+        }
+      },
+      "10": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.333333,
+          "recall_at_10": 0.333333,
+          "recall_at_100": 0.666667,
+          "recall_at_10_given_ok": 0.333333,
+          "recall_at_50": 0.666667
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.0,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.0
+        },
+        "eligible_observations": 3,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 182.333333,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.666667,
+          "recall_at_200": 0.666667,
+          "recall_at_50": 0.666667,
+          "union_recall": 0.666667
+        },
+        "mean_route_jaccard": 0.097697,
+        "oracle": {
+          "either_route_at_10": 0.333333,
+          "either_route_at_100": 0.666667,
+          "either_route_at_50": 0.666667
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 3
+          },
+          "dense": {
+            "ok": 3
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 1
+        }
+      },
+      "2": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.25,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.125
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.25,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.0
+        },
+        "eligible_observations": 8,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 173.125,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.125,
+          "recall_at_200": 0.375,
+          "recall_at_50": 0.125,
+          "union_recall": 0.375
+        },
+        "mean_route_jaccard": 0.165557,
+        "oracle": {
+          "either_route_at_10": 0.0,
+          "either_route_at_100": 0.375,
+          "either_route_at_50": 0.125
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 8
+          },
+          "dense": {
+            "ok": 8
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 0,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 5,
+          "union_not_promoted": 3
+        }
+      },
+      "3": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.265625,
+          "recall_at_10": 0.375,
+          "recall_at_100": 0.75,
+          "recall_at_10_given_ok": 0.375,
+          "recall_at_50": 0.5
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.125,
+          "recall_at_10": 0.125,
+          "recall_at_100": 0.25,
+          "recall_at_10_given_ok": 0.125,
+          "recall_at_50": 0.25
+        },
+        "eligible_observations": 8,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 169.0,
+          "mrr_at_10": 0.1375,
+          "recall_at_10": 0.25,
+          "recall_at_100": 0.625,
+          "recall_at_200": 0.75,
+          "recall_at_50": 0.375,
+          "union_recall": 0.75
+        },
+        "mean_route_jaccard": 0.195621,
+        "oracle": {
+          "either_route_at_10": 0.375,
+          "either_route_at_100": 0.75,
+          "either_route_at_50": 0.5
+        },
+        "output": {
+          "mrr_at_10": 0.1375,
+          "recall_at_10": 0.25
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 8
+          },
+          "dense": {
+            "ok": 8
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 1,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 1,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 2,
+          "union_not_promoted": 3
+        }
+      },
+      "4": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.25,
+          "recall_at_10": 0.333333,
+          "recall_at_100": 0.666667,
+          "recall_at_10_given_ok": 0.333333,
+          "recall_at_50": 0.5
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.083333,
+          "recall_at_10": 0.166667,
+          "recall_at_100": 0.166667,
+          "recall_at_10_given_ok": 0.166667,
+          "recall_at_50": 0.166667
+        },
+        "eligible_observations": 6,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 169.333333,
+          "mrr_at_10": 0.083333,
+          "recall_at_10": 0.166667,
+          "recall_at_100": 0.666667,
+          "recall_at_200": 0.666667,
+          "recall_at_50": 0.333333,
+          "union_recall": 0.666667
+        },
+        "mean_route_jaccard": 0.186377,
+        "oracle": {
+          "either_route_at_10": 0.333333,
+          "either_route_at_100": 0.666667,
+          "either_route_at_50": 0.5
+        },
+        "output": {
+          "mrr_at_10": 0.083333,
+          "recall_at_10": 0.166667
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 6
+          },
+          "dense": {
+            "ok": 6
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 1,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 2,
+          "union_not_promoted": 2
+        }
+      },
+      "5": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.6,
+          "recall_at_10": 0.6,
+          "recall_at_100": 0.8,
+          "recall_at_10_given_ok": 0.6,
+          "recall_at_50": 0.8
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.1,
+          "recall_at_10": 0.2,
+          "recall_at_100": 0.4,
+          "recall_at_10_given_ok": 0.2,
+          "recall_at_50": 0.4
+        },
+        "eligible_observations": 5,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 182.6,
+          "mrr_at_10": 0.266667,
+          "recall_at_10": 0.4,
+          "recall_at_100": 0.8,
+          "recall_at_200": 0.8,
+          "recall_at_50": 0.8,
+          "union_recall": 0.8
+        },
+        "mean_route_jaccard": 0.095776,
+        "oracle": {
+          "either_route_at_10": 0.6,
+          "either_route_at_100": 0.8,
+          "either_route_at_50": 0.8
+        },
+        "output": {
+          "mrr_at_10": 0.266667,
+          "recall_at_10": 0.4
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 5
+          },
+          "dense": {
+            "ok": 5
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 1,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 1,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 1
+        }
+      },
+      "6": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.333333,
+          "recall_at_10": 0.333333,
+          "recall_at_100": 0.666667,
+          "recall_at_10_given_ok": 0.333333,
+          "recall_at_50": 0.666667
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.0,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.0
+        },
+        "eligible_observations": 3,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 182.333333,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.666667,
+          "recall_at_200": 0.666667,
+          "recall_at_50": 0.666667,
+          "union_recall": 0.666667
+        },
+        "mean_route_jaccard": 0.097697,
+        "oracle": {
+          "either_route_at_10": 0.333333,
+          "either_route_at_100": 0.666667,
+          "either_route_at_50": 0.666667
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 3
+          },
+          "dense": {
+            "ok": 3
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 1
+        }
+      },
+      "7": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.333333,
+          "recall_at_10": 0.333333,
+          "recall_at_100": 0.666667,
+          "recall_at_10_given_ok": 0.333333,
+          "recall_at_50": 0.666667
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.0,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.0
+        },
+        "eligible_observations": 3,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 182.333333,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.666667,
+          "recall_at_200": 0.666667,
+          "recall_at_50": 0.666667,
+          "union_recall": 0.666667
+        },
+        "mean_route_jaccard": 0.097697,
+        "oracle": {
+          "either_route_at_10": 0.333333,
+          "either_route_at_100": 0.666667,
+          "either_route_at_50": 0.666667
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 3
+          },
+          "dense": {
+            "ok": 3
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 1
+        }
+      },
+      "8": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.333333,
+          "recall_at_10": 0.333333,
+          "recall_at_100": 0.666667,
+          "recall_at_10_given_ok": 0.333333,
+          "recall_at_50": 0.666667
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.0,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.0
+        },
+        "eligible_observations": 3,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 182.333333,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.666667,
+          "recall_at_200": 0.666667,
+          "recall_at_50": 0.666667,
+          "union_recall": 0.666667
+        },
+        "mean_route_jaccard": 0.097697,
+        "oracle": {
+          "either_route_at_10": 0.333333,
+          "either_route_at_100": 0.666667,
+          "either_route_at_50": 0.666667
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 3
+          },
+          "dense": {
+            "ok": 3
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 1
+        }
+      },
+      "9": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.333333,
+          "recall_at_10": 0.333333,
+          "recall_at_100": 0.666667,
+          "recall_at_10_given_ok": 0.333333,
+          "recall_at_50": 0.666667
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.0,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.0
+        },
+        "eligible_observations": 3,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 182.333333,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.666667,
+          "recall_at_200": 0.666667,
+          "recall_at_50": 0.666667,
+          "union_recall": 0.666667
+        },
+        "mean_route_jaccard": 0.097697,
+        "oracle": {
+          "either_route_at_10": 0.333333,
+          "either_route_at_100": 0.666667,
+          "either_route_at_50": 0.666667
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 3
+          },
+          "dense": {
+            "ok": 3
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 1
+        }
+      }
+    },
+    "browsing": {
+      "1": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.004514,
+          "recall_at_10": 0.025,
+          "recall_at_100": 0.375,
+          "recall_at_10_given_ok": 0.025,
+          "recall_at_50": 0.1875
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.021404,
+          "recall_at_10": 0.1,
+          "recall_at_100": 0.5125,
+          "recall_at_10_given_ok": 0.1,
+          "recall_at_50": 0.3625
+        },
+        "eligible_observations": 80,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 166.6625,
+          "mrr_at_10": 0.019593,
+          "recall_at_10": 0.1125,
+          "recall_at_100": 0.4375,
+          "recall_at_200": 0.625,
+          "recall_at_50": 0.2875,
+          "union_recall": 0.625
+        },
+        "mean_route_jaccard": 0.210456,
+        "oracle": {
+          "either_route_at_10": 0.1125,
+          "either_route_at_100": 0.625,
+          "either_route_at_50": 0.425
+        },
+        "output": {
+          "mrr_at_10": 0.019593,
+          "recall_at_10": 0.1125
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 80
+          },
+          "dense": {
+            "ok": 80
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 1,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 4,
+          "dense_lost": 3,
+          "dense_rescue": 4,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 30,
+          "union_not_promoted": 37
+        }
+      },
+      "10": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.208333,
+          "recall_at_10": 0.428571,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.428571,
+          "recall_at_50": 0.928571
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.357143,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.214286
+        },
+        "eligible_observations": 14,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 169.285714,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.928571,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.857143,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.189108,
+        "oracle": {
+          "either_route_at_10": 0.428571,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.928571
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 14
+          },
+          "dense": {
+            "ok": 14
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 6,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 8
+        }
+      },
+      "2": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.257746,
+          "recall_at_10": 0.450704,
+          "recall_at_100": 0.816901,
+          "recall_at_10_given_ok": 0.450704,
+          "recall_at_50": 0.661972
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.15579,
+          "recall_at_10": 0.253521,
+          "recall_at_100": 0.647887,
+          "recall_at_10_given_ok": 0.253521,
+          "recall_at_50": 0.507042
+        },
+        "eligible_observations": 71,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 168.352113,
+          "mrr_at_10": 0.262106,
+          "recall_at_10": 0.450704,
+          "recall_at_100": 0.760563,
+          "recall_at_200": 0.859155,
+          "recall_at_50": 0.676056,
+          "union_recall": 0.859155
+        },
+        "mean_route_jaccard": 0.19807,
+        "oracle": {
+          "either_route_at_10": 0.464789,
+          "either_route_at_100": 0.859155,
+          "either_route_at_50": 0.71831
+        },
+        "output": {
+          "mrr_at_10": 0.262106,
+          "recall_at_10": 0.450704
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 71
+          },
+          "dense": {
+            "ok": 71
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 17,
+          "agreement_lost": 0,
+          "bm25_lost": 3,
+          "bm25_rescue": 12,
+          "deep_rrf_promotion": 2,
+          "dense_lost": 0,
+          "dense_rescue": 1,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 10,
+          "union_not_promoted": 26
+        }
+      },
+      "3": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.343162,
+          "recall_at_10": 0.564103,
+          "recall_at_100": 0.948718,
+          "recall_at_10_given_ok": 0.564103,
+          "recall_at_50": 0.948718
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.124786,
+          "recall_at_10": 0.230769,
+          "recall_at_100": 0.564103,
+          "recall_at_10_given_ok": 0.230769,
+          "recall_at_50": 0.487179
+        },
+        "eligible_observations": 39,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 165.564103,
+          "mrr_at_10": 0.197894,
+          "recall_at_10": 0.333333,
+          "recall_at_100": 0.948718,
+          "recall_at_200": 0.948718,
+          "recall_at_50": 0.871795,
+          "union_recall": 0.948718
+        },
+        "mean_route_jaccard": 0.222467,
+        "oracle": {
+          "either_route_at_10": 0.615385,
+          "either_route_at_100": 0.948718,
+          "either_route_at_50": 0.948718
+        },
+        "output": {
+          "mrr_at_10": 0.197894,
+          "recall_at_10": 0.333333
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 39
+          },
+          "dense": {
+            "ok": 39
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 7,
+          "agreement_lost": 0,
+          "bm25_lost": 11,
+          "bm25_rescue": 4,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 2,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 2,
+          "union_not_promoted": 13
+        }
+      },
+      "4": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.251923,
+          "recall_at_10": 0.461538,
+          "recall_at_100": 0.961538,
+          "recall_at_10_given_ok": 0.461538,
+          "recall_at_50": 0.923077
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.038462,
+          "recall_at_10": 0.038462,
+          "recall_at_100": 0.423077,
+          "recall_at_10_given_ok": 0.038462,
+          "recall_at_50": 0.346154
+        },
+        "eligible_observations": 26,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 166.692308,
+          "mrr_at_10": 0.063187,
+          "recall_at_10": 0.115385,
+          "recall_at_100": 0.923077,
+          "recall_at_200": 0.961538,
+          "recall_at_50": 0.846154,
+          "union_recall": 0.961538
+        },
+        "mean_route_jaccard": 0.213307,
+        "oracle": {
+          "either_route_at_10": 0.461538,
+          "either_route_at_100": 0.961538,
+          "either_route_at_50": 0.923077
+        },
+        "output": {
+          "mrr_at_10": 0.063187,
+          "recall_at_10": 0.115385
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 26
+          },
+          "dense": {
+            "ok": 26
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 1,
+          "agreement_lost": 0,
+          "bm25_lost": 10,
+          "bm25_rescue": 1,
+          "deep_rrf_promotion": 1,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 12
+        }
+      },
+      "5": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.457729,
+          "recall_at_10": 0.652174,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.652174,
+          "recall_at_50": 0.956522
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.19686,
+          "recall_at_10": 0.304348,
+          "recall_at_100": 0.608696,
+          "recall_at_10_given_ok": 0.304348,
+          "recall_at_50": 0.478261
+        },
+        "eligible_observations": 23,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 166.565217,
+          "mrr_at_10": 0.305797,
+          "recall_at_10": 0.391304,
+          "recall_at_100": 0.956522,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.913043,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.212446,
+        "oracle": {
+          "either_route_at_10": 0.652174,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.956522
+        },
+        "output": {
+          "mrr_at_10": 0.305797,
+          "recall_at_10": 0.391304
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 23
+          },
+          "dense": {
+            "ok": 23
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 7,
+          "agreement_lost": 0,
+          "bm25_lost": 6,
+          "bm25_rescue": 2,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 8
+        }
+      },
+      "6": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.208333,
+          "recall_at_10": 0.428571,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.428571,
+          "recall_at_50": 0.928571
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.357143,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.214286
+        },
+        "eligible_observations": 14,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 169.285714,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.928571,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.857143,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.189108,
+        "oracle": {
+          "either_route_at_10": 0.428571,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.928571
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 14
+          },
+          "dense": {
+            "ok": 14
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 6,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 8
+        }
+      },
+      "7": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.208333,
+          "recall_at_10": 0.428571,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.428571,
+          "recall_at_50": 0.928571
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.357143,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.214286
+        },
+        "eligible_observations": 14,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 169.285714,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.928571,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.857143,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.189108,
+        "oracle": {
+          "either_route_at_10": 0.428571,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.928571
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 14
+          },
+          "dense": {
+            "ok": 14
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 6,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 8
+        }
+      },
+      "8": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.208333,
+          "recall_at_10": 0.428571,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.428571,
+          "recall_at_50": 0.928571
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.357143,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.214286
+        },
+        "eligible_observations": 14,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 169.285714,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.928571,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.857143,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.189108,
+        "oracle": {
+          "either_route_at_10": 0.428571,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.928571
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 14
+          },
+          "dense": {
+            "ok": 14
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 6,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 8
+        }
+      },
+      "9": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.208333,
+          "recall_at_10": 0.428571,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.428571,
+          "recall_at_50": 0.928571
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.357143,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.214286
+        },
+        "eligible_observations": 14,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 169.285714,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.928571,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.857143,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.189108,
+        "oracle": {
+          "either_route_at_10": 0.428571,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.928571
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 14
+          },
+          "dense": {
+            "ok": 14
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 6,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 8
+        }
+      }
+    },
+    "buying": {
+      "1": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.129425,
+          "recall_at_10": 0.225,
+          "recall_at_100": 0.625,
+          "recall_at_10_given_ok": 0.225,
+          "recall_at_50": 0.4875
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.083884,
+          "recall_at_10": 0.2125,
+          "recall_at_100": 0.4875,
+          "recall_at_10_given_ok": 0.2125,
+          "recall_at_50": 0.3625
+        },
+        "eligible_observations": 80,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 163.525,
+          "mrr_at_10": 0.081558,
+          "recall_at_10": 0.2125,
+          "recall_at_100": 0.6125,
+          "recall_at_200": 0.725,
+          "recall_at_50": 0.4875,
+          "union_recall": 0.725
+        },
+        "mean_route_jaccard": 0.234866,
+        "oracle": {
+          "either_route_at_10": 0.3125,
+          "either_route_at_100": 0.725,
+          "either_route_at_50": 0.5625
+        },
+        "output": {
+          "mrr_at_10": 0.081558,
+          "recall_at_10": 0.2125
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 80
+          },
+          "dense": {
+            "ok": 80
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 10,
+          "agreement_lost": 0,
+          "bm25_lost": 6,
+          "bm25_rescue": 2,
+          "deep_rrf_promotion": 1,
+          "dense_lost": 3,
+          "dense_rescue": 4,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 22,
+          "union_not_promoted": 32
+        }
+      },
+      "10": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.427827,
+          "recall_at_10": 0.583333,
+          "recall_at_100": 0.958333,
+          "recall_at_10_given_ok": 0.583333,
+          "recall_at_50": 0.833333
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.125,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.083333
+        },
+        "eligible_observations": 24,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 170.916667,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.833333,
+          "recall_at_200": 0.958333,
+          "recall_at_50": 0.791667,
+          "union_recall": 0.958333
+        },
+        "mean_route_jaccard": 0.178601,
+        "oracle": {
+          "either_route_at_10": 0.583333,
+          "either_route_at_100": 0.958333,
+          "either_route_at_50": 0.833333
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 24
+          },
+          "dense": {
+            "ok": 24
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 14,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 9
+        }
+      },
+      "2": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.166534,
+          "recall_at_10": 0.31746,
+          "recall_at_100": 0.825397,
+          "recall_at_10_given_ok": 0.31746,
+          "recall_at_50": 0.619048
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.04195,
+          "recall_at_10": 0.063492,
+          "recall_at_100": 0.31746,
+          "recall_at_10_given_ok": 0.063492,
+          "recall_at_50": 0.222222
+        },
+        "eligible_observations": 63,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 172.920635,
+          "mrr_at_10": 0.070918,
+          "recall_at_10": 0.174603,
+          "recall_at_100": 0.730159,
+          "recall_at_200": 0.857143,
+          "recall_at_50": 0.555556,
+          "union_recall": 0.857143
+        },
+        "mean_route_jaccard": 0.164249,
+        "oracle": {
+          "either_route_at_10": 0.333333,
+          "either_route_at_100": 0.857143,
+          "either_route_at_50": 0.666667
+        },
+        "output": {
+          "mrr_at_10": 0.070918,
+          "recall_at_10": 0.174603
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 63
+          },
+          "dense": {
+            "ok": 63
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 3,
+          "agreement_lost": 0,
+          "bm25_lost": 10,
+          "bm25_rescue": 7,
+          "deep_rrf_promotion": 1,
+          "dense_lost": 1,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 9,
+          "union_not_promoted": 32
+        }
+      },
+      "3": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.201122,
+          "recall_at_10": 0.326923,
+          "recall_at_100": 0.865385,
+          "recall_at_10_given_ok": 0.326923,
+          "recall_at_50": 0.653846
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.026442,
+          "recall_at_10": 0.057692,
+          "recall_at_100": 0.269231,
+          "recall_at_10_given_ok": 0.057692,
+          "recall_at_50": 0.192308
+        },
+        "eligible_observations": 52,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 173.269231,
+          "mrr_at_10": 0.086615,
+          "recall_at_10": 0.134615,
+          "recall_at_100": 0.75,
+          "recall_at_200": 0.865385,
+          "recall_at_50": 0.557692,
+          "union_recall": 0.865385
+        },
+        "mean_route_jaccard": 0.161524,
+        "oracle": {
+          "either_route_at_10": 0.326923,
+          "either_route_at_100": 0.865385,
+          "either_route_at_50": 0.692308
+        },
+        "output": {
+          "mrr_at_10": 0.086615,
+          "recall_at_10": 0.134615
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 52
+          },
+          "dense": {
+            "ok": 52
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 3,
+          "agreement_lost": 0,
+          "bm25_lost": 10,
+          "bm25_rescue": 4,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 7,
+          "union_not_promoted": 28
+        }
+      },
+      "4": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.617063,
+          "recall_at_10": 0.755556,
+          "recall_at_100": 0.977778,
+          "recall_at_10_given_ok": 0.755556,
+          "recall_at_50": 0.911111
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.112037,
+          "recall_at_10": 0.177778,
+          "recall_at_100": 0.488889,
+          "recall_at_10_given_ok": 0.177778,
+          "recall_at_50": 0.422222
+        },
+        "eligible_observations": 45,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 171.711111,
+          "mrr_at_10": 0.224568,
+          "recall_at_10": 0.466667,
+          "recall_at_100": 0.911111,
+          "recall_at_200": 0.977778,
+          "recall_at_50": 0.888889,
+          "union_recall": 0.977778
+        },
+        "mean_route_jaccard": 0.173072,
+        "oracle": {
+          "either_route_at_10": 0.755556,
+          "either_route_at_100": 0.977778,
+          "either_route_at_50": 0.911111
+        },
+        "output": {
+          "mrr_at_10": 0.224568,
+          "recall_at_10": 0.466667
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 45
+          },
+          "dense": {
+            "ok": 45
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 8,
+          "agreement_lost": 0,
+          "bm25_lost": 14,
+          "bm25_rescue": 12,
+          "deep_rrf_promotion": 1,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 9
+        }
+      },
+      "5": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.427827,
+          "recall_at_10": 0.583333,
+          "recall_at_100": 0.958333,
+          "recall_at_10_given_ok": 0.583333,
+          "recall_at_50": 0.833333
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.125,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.083333
+        },
+        "eligible_observations": 24,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 170.916667,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.833333,
+          "recall_at_200": 0.958333,
+          "recall_at_50": 0.791667,
+          "union_recall": 0.958333
+        },
+        "mean_route_jaccard": 0.178601,
+        "oracle": {
+          "either_route_at_10": 0.583333,
+          "either_route_at_100": 0.958333,
+          "either_route_at_50": 0.833333
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 24
+          },
+          "dense": {
+            "ok": 24
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 14,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 9
+        }
+      },
+      "6": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.427827,
+          "recall_at_10": 0.583333,
+          "recall_at_100": 0.958333,
+          "recall_at_10_given_ok": 0.583333,
+          "recall_at_50": 0.833333
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.125,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.083333
+        },
+        "eligible_observations": 24,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 170.916667,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.833333,
+          "recall_at_200": 0.958333,
+          "recall_at_50": 0.791667,
+          "union_recall": 0.958333
+        },
+        "mean_route_jaccard": 0.178601,
+        "oracle": {
+          "either_route_at_10": 0.583333,
+          "either_route_at_100": 0.958333,
+          "either_route_at_50": 0.833333
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 24
+          },
+          "dense": {
+            "ok": 24
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 14,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 9
+        }
+      },
+      "7": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.427827,
+          "recall_at_10": 0.583333,
+          "recall_at_100": 0.958333,
+          "recall_at_10_given_ok": 0.583333,
+          "recall_at_50": 0.833333
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.125,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.083333
+        },
+        "eligible_observations": 24,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 170.916667,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.833333,
+          "recall_at_200": 0.958333,
+          "recall_at_50": 0.791667,
+          "union_recall": 0.958333
+        },
+        "mean_route_jaccard": 0.178601,
+        "oracle": {
+          "either_route_at_10": 0.583333,
+          "either_route_at_100": 0.958333,
+          "either_route_at_50": 0.833333
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 24
+          },
+          "dense": {
+            "ok": 24
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 14,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 9
+        }
+      },
+      "8": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.427827,
+          "recall_at_10": 0.583333,
+          "recall_at_100": 0.958333,
+          "recall_at_10_given_ok": 0.583333,
+          "recall_at_50": 0.833333
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.125,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.083333
+        },
+        "eligible_observations": 24,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 170.916667,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.833333,
+          "recall_at_200": 0.958333,
+          "recall_at_50": 0.791667,
+          "union_recall": 0.958333
+        },
+        "mean_route_jaccard": 0.178601,
+        "oracle": {
+          "either_route_at_10": 0.583333,
+          "either_route_at_100": 0.958333,
+          "either_route_at_50": 0.833333
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 24
+          },
+          "dense": {
+            "ok": 24
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 14,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 9
+        }
+      },
+      "9": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.427827,
+          "recall_at_10": 0.583333,
+          "recall_at_100": 0.958333,
+          "recall_at_10_given_ok": 0.583333,
+          "recall_at_50": 0.833333
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.125,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.083333
+        },
+        "eligible_observations": 24,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 170.916667,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.833333,
+          "recall_at_200": 0.958333,
+          "recall_at_50": 0.791667,
+          "union_recall": 0.958333
+        },
+        "mean_route_jaccard": 0.178601,
+        "oracle": {
+          "either_route_at_10": 0.583333,
+          "either_route_at_100": 0.958333,
+          "either_route_at_50": 0.833333
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 24
+          },
+          "dense": {
+            "ok": 24
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 14,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 9
+        }
+      }
+    },
+    "intent_override": {
+      "1": {
+        "bm25": {
+          "mean_candidate_count": 0.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.0,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.0
+        },
+        "dense": {
+          "mean_candidate_count": 0.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.0,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.0
+        },
+        "eligible_observations": 0,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 0.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.0,
+          "recall_at_200": 0.0,
+          "recall_at_50": 0.0,
+          "union_recall": 0.0
+        },
+        "mean_route_jaccard": 0.0,
+        "oracle": {
+          "either_route_at_10": 0.0,
+          "either_route_at_100": 0.0,
+          "either_route_at_50": 0.0
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {},
+          "dense": {}
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 0,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 0
+        }
+      },
+      "10": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.2,
+          "recall_at_10": 0.2,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.2,
+          "recall_at_50": 0.8
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.4,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.2
+        },
+        "eligible_observations": 5,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 167.4,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.8,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.6,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.207674,
+        "oracle": {
+          "either_route_at_10": 0.2,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.8
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 5
+          },
+          "dense": {
+            "ok": 5
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 4
+        }
+      },
+      "2": {
+        "bm25": {
+          "mean_candidate_count": 0.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.0,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.0
+        },
+        "dense": {
+          "mean_candidate_count": 0.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.0,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.0
+        },
+        "eligible_observations": 0,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 0.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.0,
+          "recall_at_200": 0.0,
+          "recall_at_50": 0.0,
+          "union_recall": 0.0
+        },
+        "mean_route_jaccard": 0.0,
+        "oracle": {
+          "either_route_at_10": 0.0,
+          "either_route_at_100": 0.0,
+          "either_route_at_50": 0.0
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {},
+          "dense": {}
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 0,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 0
+        }
+      },
+      "3": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.228009,
+          "recall_at_10": 0.416667,
+          "recall_at_100": 0.833333,
+          "recall_at_10_given_ok": 0.416667,
+          "recall_at_50": 0.583333
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.166667,
+          "recall_at_10": 0.166667,
+          "recall_at_100": 0.583333,
+          "recall_at_10_given_ok": 0.166667,
+          "recall_at_50": 0.583333
+        },
+        "eligible_observations": 12,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 159.416667,
+          "mrr_at_10": 0.171627,
+          "recall_at_10": 0.416667,
+          "recall_at_100": 0.916667,
+          "recall_at_200": 0.916667,
+          "recall_at_50": 0.5,
+          "union_recall": 0.916667
+        },
+        "mean_route_jaccard": 0.263464,
+        "oracle": {
+          "either_route_at_10": 0.416667,
+          "either_route_at_100": 0.916667,
+          "either_route_at_50": 0.666667
+        },
+        "output": {
+          "mrr_at_10": 0.171627,
+          "recall_at_10": 0.416667
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 12
+          },
+          "dense": {
+            "ok": 12
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 2,
+          "agreement_lost": 0,
+          "bm25_lost": 0,
+          "bm25_rescue": 3,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 1,
+          "union_not_promoted": 6
+        }
+      },
+      "4": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.395873,
+          "recall_at_10": 0.56,
+          "recall_at_100": 0.84,
+          "recall_at_10_given_ok": 0.56,
+          "recall_at_50": 0.72
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.215714,
+          "recall_at_10": 0.32,
+          "recall_at_100": 0.64,
+          "recall_at_10_given_ok": 0.32,
+          "recall_at_50": 0.6
+        },
+        "eligible_observations": 25,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 169.08,
+          "mrr_at_10": 0.338714,
+          "recall_at_10": 0.52,
+          "recall_at_100": 0.92,
+          "recall_at_200": 0.92,
+          "recall_at_50": 0.68,
+          "union_recall": 0.92
+        },
+        "mean_route_jaccard": 0.190663,
+        "oracle": {
+          "either_route_at_10": 0.56,
+          "either_route_at_100": 0.92,
+          "either_route_at_50": 0.8
+        },
+        "output": {
+          "mrr_at_10": 0.338714,
+          "recall_at_10": 0.52
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 25
+          },
+          "dense": {
+            "ok": 25
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 8,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 5,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 2,
+          "union_not_promoted": 9
+        }
+      },
+      "5": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.527083,
+          "recall_at_10": 0.666667,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.666667,
+          "recall_at_50": 0.916667
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.259259,
+          "recall_at_10": 0.333333,
+          "recall_at_100": 0.75,
+          "recall_at_10_given_ok": 0.333333,
+          "recall_at_50": 0.583333
+        },
+        "eligible_observations": 12,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 172.833333,
+          "mrr_at_10": 0.445238,
+          "recall_at_10": 0.583333,
+          "recall_at_100": 0.916667,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.833333,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.16553,
+        "oracle": {
+          "either_route_at_10": 0.666667,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.916667
+        },
+        "output": {
+          "mrr_at_10": 0.445238,
+          "recall_at_10": 0.583333
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 12
+          },
+          "dense": {
+            "ok": 12
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 4,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 3,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 4
+        }
+      },
+      "6": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.2,
+          "recall_at_10": 0.2,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.2,
+          "recall_at_50": 0.8
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.4,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.2
+        },
+        "eligible_observations": 5,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 167.4,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.8,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.6,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.207674,
+        "oracle": {
+          "either_route_at_10": 0.2,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.8
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 5
+          },
+          "dense": {
+            "ok": 5
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 4
+        }
+      },
+      "7": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.2,
+          "recall_at_10": 0.2,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.2,
+          "recall_at_50": 0.8
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.4,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.2
+        },
+        "eligible_observations": 5,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 167.4,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.8,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.6,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.207674,
+        "oracle": {
+          "either_route_at_10": 0.2,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.8
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 5
+          },
+          "dense": {
+            "ok": 5
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 4
+        }
+      },
+      "8": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.2,
+          "recall_at_10": 0.2,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.2,
+          "recall_at_50": 0.8
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.4,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.2
+        },
+        "eligible_observations": 5,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 167.4,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.8,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.6,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.207674,
+        "oracle": {
+          "either_route_at_10": 0.2,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.8
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 5
+          },
+          "dense": {
+            "ok": 5
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 4
+        }
+      },
+      "9": {
+        "bm25": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.2,
+          "recall_at_10": 0.2,
+          "recall_at_100": 1.0,
+          "recall_at_10_given_ok": 0.2,
+          "recall_at_50": 0.8
+        },
+        "dense": {
+          "mean_candidate_count": 100.0,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.4,
+          "recall_at_10_given_ok": 0.0,
+          "recall_at_50": 0.2
+        },
+        "eligible_observations": 5,
+        "fallback_rate": 0.0,
+        "fused": {
+          "mean_candidate_count": 167.4,
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0,
+          "recall_at_100": 0.8,
+          "recall_at_200": 1.0,
+          "recall_at_50": 0.6,
+          "union_recall": 1.0
+        },
+        "mean_route_jaccard": 0.207674,
+        "oracle": {
+          "either_route_at_10": 0.2,
+          "either_route_at_100": 1.0,
+          "either_route_at_50": 0.8
+        },
+        "output": {
+          "mrr_at_10": 0.0,
+          "recall_at_10": 0.0
+        },
+        "route_status_counts": {
+          "bm25": {
+            "ok": 5
+          },
+          "dense": {
+            "ok": 5
+          }
+        },
+        "waterfall_counts": {
+          "agreement_kept": 0,
+          "agreement_lost": 0,
+          "bm25_lost": 1,
+          "bm25_rescue": 0,
+          "deep_rrf_promotion": 0,
+          "dense_lost": 0,
+          "dense_rescue": 0,
+          "fallback_hit": 0,
+          "fallback_miss": 0,
+          "not_retrieved": 0,
+          "union_not_promoted": 4
+        }
+      }
+    }
+  },
+  "by_turn": {
+    "1": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.06303,
+        "recall_at_10": 0.117647,
+        "recall_at_100": 0.494118,
+        "recall_at_10_given_ok": 0.117647,
+        "recall_at_50": 0.335294
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.05641,
+        "recall_at_10": 0.158824,
+        "recall_at_100": 0.494118,
+        "recall_at_10_given_ok": 0.158824,
+        "recall_at_50": 0.352941
+      },
+      "eligible_observations": 170,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 165.317647,
+        "mrr_at_10": 0.049176,
+        "recall_at_10": 0.164706,
+        "recall_at_100": 0.511765,
+        "recall_at_200": 0.664706,
+        "recall_at_50": 0.382353,
+        "union_recall": 0.664706
+      },
+      "mean_route_jaccard": 0.221124,
+      "oracle": {
+        "either_route_at_10": 0.211765,
+        "either_route_at_100": 0.664706,
+        "either_route_at_50": 0.482353
+      },
+      "output": {
+        "mrr_at_10": 0.049176,
+        "recall_at_10": 0.164706
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 170
+        },
+        "dense": {
+          "ok": 170
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 11,
+        "agreement_lost": 0,
+        "bm25_lost": 7,
+        "bm25_rescue": 2,
+        "deep_rrf_promotion": 5,
+        "dense_lost": 6,
+        "dense_rescue": 10,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 57,
+        "union_not_promoted": 72
+      }
+    },
+    "10": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.330098,
+        "recall_at_10": 0.478261,
+        "recall_at_100": 0.956522,
+        "recall_at_10_given_ok": 0.478261,
+        "recall_at_50": 0.847826
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.217391,
+        "recall_at_10_given_ok": 0.0,
+        "recall_at_50": 0.130435
+      },
+      "eligible_observations": 46,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 170.782609,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.847826,
+        "recall_at_200": 0.956522,
+        "recall_at_50": 0.782609,
+        "union_recall": 0.956522
+      },
+      "mean_route_jaccard": 0.179683,
+      "oracle": {
+        "either_route_at_10": 0.478261,
+        "either_route_at_100": 0.956522,
+        "either_route_at_50": 0.847826
+      },
+      "output": {
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 46
+        },
+        "dense": {
+          "ok": 46
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 0,
+        "agreement_lost": 0,
+        "bm25_lost": 22,
+        "bm25_rescue": 0,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 2,
+        "union_not_promoted": 22
+      }
+    },
+    "2": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.202758,
+        "recall_at_10": 0.366197,
+        "recall_at_100": 0.788732,
+        "recall_at_10_given_ok": 0.366197,
+        "recall_at_50": 0.612676
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.096507,
+        "recall_at_10": 0.15493,
+        "recall_at_100": 0.478873,
+        "recall_at_10_given_ok": 0.15493,
+        "recall_at_50": 0.352113
+      },
+      "eligible_observations": 142,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 170.647887,
+        "mrr_at_10": 0.162517,
+        "recall_at_10": 0.302817,
+        "recall_at_100": 0.711268,
+        "recall_at_200": 0.830986,
+        "recall_at_50": 0.591549,
+        "union_recall": 0.830986
+      },
+      "mean_route_jaccard": 0.181233,
+      "oracle": {
+        "either_route_at_10": 0.380282,
+        "either_route_at_100": 0.830986,
+        "either_route_at_50": 0.661972
+      },
+      "output": {
+        "mrr_at_10": 0.162517,
+        "recall_at_10": 0.302817
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 142
+        },
+        "dense": {
+          "ok": 142
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 20,
+        "agreement_lost": 0,
+        "bm25_lost": 13,
+        "bm25_rescue": 19,
+        "deep_rrf_promotion": 3,
+        "dense_lost": 1,
+        "dense_rescue": 1,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 24,
+        "union_not_promoted": 61
+      }
+    },
+    "3": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.258584,
+        "recall_at_10": 0.423423,
+        "recall_at_100": 0.882883,
+        "recall_at_10_given_ok": 0.423423,
+        "recall_at_50": 0.738739
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.083258,
+        "recall_at_10": 0.135135,
+        "recall_at_100": 0.405405,
+        "recall_at_10_given_ok": 0.135135,
+        "recall_at_50": 0.342342
+      },
+      "eligible_observations": 111,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 168.756757,
+        "mrr_at_10": 0.138571,
+        "recall_at_10": 0.243243,
+        "recall_at_100": 0.828829,
+        "recall_at_200": 0.891892,
+        "recall_at_50": 0.648649,
+        "union_recall": 0.891892
+      },
+      "mean_route_jaccard": 0.196414,
+      "oracle": {
+        "either_route_at_10": 0.441441,
+        "either_route_at_100": 0.891892,
+        "either_route_at_50": 0.765766
+      },
+      "output": {
+        "mrr_at_10": 0.138571,
+        "recall_at_10": 0.243243
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 111
+        },
+        "dense": {
+          "ok": 111
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 13,
+        "agreement_lost": 0,
+        "bm25_lost": 22,
+        "bm25_rescue": 12,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 2,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 12,
+        "union_not_promoted": 50
+      }
+    },
+    "4": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.448183,
+        "recall_at_10": 0.607843,
+        "recall_at_100": 0.921569,
+        "recall_at_10_given_ok": 0.607843,
+        "recall_at_50": 0.843137
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.117005,
+        "recall_at_10": 0.176471,
+        "recall_at_100": 0.490196,
+        "recall_at_10_given_ok": 0.176471,
+        "recall_at_50": 0.431373
+      },
+      "eligible_observations": 102,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 169.647059,
+        "mrr_at_10": 0.203101,
+        "recall_at_10": 0.372549,
+        "recall_at_100": 0.901961,
+        "recall_at_200": 0.941176,
+        "recall_at_50": 0.794118,
+        "union_recall": 0.941176
+      },
+      "mean_route_jaccard": 0.188422,
+      "oracle": {
+        "either_route_at_10": 0.607843,
+        "either_route_at_100": 0.941176,
+        "either_route_at_50": 0.862745
+      },
+      "output": {
+        "mrr_at_10": 0.203101,
+        "recall_at_10": 0.372549
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 102
+        },
+        "dense": {
+          "ok": 102
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 18,
+        "agreement_lost": 0,
+        "bm25_lost": 26,
+        "bm25_rescue": 18,
+        "deep_rrf_promotion": 2,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 6,
+        "union_not_promoted": 32
+      }
+    },
+    "5": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.470635,
+        "recall_at_10": 0.625,
+        "recall_at_100": 0.96875,
+        "recall_at_10_given_ok": 0.625,
+        "recall_at_50": 0.890625
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.12717,
+        "recall_at_10": 0.1875,
+        "recall_at_100": 0.4375,
+        "recall_at_10_given_ok": 0.1875,
+        "recall_at_50": 0.34375
+      },
+      "eligible_observations": 64,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 170.625,
+        "mrr_at_10": 0.214211,
+        "recall_at_10": 0.28125,
+        "recall_at_100": 0.890625,
+        "recall_at_200": 0.96875,
+        "recall_at_50": 0.84375,
+        "union_recall": 0.96875
+      },
+      "mean_route_jaccard": 0.181843,
+      "oracle": {
+        "either_route_at_10": 0.625,
+        "either_route_at_100": 0.96875,
+        "either_route_at_50": 0.890625
+      },
+      "output": {
+        "mrr_at_10": 0.214211,
+        "recall_at_10": 0.28125
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 64
+        },
+        "dense": {
+          "ok": 64
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 12,
+        "agreement_lost": 0,
+        "bm25_lost": 22,
+        "bm25_rescue": 6,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 2,
+        "union_not_promoted": 22
+      }
+    },
+    "6": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.330098,
+        "recall_at_10": 0.478261,
+        "recall_at_100": 0.956522,
+        "recall_at_10_given_ok": 0.478261,
+        "recall_at_50": 0.847826
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.217391,
+        "recall_at_10_given_ok": 0.0,
+        "recall_at_50": 0.130435
+      },
+      "eligible_observations": 46,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 170.782609,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.847826,
+        "recall_at_200": 0.956522,
+        "recall_at_50": 0.782609,
+        "union_recall": 0.956522
+      },
+      "mean_route_jaccard": 0.179683,
+      "oracle": {
+        "either_route_at_10": 0.478261,
+        "either_route_at_100": 0.956522,
+        "either_route_at_50": 0.847826
+      },
+      "output": {
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 46
+        },
+        "dense": {
+          "ok": 46
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 0,
+        "agreement_lost": 0,
+        "bm25_lost": 22,
+        "bm25_rescue": 0,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 2,
+        "union_not_promoted": 22
+      }
+    },
+    "7": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.330098,
+        "recall_at_10": 0.478261,
+        "recall_at_100": 0.956522,
+        "recall_at_10_given_ok": 0.478261,
+        "recall_at_50": 0.847826
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.217391,
+        "recall_at_10_given_ok": 0.0,
+        "recall_at_50": 0.130435
+      },
+      "eligible_observations": 46,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 170.782609,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.847826,
+        "recall_at_200": 0.956522,
+        "recall_at_50": 0.782609,
+        "union_recall": 0.956522
+      },
+      "mean_route_jaccard": 0.179683,
+      "oracle": {
+        "either_route_at_10": 0.478261,
+        "either_route_at_100": 0.956522,
+        "either_route_at_50": 0.847826
+      },
+      "output": {
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 46
+        },
+        "dense": {
+          "ok": 46
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 0,
+        "agreement_lost": 0,
+        "bm25_lost": 22,
+        "bm25_rescue": 0,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 2,
+        "union_not_promoted": 22
+      }
+    },
+    "8": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.330098,
+        "recall_at_10": 0.478261,
+        "recall_at_100": 0.956522,
+        "recall_at_10_given_ok": 0.478261,
+        "recall_at_50": 0.847826
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.217391,
+        "recall_at_10_given_ok": 0.0,
+        "recall_at_50": 0.130435
+      },
+      "eligible_observations": 46,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 170.782609,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.847826,
+        "recall_at_200": 0.956522,
+        "recall_at_50": 0.782609,
+        "union_recall": 0.956522
+      },
+      "mean_route_jaccard": 0.179683,
+      "oracle": {
+        "either_route_at_10": 0.478261,
+        "either_route_at_100": 0.956522,
+        "either_route_at_50": 0.847826
+      },
+      "output": {
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 46
+        },
+        "dense": {
+          "ok": 46
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 0,
+        "agreement_lost": 0,
+        "bm25_lost": 22,
+        "bm25_rescue": 0,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 2,
+        "union_not_promoted": 22
+      }
+    },
+    "9": {
+      "bm25": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.330098,
+        "recall_at_10": 0.478261,
+        "recall_at_100": 0.956522,
+        "recall_at_10_given_ok": 0.478261,
+        "recall_at_50": 0.847826
+      },
+      "dense": {
+        "mean_candidate_count": 100.0,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.217391,
+        "recall_at_10_given_ok": 0.0,
+        "recall_at_50": 0.130435
+      },
+      "eligible_observations": 46,
+      "fallback_rate": 0.0,
+      "fused": {
+        "mean_candidate_count": 170.782609,
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0,
+        "recall_at_100": 0.847826,
+        "recall_at_200": 0.956522,
+        "recall_at_50": 0.782609,
+        "union_recall": 0.956522
+      },
+      "mean_route_jaccard": 0.179683,
+      "oracle": {
+        "either_route_at_10": 0.478261,
+        "either_route_at_100": 0.956522,
+        "either_route_at_50": 0.847826
+      },
+      "output": {
+        "mrr_at_10": 0.0,
+        "recall_at_10": 0.0
+      },
+      "route_status_counts": {
+        "bm25": {
+          "ok": 46
+        },
+        "dense": {
+          "ok": 46
+        }
+      },
+      "waterfall_counts": {
+        "agreement_kept": 0,
+        "agreement_lost": 0,
+        "bm25_lost": 22,
+        "bm25_rescue": 0,
+        "deep_rrf_promotion": 0,
+        "dense_lost": 0,
+        "dense_rescue": 0,
+        "fallback_hit": 0,
+        "fallback_miss": 0,
+        "not_retrieved": 2,
+        "union_not_promoted": 22
+      }
+    }
+  },
+  "censoring": "The official evaluator stops after a fused Top-10 hit; route metrics describe only observed on-policy turns.",
+  "configuration": {
+    "external_api_calls": 0,
+    "onnx_threads": 1,
+    "question_policy": "conservative_early_other",
+    "route_limit": 100,
+    "rrf_k": 60,
+    "top_k": 10
+  },
+  "official_metrics": {
+    "efficiency": 0.6285,
+    "hit_rate_at_10": 0.77,
+    "mrr": 0.406222,
+    "mttc": 4.715,
+    "recommended_technical_score": 0.632567,
+    "reported_token_usage": {
+      "completion_tokens": 0,
+      "prompt_tokens": 0,
+      "total_tokens": 0
+    },
+    "sample_count": 200,
+    "scenario_metrics": {
+      "boundary": {
+        "hit_rate_at_10": 0.7,
+        "mrr": 0.320119,
+        "mttc": 5.5,
+        "sample_count": 10
+      },
+      "browsing": {
+        "hit_rate_at_10": 0.825,
+        "mrr": 0.457138,
+        "mttc": 4.0375,
+        "sample_count": 80
+      },
+      "buying": {
+        "hit_rate_at_10": 0.7,
+        "mrr": 0.320025,
+        "mttc": 5.1,
+        "sample_count": 80
+      },
+      "intent_override": {
+        "hit_rate_at_10": 0.833333,
+        "mrr": 0.529008,
+        "mttc": 5.233333,
+        "sample_count": 30
+      }
+    }
+  },
+  "overall": {
+    "bm25": {
+      "mean_candidate_count": 100.0,
+      "mrr_at_10": 0.268581,
+      "recall_at_10": 0.404151,
+      "recall_at_100": 0.818071,
+      "recall_at_10_given_ok": 0.404151,
+      "recall_at_50": 0.688645
+    },
+    "dense": {
+      "mean_candidate_count": 100.0,
+      "mrr_at_10": 0.064235,
+      "recall_at_10": 0.114774,
+      "recall_at_100": 0.396825,
+      "recall_at_10_given_ok": 0.114774,
+      "recall_at_50": 0.297924
+    },
+    "eligible_observations": 819,
+    "fallback_rate": 0.0,
+    "fused": {
+      "mean_candidate_count": 169.196581,
+      "mrr_at_10": 0.0992,
+      "recall_at_10": 0.188034,
+      "recall_at_100": 0.761905,
+      "recall_at_200": 0.864469,
+      "recall_at_50": 0.654457,
+      "union_recall": 0.864469
+    },
+    "mean_route_jaccard": 0.192078,
+    "oracle": {
+      "either_route_at_10": 0.428571,
+      "either_route_at_100": 0.864469,
+      "either_route_at_50": 0.733822
+    },
+    "output": {
+      "mrr_at_10": 0.0992,
+      "recall_at_10": 0.188034
+    },
+    "route_status_counts": {
+      "bm25": {
+        "ok": 819
+      },
+      "dense": {
+        "ok": 819
+      }
+    },
+    "waterfall_counts": {
+      "agreement_kept": 74,
+      "agreement_lost": 0,
+      "bm25_lost": 200,
+      "bm25_rescue": 57,
+      "deep_rrf_promotion": 10,
+      "dense_lost": 7,
+      "dense_rescue": 13,
+      "fallback_hit": 0,
+      "fallback_miss": 0,
+      "not_retrieved": 111,
+      "union_not_promoted": 347
+    }
+  },
+  "reproducibility": {
+    "catalog_sha256": "da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67",
+    "dataset_sha256": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+    "index_manifest_sha256": "c9b7291004d6ef78473b24886899ea51f427fc2e179c8216c8e8b65f6cf929b2",
+    "model_manifest_sha256": "f1130079f60555f7e35dc84344a33cd8e9afdcb4743c42afc94fb42b3991fd76",
+    "source_sha256": {
+      "conversational_search/intent.py": "ad72fe3d15d827909a9602bb0e76ea6d605ebba82a53a93e8a62450d0d94dfe3",
+      "conversational_search/questions.py": "900a0a129b12e5a9628cea845dd5e9dd859395d1c8d745b4ccef987ac4964cfd",
+      "conversational_search/retrieval.py": "102ad6e905263264fb4b0f0eecca6a7c89a79489baabce2b07f15b56adf02e54",
+      "conversational_search/service.py": "4c039dd4795a2eab1b4d0e70c33a0ec2428417cdc41f83808eaee32c4ff9663f",
+      "evaluator/local_evaluator.py": "79a5ea06f9a1b8c5036f30efa85dc1f36b8f6b06eb8feb8f545dfa767bc45564",
+      "scripts/run_retrieval_audit.py": "ace88f7834b8c3f32875a55a987329acca83c37da88eee7a45008abeab517e1e"
+    }
+  },
+  "run": {
+    "captured_turns": 897,
+    "eligible_turns": 819,
+    "ignored_pre_override_turns": 78,
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14",
+    "runtime_versions": {
+      "numpy": "2.2.6",
+      "onnxruntime": "1.23.2",
+      "tokenizers": "0.22.1"
+    },
+    "sample_count": 200
+  },
+  "schema_version": 1,
+  "trajectory": "production-fused-stop"
+}

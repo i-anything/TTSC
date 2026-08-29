@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "diagnostic_id": "phase6-seeded-message-robustness-v1",
+  "candidate": "phase6-robust-intent-reducer-v1",
+  "baseline": "phase5-stagnation-aware-slate-v1",
+  "decision": "adopted",
+  "configuration": {
+    "sample_count_per_replicate": 200,
+    "replicate_count": 5,
+    "master_seed": 20260829,
+    "execution": "sequential",
+    "onnx_threads": 1,
+    "external_api_calls": 0
+  },
+  "canonical_control": {
+    "payloads_equal": true,
+    "hit_rate_at_10": 0.99,
+    "mrr": 0.52223,
+    "mttc": 3.07,
+    "efficiency": 0.793,
+    "recommended_technical_score": 0.810269
+  },
+  "baseline_distribution": {
+    "hit_rate_at_10": {
+      "mean": 0.9,
+      "worst": 0.88,
+      "best": 0.915,
+      "population_stddev": 0.014832
+    },
+    "mrr": {
+      "mean": 0.502652,
+      "worst": 0.479728,
+      "best": 0.517137,
+      "population_stddev": 0.013905
+    },
+    "mttc": {
+      "mean": 4.048,
+      "worst": 4.16,
+      "best": 3.955,
+      "population_stddev": 0.069541
+    },
+    "efficiency": {
+      "mean": 0.6952,
+      "worst": 0.684,
+      "best": 0.7045,
+      "population_stddev": 0.006954
+    },
+    "recommended_technical_score": {
+      "mean": 0.739836,
+      "worst": 0.724718,
+      "best": 0.750241,
+      "population_stddev": 0.009326
+    }
+  },
+  "candidate_distribution": {
+    "hit_rate_at_10": {
+      "mean": 0.99,
+      "worst": 0.99,
+      "best": 0.99,
+      "population_stddev": 0.0
+    },
+    "mrr": {
+      "mean": 0.52223,
+      "worst": 0.52223,
+      "best": 0.52223,
+      "population_stddev": 0.0
+    },
+    "mttc": {
+      "mean": 3.07,
+      "worst": 3.07,
+      "best": 3.07,
+      "population_stddev": 0.0
+    },
+    "efficiency": {
+      "mean": 0.793,
+      "worst": 0.793,
+      "best": 0.793,
+      "population_stddev": 0.0
+    },
+    "recommended_technical_score": {
+      "mean": 0.810269,
+      "worst": 0.810269,
+      "best": 0.810269,
+      "population_stddev": 0.0
+    }
+  },
+  "mean_metric_change": {
+    "hit_rate_at_10": 0.09,
+    "mrr": 0.019578,
+    "mttc": -0.978,
+    "efficiency": 0.0978,
+    "recommended_technical_score": 0.070433
+  },
+  "paired_outcomes": {
+    "both_hit": 897,
+    "rescued_hit": 93,
+    "regressed_hit": 3,
+    "both_miss": 7,
+    "hit_earlier": 260,
+    "hit_turn_same": 512,
+    "hit_later": 125,
+    "rank_improved": 239,
+    "rank_same": 408,
+    "rank_worsened": 250,
+    "pooled_scenario_hit_change": {
+      "boundary": 2,
+      "browsing": 33,
+      "buying": 39,
+      "intent_override": 16
+    },
+    "worst_replicate_scenario_hit_change": {
+      "boundary": -1,
+      "browsing": 6,
+      "buying": 5,
+      "intent_override": 1
+    }
+  },
+  "candidate_semantic_equivalence": {
+    "known_messages": 3060,
+    "unknown_messages": 0,
+    "transformed_messages": 2607,
+    "state_checks": 3060,
+    "state_matches": 3060,
+    "query_matches": 3060,
+    "critical_checks": 835,
+    "critical_matches": 835,
+    "service_integration_checks": 3060,
+    "service_integration_matches": 3060,
+    "input_processing_exceptions": 0,
+    "slot_corruptions": 0
+  },
+  "candidate_health": {
+    "bm25_successes": 3060,
+    "dense_successes": 3060,
+    "fallback_turns": 0,
+    "reranking_successes": 3060,
+    "reranking_failures": 0,
+    "slate_successes": 3060,
+    "slate_failures": 0
+  },
+  "latency": {
+    "baseline_mean_warm_p95_ms": 57.586123,
+    "candidate_mean_warm_p95_ms": 44.267304,
+    "maximum_paired_warm_p95_ratio": 0.7799
+  },
+  "determinism": {
+    "perturbation_bank_sha256": "be52c101df1194b517c7be136da1d67b616fa878d5e3c221d6026a6774db7d4a",
+    "coordinate_plan_suite_sha256": "7e8987bfd92c113849d89888238b87a6495d7f1c3864e9dc7511953a0340289b",
+    "decision_plan_suite_sha256": "f0879f8fc57a170a158cdbcf0f708e5b4cc215ac7d9d4603a2a1f30c0c7e223f",
+    "perturbation_spec_sha256": "a965e2da01c15bc4cfd768146169b12073bb13f51a27c56cb3464223f720175c",
+    "replay_payload_equal": true,
+    "replay_trace_equal": true,
+    "replay_diagnostics_equal": true
+  },
+  "privacy": {
+    "exact_recursive_aggregate_schema_valid": true,
+    "contains_queries_or_messages": false,
+    "contains_profiles": false,
+    "contains_product_or_sample_ids": false,
+    "contains_session_or_turn_rows": false,
+    "contains_per_replicate_rows": false
+  },
+  "decision_gate": {
+    "all_predeclared_checks_pass": true,
+    "adopt": true
+  },
+  "reproducibility": {
+    "experiment_contract_sha256": "44d78b22d6ea71f2dbca4151df718459df6a456539af56bd79ec2831b272fc60",
+    "implementation_lock_sha256": "7df29ad6313c92f4330a693c4cd70b2d971e866f7fe3e05e149c286f14105720",
+    "raw_aggregate_sha256": "f83555c5b211599afac3295f9e73a6d9721a6671376033fff8c73d1e6e920102"
+  }
+}

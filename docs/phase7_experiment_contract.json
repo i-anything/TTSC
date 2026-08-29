@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "experiment_id": "phase7-exact-value-orchestration-v1",
+  "candidate": "phase7-exact-ranking-reuse-v1",
+  "baseline": "phase6-robust-intent-reducer-v1",
+  "status": "predeclared_before_implementation_and_hardened_before_public_evaluation",
+  "review_history": {
+    "initial_freeze": "The exact-reuse hypothesis, non-overfit boundary, dependency split, cache layer, synthetic equivalence requirement, and promotion gates were written before production implementation.",
+    "pre_public_hardening": "Adversarial review before any Phase 7 public run added an explicit immutable-backend capability, payload-free token type, hashed session keys, bounded ASCII IDs, measured cache bytes, an untrusted-backend fail-closed test, and a conservative label-free warm-up/run order.",
+    "public_outcomes_seen_during_design": false
+  },
+  "purpose": "Add a deterministic pre-query value decision that avoids retrieval and reranking only when their result is provably unchanged, while preserving every Phase 6 user-visible decision.",
+  "non_overfit_boundary": {
+    "allowed_development_inputs": [
+      "source code and documented contracts",
+      "catalog schema and immutable runtime asset metadata",
+      "synthetic intent states and messages",
+      "synthetic product IDs and deterministic fake route pools"
+    ],
+    "forbidden_policy_inputs": [
+      "sample ID",
+      "scenario label",
+      "ground-truth or target product ID",
+      "hidden intent card or simulator state",
+      "user profile",
+      "per-sample outcomes",
+      "public hit or miss distributions",
+      "public cache-rate distributions"
+    ],
+    "public_evaluation_rule": "Run one frozen baseline/candidate comparison only after implementation, synthetic tests, source hashes, and gates are locked; do not tune Phase 7 from its misses.",
+    "labels_profiles_or_outcomes_used": false
+  },
+  "frozen_components": {
+    "intent_policy": "robust intent reducer v1",
+    "question_policy": "conservative-early-other-v1",
+    "fusion_policy": "completeness_adaptive",
+    "retrieval_routes": "BM25 Top-100 plus BGE-small dense Top-100",
+    "ranking_policy": "deterministic Stage-A v1",
+    "slate_policy": "stagnation-aware v1",
+    "model_and_index": "Phase 6 BGE-small-en-v1.5 runtime and 384-dimensional index",
+    "official_evaluator": "evaluator/local_evaluator.py"
+  },
+  "candidate_change": {
+    "scope": "pre-query orchestration and bounded in-memory caching only",
+    "equivalence_scope": "Exact Phase 6 user-visible equivalence is required for the built-in deterministic immutable HybridRetriever capability. Untrusted, mutable, top-k-dependent, or capability-unknown retrievers fail closed to SEARCH and are never cached. A prior backend failure is never cached; a later transient failure from a capability-compliant immutable backend is outside the capability contract and may be masked by an already proven ranking.",
+    "actions": {
+      "search": "Run the frozen retrieval and Stage-A ranking path whenever ranking evidence changed, no trustworthy snapshot exists, or the prior attempt was incomplete or degraded.",
+      "reuse": "Reuse a complete successful pre-slate ranked pool only after exact dependency equality.",
+      "skip": "For a non-positive requested result count, skip retrieval because an empty recommendation list is required."
+    },
+    "ask_and_recommend_invariant": "Clarification and recommendation are independent. On ordinary turns the agent still recommends and asks one unresolved question when allowed; it never substitutes ask-only for a useful recommendation.",
+    "confidence_semantics": "Intent completeness is exposed only as bounded evidence telemetry, not as a calibrated probability and not as a threshold for suppressing changed searches.",
+    "recomputation_value": "Exactly zero only for a valid dependency-identical cache hit or an empty requested result; otherwise one.",
+    "new_api_model_embedding_or_catalog_calls": false
+  },
+  "ranking_dependency_contract": {
+    "digest": "SHA-256 over deterministic structured serialization",
+    "included": [
+      "cache contract version",
+      "category",
+      "ordered active requirement value, source, and attribute",
+      "exclusions",
+      "rendered dense query",
+      "rendered lexical query",
+      "exact route weights",
+      "ranking policy"
+    ],
+    "separate_identity_check": "opaque retrieval-backend snapshot token compared by identity",
+    "backend_capability": "The backend must expose the exact immutable-complete-fused-ranking-v1 singleton and a bounded payload-free snapshot token. A token or similarly named property alone cannot enable reuse.",
+    "excluded_after_dependency_audit": [
+      "requirement turn",
+      "conversation turn",
+      "intent version",
+      "asked attributes",
+      "last asked attribute",
+      "no-preference markers that do not remove an active requirement",
+      "requested top-k"
+    ],
+    "exclusion_reason": "These fields do not affect retrieval or Stage-A ordering. Intent version and requested top-k remain in the existing slate signature, so overrides and window-size changes still reset slate history.",
+    "approximate_reuse": false
+  },
+  "cache_contract": {
+    "layer": "complete successful Stage-A ranked pool before slate selection",
+    "session_local": true,
+    "entries_per_session": 1,
+    "global_capacity": 256,
+    "maximum_ids_per_entry": 200,
+    "maximum_ascii_characters_per_id": 64,
+    "eviction": "deterministic least-recently-used by session",
+    "stored_fields": [
+      "32-byte dependency digest",
+      "payload-free bounded backend snapshot-token reference",
+      "normalized unique product IDs"
+    ],
+    "forbidden_stored_fields": [
+      "user messages",
+      "rendered query text",
+      "requirements or profiles",
+      "candidate documents",
+      "embeddings or scores",
+      "questions or final responses",
+      "slate state"
+    ],
+    "session_key_storage": "Store only a 32-byte SHA-256 digest of session_id, never the raw session identifier.",
+    "store_only_when": [
+      "both route statuses are ok or empty",
+      "fallback is false",
+      "candidate documents are complete",
+      "Stage-A ranking succeeds",
+      "the entire ranked pool is normalized, unique, non-empty, and at most 200 IDs"
+    ],
+    "never_cache": [
+      "fallback output",
+      "route error or unavailable state",
+      "retrieval exception",
+      "missing or partial documents",
+      "reranker skip or failure",
+      "empty or malformed ranking"
+    ],
+    "invalidation": [
+      "session reset",
+      "backend snapshot-token change",
+      "malformed cache entry",
+      "least-recently-used capacity eviction"
+    ],
+    "historic_contract_supersession": "For the Phase 7 candidate only, this explicitly supersedes the Phase 4 statement that candidate text/ranking is not cached across turns. Candidate text remains transient and is never cached; only ranked IDs are retained. The Phase 6 baseline remains cache-disabled."
+  },
+  "synthetic_confirmation": {
+    "inputs": "label-free fixed fake backends, synthetic IDs, slot canaries, and natural message contrasts",
+    "transition_cells": [
+      "initial browsing",
+      "initial buying",
+      "clarification answer",
+      "unchanged request",
+      "no preference",
+      "changed evidence",
+      "override",
+      "unknown useful free text"
+    ],
+    "top_k_cells": [0, 1, 5, 10, 11],
+    "pool_cells": [
+      "shorter than top-k",
+      "equal to top-k",
+      "larger than top-k",
+      "full 200",
+      "exhaustion with repeat backfill"
+    ],
+    "failure_cells": [
+      "retrieval exception then recovery",
+      "fallback then recovery",
+      "route error then recovery",
+      "document failure then recovery",
+      "reranker unavailable then recovery",
+      "malformed cache entry"
+    ],
+    "isolation_cells": [
+      "interleaved sessions",
+      "reset same session",
+      "reset one session without disturbing another",
+      "capacity plus one eviction",
+      "backend snapshot-token change"
+    ],
+    "required_equivalence": [
+      "message",
+      "ask_attribute",
+      "ordered recommendations",
+      "usage",
+      "IntentState",
+      "SlateState",
+      "deterministic replay"
+    ]
+  },
+  "execution": {
+    "order": "synthetic invariants, complete unit suite, implementation lock, one unlabeled untimed backend warm-up, one cold-cache Phase 7 candidate, one cache-disabled Phase 6 baseline, one Phase 7 deterministic replay, then independent starter.Agent verification",
+    "latency_bias_control": "The fixed candidate-before-baseline order is conservative for the candidate after a single label-free backend initialization warm-up; no public query is used for prewarming and no best-order selection is allowed.",
+    "parallelism": "strictly sequential for all model and evaluator work",
+    "onnx_threads": 1,
+    "fresh_agent_state_per_variant": true,
+    "shared_immutable_retrieval_backend": true,
+    "baseline_result_cache": false,
+    "candidate_result_cache": "cold at run start",
+    "external_api_calls": 0
+  },
+  "promotion_gate": {
+    "phase6_baseline_metrics_exact": true,
+    "candidate_full_evaluator_payload_exactly_matches_baseline": true,
+    "candidate_full_action_trace_exactly_matches_baseline": true,
+    "candidate_replay_payload_and_trace_identical": true,
+    "independent_starter_agent_matches_candidate": true,
+    "synthetic_response_state_and_slate_equivalence": 1.0,
+    "cache_hits_minimum": 1,
+    "retrievals_and_reranks_avoided_minimum": 1,
+    "lookup_accounting_exact": true,
+    "hits_equal_retrievals_avoided_equal_reranks_avoided": true,
+    "candidate_route_calls_plus_hits_equal_eligible_turns": true,
+    "candidate_reranker_attempts_plus_hits_equal_eligible_turns": true,
+    "baseline_route_calls_and_reranker_attempts_equal_eligible_turns": true,
+    "cache_entries_maximum": 256,
+    "cached_ids_per_entry_maximum": 200,
+    "cached_id_characters_maximum": 64,
+    "retained_cache_bytes_maximum": 8388608,
+    "retained_cache_contains_no_text_documents_profiles_or_vectors": true,
+    "baseline_and_candidate_route_faults": 0,
+    "baseline_and_candidate_reranker_faults": 0,
+    "baseline_and_candidate_slate_faults": 0,
+    "baseline_and_candidate_fallback_turns": 0,
+    "maximum_candidate_warm_p95_latency_ratio": 1.05,
+    "maximum_candidate_wall_time_ratio": 0.9,
+    "aggregate_publication_contains_sensitive_or_per_session_data": false
+  },
+  "publication": {
+    "implementation_lock": "docs/phase7_implementation_lock.json",
+    "raw_result": "gitignored results-phase7-orchestration.json",
+    "result_document_if_promoted": "docs/phase7_results.json",
+    "official_record_if_promoted": "benchmarks/phase7.json",
+    "aggregate_diagnostic_if_promoted": "benchmarks/diagnostics/phase7-exact-value-orchestration.json",
+    "append_only": true
+  }
+}

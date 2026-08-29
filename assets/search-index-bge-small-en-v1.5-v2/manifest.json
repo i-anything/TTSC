@@ -1,0 +1,136 @@
+{
+  "build": {
+    "allow_truncation": true,
+    "batch_size": 4,
+    "chunk_size": 512,
+    "documents_per_second": 18.035,
+    "duration_seconds": 2772.332,
+    "libraries": {
+      "numpy": "2.2.6",
+      "onnxruntime": "1.23.2",
+      "tokenizers": "0.22.1"
+    },
+    "maximum_tokens": 3112,
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14",
+    "truncated_documents": 4999
+  },
+  "build_id": "fdfcd830321690d96cd87754db62161b5264485803a08ed1b30f4a0c33c227c8",
+  "catalog": {
+    "bytes": 60546327,
+    "rows": 50000,
+    "sha256": "da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67",
+    "warnings": {
+      "empty_description": 23887,
+      "empty_details": 1670,
+      "empty_features": 5219,
+      "empty_store": 314,
+      "empty_title": 2,
+      "price_exact": 10410,
+      "price_from": 5,
+      "price_missing": 39585
+    }
+  },
+  "embeddings": {
+    "dtype": "float32",
+    "l2_normalized": true,
+    "logical_data_sha256": "beaabadaa1f13cf0177f7ca02b6aa9a869392c2f7ed4fa8e9b9e30c6467d0ebb",
+    "shape": [
+      50000,
+      384
+    ],
+    "shard_count": 4,
+    "shards": [
+      {
+        "bytes": 19200128,
+        "file": "product_embeddings-000-of-004.npy",
+        "index": 0,
+        "max_norm_error": 1.1920928955078125e-07,
+        "row_end": 12500,
+        "row_start": 0,
+        "sha256": "e1a39fe4a3d92593c0939645f6a8801a1595a714caf9c81d1d61ed8500d23ff0",
+        "shape": [
+          12500,
+          384
+        ]
+      },
+      {
+        "bytes": 19200128,
+        "file": "product_embeddings-001-of-004.npy",
+        "index": 1,
+        "max_norm_error": 1.1920928955078125e-07,
+        "row_end": 25000,
+        "row_start": 12500,
+        "sha256": "2465d20e1ae7bc4414167714a9af02db511f69c43ef0dc09bc7f1b41376900fc",
+        "shape": [
+          12500,
+          384
+        ]
+      },
+      {
+        "bytes": 19200128,
+        "file": "product_embeddings-002-of-004.npy",
+        "index": 2,
+        "max_norm_error": 1.1920928955078125e-07,
+        "row_end": 37500,
+        "row_start": 25000,
+        "sha256": "2306c3e15bdd9f9f1e0ff008c453c628a51bad0d744bfcfb36156aec749261d4",
+        "shape": [
+          12500,
+          384
+        ]
+      },
+      {
+        "bytes": 19200128,
+        "file": "product_embeddings-003-of-004.npy",
+        "index": 3,
+        "max_norm_error": 1.1920928955078125e-07,
+        "row_end": 50000,
+        "row_start": 37500,
+        "sha256": "741335dfa78d8c097d10c21d0241a7800687a71a4b9e89068782ff0297ea5485",
+        "shape": [
+          12500,
+          384
+        ]
+      }
+    ]
+  },
+  "ids": {
+    "alignment": "zero-based catalog row",
+    "bytes": 500128,
+    "dtype": "S10",
+    "file": "product_ids.npy",
+    "sha256": "a29737297c3757d33d8a2d30f375cfd6e05bb0f1f175d485e2464dab85da52d2",
+    "shape": [
+      50000
+    ]
+  },
+  "model": {
+    "asset_manifest_sha256": "f1130079f60555f7e35dc84344a33cd8e9afdcb4743c42afc94fb42b3991fd76",
+    "backend": "onnxruntime",
+    "compute_dtype": "int8_weights_float32_output",
+    "dimension": 384,
+    "document_prefix": "",
+    "license": "MIT",
+    "max_sequence_length": 512,
+    "model_file": "model_int8.onnx",
+    "model_id": "BAAI/bge-small-en-v1.5",
+    "model_sha256": "f8b2217838ea27564f870f96e377cb6e5ca0fa37dec9599cf305d5de011d6b7f",
+    "normalization": "l2_float32",
+    "pooling": "cls",
+    "provider": "CPUExecutionProvider",
+    "query_prefix": "Represent this sentence for searching relevant passages: ",
+    "revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    "source_model_sha256": "828e1496d7fabb79cfa4dcd84fa38625c0d3d21da474a00f08db0f559940cf35",
+    "tokenizer_sha256": "d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66"
+  },
+  "schema_version": 2,
+  "text": {
+    "canonical_sha256": "5665e5be3bb909833c9ad0818d502247eb69a3f79bd224009b527c88d8c103fb",
+    "max_characters": 10256,
+    "mean_characters": 1141.554,
+    "persisted": false,
+    "template_version": "product-text-v2",
+    "unicode_normalization": "NFC"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "candidate": "phase4-deterministic-stage-a-reranker-v1",
+  "baseline": "phase3-completeness-adaptive-rrf-v1",
+  "status": "predeclared_before_ablation",
+  "candidate_union_limit": 200,
+  "document_access": "transient SQLite FTS rowid lookup",
+  "persistent_catalog_copy": false,
+  "new_model_or_embedding_calls": false,
+  "scoring": {
+    "requirement_match": "exact phrase 1.0; all significant tokens at least 0.8; otherwise token coverage squared",
+    "requirement_weight": "strong provenance 1.0; weak provenance 0.5; category 0.5",
+    "unobservable_clause": "exclude typed budget clauses because candidate documents omit price; exclude any remaining clause when every candidate match is zero",
+    "input_bounds": "at most 200 candidates, 32768 characters per candidate, 32 clauses, 1024 characters and 64 significant tokens per clause",
+    "beta": "0.20 + 0.25 * intent_completeness",
+    "final_score": "(1 - beta) * normalized_weighted_rrf + beta * weighted_requirement_satisfaction",
+    "tie_break": "original fused order"
+  },
+  "promotion_gate": {
+    "minimum_technical_score_gain": 0.005,
+    "minimum_hit_rate_at_10": 0.775,
+    "minimum_mrr": 0.433784,
+    "maximum_mttc": 4.825,
+    "maximum_scenario_hit_loss": 1,
+    "maximum_wall_time_ratio": 1.25,
+    "maximum_warm_p95_latency_ratio": 1.25,
+    "route_faults": 0,
+    "reranker_faults": 0,
+    "fallback_turns": 0,
+    "repeated_evaluator_payloads_identical": true
+  }
+}

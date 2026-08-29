@@ -1,0 +1,40 @@
+{
+  "metrics": {
+    "efficiency": 0.6275,
+    "hit_rate_at_10": 0.775,
+    "mrr": 0.433784,
+    "mttc": 4.725,
+    "recommended_technical_score": 0.643135
+  },
+  "record_id": "phase3",
+  "sample_count": 200,
+  "scenario_metrics": {
+    "boundary": {
+      "hit_rate_at_10": 0.7,
+      "mrr": 0.422619,
+      "mttc": 5.7,
+      "sample_count": 10
+    },
+    "browsing": {
+      "hit_rate_at_10": 0.8125,
+      "mrr": 0.471066,
+      "mttc": 4.2125,
+      "sample_count": 80
+    },
+    "buying": {
+      "hit_rate_at_10": 0.725,
+      "mrr": 0.350759,
+      "mttc": 4.925,
+      "sample_count": 80
+    },
+    "intent_override": {
+      "hit_rate_at_10": 0.833333,
+      "mrr": 0.559484,
+      "mttc": 5.233333,
+      "sample_count": 30
+    }
+  },
+  "schema_version": 1,
+  "source_document": "docs/phase3_results.json",
+  "system": "phase3-completeness-adaptive-rrf-v1"
+}

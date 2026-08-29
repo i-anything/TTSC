@@ -1,0 +1,2 @@
+-r requirements-runtime.txt
+onnx==1.19.1

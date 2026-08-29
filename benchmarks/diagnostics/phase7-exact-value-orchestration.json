@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagnostic_id": "phase7-exact-value-orchestration-v1",
+  "experiment_contract": "docs/phase7_experiment_contract.json",
+  "implementation_lock": "docs/phase7_implementation_lock.json",
+  "execution": {
+    "public_samples": 200,
+    "turns": 612,
+    "parallelism": "strictly_sequential",
+    "onnx_threads": 1,
+    "candidate_ran_before_baseline": true,
+    "label_free_backend_warmup": true
+  },
+  "equivalence": {
+    "official_metrics_equal": true,
+    "full_evaluator_payload_equal": true,
+    "response_intent_and_slate_trace_equal": true,
+    "deterministic_replay_equal": true,
+    "independent_entry_point_equal": true
+  },
+  "orchestration": {
+    "searches": 471,
+    "reuses": 141,
+    "cold_misses": 200,
+    "dependency_misses": 271,
+    "retrievals_avoided": 141,
+    "reranks_avoided": 141,
+    "avoided_work_rate": 0.230392,
+    "cache_stores": 471,
+    "cache_entries": 200,
+    "cached_id_references": 33929,
+    "cached_id_utf8_bytes": 339290,
+    "retained_cache_bytes": 2066907,
+    "capacity": 256,
+    "maximum_ids_per_entry": 200,
+    "maximum_ascii_characters_per_id": 64
+  },
+  "latency": {
+    "baseline_wall_seconds": 14.216614,
+    "candidate_wall_seconds": 10.544683,
+    "candidate_replay_wall_seconds": 10.771666,
+    "wall_ratio": 0.741716,
+    "baseline_warm_p95_ms": 40.923063,
+    "candidate_warm_p95_ms": 38.802896,
+    "candidate_replay_warm_p95_ms": 39.749291,
+    "candidate_warm_p95_ratio": 0.948191
+  },
+  "health": {
+    "route_faults": 0,
+    "fallback_turns": 0,
+    "reranker_faults": 0,
+    "slate_faults": 0,
+    "cache_fault_invalidations": 0,
+    "cache_store_rejections": 0
+  },
+  "privacy": {
+    "contains_queries_or_messages": false,
+    "contains_profiles": false,
+    "contains_product_or_sample_ids": false,
+    "contains_session_or_turn_rows": false,
+    "contains_raw_action_or_state_traces": false
+  },
+  "adopted": true
+}

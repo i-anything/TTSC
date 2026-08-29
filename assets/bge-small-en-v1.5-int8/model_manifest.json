@@ -1,0 +1,171 @@
+{
+  "build_environment": {
+    "packages": {
+      "numpy": "2.2.6",
+      "onnx": "1.19.1",
+      "onnxruntime": "1.23.2",
+      "tokenizers": "0.22.1"
+    },
+    "python": "3.12.14",
+    "python_implementation": "CPython"
+  },
+  "files": [
+    {
+      "bytes": 1427,
+      "file": "BGE_MODEL_ATTRIBUTION.md",
+      "origin": "repository_attribution",
+      "sha256": "461949cab2810f6ffd381b7c509d0f1e171ab7346fbd0fdccdb41c33bd249847"
+    },
+    {
+      "bytes": 94783,
+      "file": "MODEL_CARD.md",
+      "origin": "official_upstream",
+      "sha256": "ddb964361a55c6e5dfca6361615854b260c9c960205d04c7520151aaa1d75837",
+      "source_path": "README.md",
+      "source_url": "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/README.md?download=true"
+    },
+    {
+      "bytes": 743,
+      "file": "config.json",
+      "origin": "official_upstream",
+      "sha256": "094f8e891b932f2000c92cfc663bac4c62069f5d8af5b5278c4306aef3084750",
+      "source_path": "config.json",
+      "source_url": "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/config.json?download=true"
+    },
+    {
+      "bytes": 124,
+      "file": "config_sentence_transformers.json",
+      "origin": "official_upstream",
+      "sha256": "940d5f50db195fa6e5e6a4f122c095f77880de259d74b14a65779ed48bdd7c56",
+      "source_path": "config_sentence_transformers.json",
+      "source_url": "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/config_sentence_transformers.json?download=true"
+    },
+    {
+      "bytes": 34015106,
+      "file": "model_int8.onnx",
+      "origin": "derived_dynamic_quantization",
+      "sha256": "f8b2217838ea27564f870f96e377cb6e5ca0fa37dec9599cf305d5de011d6b7f",
+      "source_path": "onnx/model.onnx",
+      "source_sha256": "828e1496d7fabb79cfa4dcd84fa38625c0d3d21da474a00f08db0f559940cf35"
+    },
+    {
+      "bytes": 349,
+      "file": "modules.json",
+      "origin": "official_upstream",
+      "sha256": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+      "source_path": "modules.json",
+      "source_url": "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/modules.json?download=true"
+    },
+    {
+      "bytes": 190,
+      "file": "pooling_config.json",
+      "origin": "official_upstream",
+      "sha256": "d1caf60c96f5fba2157c0c26b76d80818fad6cf0b8eb5e73ec372ff9818eba5c",
+      "source_path": "1_Pooling/config.json",
+      "source_url": "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/1_Pooling/config.json?download=true"
+    },
+    {
+      "bytes": 52,
+      "file": "sentence_bert_config.json",
+      "origin": "official_upstream",
+      "sha256": "84e39fda68ccbff05bfa723ae9c0e70e23e2ec373b76e0f8c6e71af72a693cbf",
+      "source_path": "sentence_bert_config.json",
+      "source_url": "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/sentence_bert_config.json?download=true"
+    },
+    {
+      "bytes": 125,
+      "file": "special_tokens_map.json",
+      "origin": "official_upstream",
+      "sha256": "b6d346be366a7d1d48332dbc9fdf3bf8960b5d879522b7799ddba59e76237ee3",
+      "source_path": "special_tokens_map.json",
+      "source_url": "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/special_tokens_map.json?download=true"
+    },
+    {
+      "bytes": 711396,
+      "file": "tokenizer.json",
+      "origin": "official_upstream",
+      "sha256": "d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66",
+      "source_path": "tokenizer.json",
+      "source_url": "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/tokenizer.json?download=true"
+    },
+    {
+      "bytes": 366,
+      "file": "tokenizer_config.json",
+      "origin": "official_upstream",
+      "sha256": "9261e7d79b44c8195c1cada2b453e55b00aeb81e907a6664974b4d7776172ab3",
+      "source_path": "tokenizer_config.json",
+      "source_url": "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/tokenizer_config.json?download=true"
+    },
+    {
+      "bytes": 231508,
+      "file": "vocab.txt",
+      "origin": "official_upstream",
+      "sha256": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3",
+      "source_path": "vocab.txt",
+      "source_url": "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/vocab.txt?download=true"
+    }
+  ],
+  "model": {
+    "dimension": 384,
+    "document_prefix": "",
+    "file": "model_int8.onnx",
+    "id": "BAAI/bge-small-en-v1.5",
+    "license": "MIT",
+    "max_sequence_length": 512,
+    "normalization": "l2_float32",
+    "pooling": "cls",
+    "query_prefix": "Represent this sentence for searching relevant passages: ",
+    "revision": "5c38ec7c405ec4b44b94cc5a9bb96e735b38267a",
+    "sha256": "f8b2217838ea27564f870f96e377cb6e5ca0fa37dec9599cf305d5de011d6b7f",
+    "source_bytes": 133093490,
+    "source_file": "onnx/model.onnx",
+    "source_sha256": "828e1496d7fabb79cfa4dcd84fa38625c0d3d21da474a00f08db0f559940cf35",
+    "source_url": "https://huggingface.co/BAAI/bge-small-en-v1.5/resolve/5c38ec7c405ec4b44b94cc5a9bb96e735b38267a/onnx/model.onnx?download=true"
+  },
+  "quantization": {
+    "activation_type": "QUInt8",
+    "api": "onnxruntime.quantization.quantize_dynamic",
+    "extra_options": null,
+    "nodes_to_exclude": null,
+    "nodes_to_quantize": null,
+    "op_types_to_quantize": null,
+    "per_channel": true,
+    "reduce_range": false,
+    "use_external_data_format": false,
+    "weight_type": "QInt8"
+  },
+  "schema_version": 1,
+  "tokenizer": {
+    "file": "tokenizer.json",
+    "lowercase": true,
+    "sha256": "d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66",
+    "type": "BertTokenizer",
+    "vocab_size": 30522
+  },
+  "validation": {
+    "fidelity": {
+      "mean_cosine": 0.9970631003379822,
+      "required_mean_cosine": 0.995,
+      "required_worst_cosine": 0.98,
+      "sample_count": 9,
+      "worst_cosine": 0.9962412714958191
+    },
+    "inputs": [
+      "input_ids",
+      "attention_mask",
+      "token_type_ids"
+    ],
+    "outputs": [
+      "last_hidden_state"
+    ],
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "smoke_output_dtype": "float32",
+    "smoke_output_shape": [
+      1,
+      6,
+      384
+    ]
+  }
+}

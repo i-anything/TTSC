@@ -1,0 +1,14 @@
+{
+  "metrics": {
+    "efficiency": 0.119,
+    "hit_rate_at_10": 0.125,
+    "mrr": 0.068034,
+    "mttc": 9.81,
+    "recommended_technical_score": 0.10671
+  },
+  "record_id": "baseline",
+  "sample_count": 200,
+  "schema_version": 1,
+  "source_document": "docs/baseline_results.json",
+  "system": "weak_bm25"
+}

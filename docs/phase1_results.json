@@ -1,0 +1,80 @@
+{
+  "agent_version": "phase1-intent-hybrid-v1",
+  "evaluation": {
+    "date": "2026-08-29",
+    "command": "python -m evaluator.local_evaluator --output results-phase1.json",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14",
+    "public_samples": 200,
+    "wall_seconds": 21.4,
+    "onnx_threads": 1,
+    "runtime_versions": {
+      "numpy": "2.2.6",
+      "onnxruntime": "1.23.2",
+      "tokenizers": "0.22.1"
+    },
+    "external_api_calls": 0
+  },
+  "reproducibility": {
+    "catalog_sha256": "da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67",
+    "public_set_sha256": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+    "evaluator_sha256": "79a5ea06f9a1b8c5036f30efa85dc1f36b8f6b06eb8feb8f545dfa767bc45564",
+    "model_manifest_sha256": "f1130079f60555f7e35dc84344a33cd8e9afdcb4743c42afc94fb42b3991fd76",
+    "index_manifest_sha256": "c9b7291004d6ef78473b24886899ea51f427fc2e179c8216c8e8b65f6cf929b2",
+    "source_sha256": {
+      "starter/agent.py": "e661179798a99130a5b57eb9f195958d9a145435dd8a27caf669c77292a70e2b",
+      "starter/dense.py": "013defff58a9aac956af70ee282c1653d44692309d0131d105514f27aa882ed5",
+      "conversational_search/intent.py": "ad72fe3d15d827909a9602bb0e76ea6d605ebba82a53a93e8a62450d0d94dfe3",
+      "conversational_search/retrieval.py": "bef4474c54d2679da6fc395678ab29bca732f023c19434ee38db7c036be008aa",
+      "conversational_search/service.py": "17cd714f2b369f03f3b58296532ddddb1412a2115ea9ca13ee7c0dd4d224b871",
+      "preprocessing/encoder.py": "8cf3f00fac5e473a4cb0001bac2462d228ec6b1359199e6c3ea5cdb17ce3ea5c",
+      "requirements-runtime.txt": "db8bcb738aa8a27746b78473e7ba0806b9ddb03011917a82285ee7ca0e9523b5"
+    },
+    "linux_x86_64_validation": "pending"
+  },
+  "metrics": {
+    "hit_rate_at_10": 0.77,
+    "mrr": 0.409556,
+    "mttc": 5.35,
+    "efficiency": 0.565,
+    "recommended_technical_score": 0.620867
+  },
+  "scenario_metrics": {
+    "boundary": {
+      "sample_count": 10,
+      "hit_rate_at_10": 0.7,
+      "mrr": 0.320119,
+      "mttc": 6.3
+    },
+    "browsing": {
+      "sample_count": 80,
+      "hit_rate_at_10": 0.825,
+      "mrr": 0.457138,
+      "mttc": 4.3875
+    },
+    "buying": {
+      "sample_count": 80,
+      "hit_rate_at_10": 0.7,
+      "mrr": 0.328358,
+      "mttc": 6.0375
+    },
+    "intent_override": {
+      "sample_count": 30,
+      "hit_rate_at_10": 0.833333,
+      "mrr": 0.529008,
+      "mttc": 5.766667
+    }
+  },
+  "original_bm25_baseline": {
+    "hit_rate_at_10": 0.125,
+    "mrr": 0.068034,
+    "mttc": 9.81,
+    "recommended_technical_score": 0.10671
+  },
+  "absolute_change": {
+    "hit_rate_at_10": 0.645,
+    "mrr": 0.341522,
+    "mttc_turns_reduced": 4.46,
+    "recommended_technical_score": 0.514157
+  }
+}
