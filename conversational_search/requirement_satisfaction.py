@@ -23,7 +23,7 @@ MAX_SATISFACTION_CANDIDATES = 200
 MAX_SATISFACTION_REQUIREMENTS = 64
 MAX_REQUIREMENT_CHARACTERS = 1_024
 
-_TOKEN_RE = re.compile(r"[a-z0-9]+")
+_TOKEN_RE = re.compile(r"[a-z0-9]+(?:\.[0-9]+)?")
 _LEADING_LABEL_RE = re.compile(
     r"^\s*(?:category|material|color|size|style|brand|budget|price|"
     r"feature|features|use[_ ]case|other)\s*:\s*",
@@ -527,6 +527,8 @@ def _satisfaction(
         return RequirementSatisfaction.FULL
     if negated:
         return RequirementSatisfaction.VIOLATED
+    if _partially_compatible(required_tokens, candidate.document_tokens):
+        return RequirementSatisfaction.PARTIAL
     typed_values = tuple(
         (value, tokens)
         for attribute, value, tokens in candidate.structured_values
@@ -663,6 +665,7 @@ def _normalized_text(value: str) -> str:
         .encode("ascii", "ignore")
         .decode("ascii")
     )
+    folded = re.sub(r"(?<=\d),(?=\d{3}\b)", "", folded)
     return " ".join(_TOKEN_RE.findall(folded))
 
 

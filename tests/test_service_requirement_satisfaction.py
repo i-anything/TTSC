@@ -215,6 +215,28 @@ class ServiceRequirementSatisfactionTests(unittest.TestCase):
         )
         self.assertEqual(agent.orchestration_health["stores"], 0)
 
+    def test_evidence_error_fails_open_to_complete_stage_a_order(self) -> None:
+        retriever = _SatisfactionRetriever(
+            self._evidence(),
+            evidence_error=True,
+        )
+        agent = self._agent(retriever)
+        agent.reset("session", {})
+
+        response = agent.respond(
+            "session",
+            "I'm looking for Hiking Shoes. A key requirement is: waterproof.",
+            1,
+            10,
+        )
+
+        self.assertEqual(_response_ids(response), retriever._ids)
+        self.assertEqual(
+            agent.importance_satisfaction_health["evidence_errors"],
+            1,
+        )
+        self.assertEqual(agent.orchestration_health["stores"], 0)
+
     def test_malformed_result_fails_open_and_is_not_cached(self) -> None:
         retriever = _SatisfactionRetriever(self._evidence())
         agent = self._agent(retriever)

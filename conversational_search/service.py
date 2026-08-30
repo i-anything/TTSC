@@ -2123,6 +2123,7 @@ class ConversationalSearchAgent:
             ImportanceAwareStatus,
             RequirementSatisfaction,
         )
+        from conversational_search.intent import RequirementImportance
 
         if not isinstance(result, ImportanceAwareResult):
             raise TypeError(
@@ -2167,6 +2168,19 @@ class ConversationalSearchAgent:
                 )
                 or type(assessment.exact_affinity) is not int
                 or not 0 <= assessment.exact_affinity <= len(result.requirements)
+                or any(
+                    type(value) is not int
+                    or not 0 <= value <= 3 * len(result.requirements) + 3
+                    for value in assessment.requirement_tier
+                )
+                or any(
+                    assessment.requirement_tier[index] not in {0, 1}
+                    for index in (0, 3, 6)
+                )
+                or any(
+                    not 0 <= assessment.requirement_tier[index] <= 3
+                    for index in (1, 4, 7)
+                )
             ):
                 raise ValueError("importance-aware assessment is invalid")
 
@@ -2208,6 +2222,97 @@ class ConversationalSearchAgent:
             raise ValueError("importance-aware trace count is out of bounds")
         if trace.best_requirement_tier_count < 1:
             raise ValueError("importance-aware best tier cannot be empty")
+        must_indexes = tuple(
+            index
+            for index, requirement in enumerate(result.requirements)
+            if requirement.importance is RequirementImportance.MUST
+        )
+        calculated_must_violations = sum(
+            any(
+                assessment.satisfactions[index]
+                is RequirementSatisfaction.VIOLATED
+                for index in must_indexes
+            )
+            for assessment in result.assessments
+        )
+        calculated_must_unknown = sum(
+            any(
+                assessment.satisfactions[index]
+                is RequirementSatisfaction.UNKNOWN
+                for index in must_indexes
+            )
+            for assessment in result.assessments
+        )
+        calculated_all_must_full = sum(
+            all(
+                assessment.satisfactions[index]
+                is RequirementSatisfaction.FULL
+                for index in must_indexes
+            )
+            for assessment in result.assessments
+        )
+        best_tier = max(
+            assessment.requirement_tier for assessment in result.assessments
+        )
+        calculated_best_count = sum(
+            assessment.requirement_tier == best_tier
+            for assessment in result.assessments
+        )
+        assessment_by_id = {
+            assessment.parent_asin: assessment
+            for assessment in result.assessments
+        }
+        calculated_support = tuple(
+            parent_asin
+            for parent_asin in result.ranked_ids
+            if assessment_by_id[parent_asin].requirement_tier == best_tier
+            and all(
+                assessment_by_id[parent_asin].satisfactions[index]
+                is RequirementSatisfaction.FULL
+                for index in must_indexes
+            )
+        )
+        if (
+            trace.must_violation_candidate_count
+            != calculated_must_violations
+            or trace.must_unknown_candidate_count != calculated_must_unknown
+            or trace.all_must_full_candidate_count
+            != calculated_all_must_full
+            or trace.best_requirement_tier_count != calculated_best_count
+            or trace.exact_affinity_candidate_count
+            != sum(
+                assessment.exact_affinity > 0
+                for assessment in result.assessments
+            )
+            or trace.must_requirement_count != len(must_indexes)
+            or trace.should_requirement_count
+            != sum(
+                requirement.importance is RequirementImportance.SHOULD
+                for requirement in result.requirements
+            )
+            or trace.prefer_requirement_count
+            != sum(
+                requirement.importance is RequirementImportance.PREFER
+                for requirement in result.requirements
+            )
+            or trace.exclusion_requirement_count
+            != sum(
+                requirement.kind == "exclusion"
+                for requirement in result.requirements
+            )
+            or trace.budget_requirement_count
+            != sum(
+                requirement.attribute == "budget"
+                for requirement in result.requirements
+            )
+            or trace.profile_preference_count
+            != sum(
+                requirement.kind == "profile"
+                for requirement in result.requirements
+            )
+            or result.fully_satisfied_best_ids != calculated_support
+        ):
+            raise ValueError("importance-aware trace evidence drifted")
         if result.status is ImportanceAwareStatus.NO_REQUIREMENTS:
             if result.requirements or result.ranked_ids != expected:
                 raise ValueError("no-requirement ranking must preserve base order")
