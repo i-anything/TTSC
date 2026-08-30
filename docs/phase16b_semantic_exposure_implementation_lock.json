@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "lock_id": "phase16b-semantic-exposure-implementation-v1",
+  "experiment_id": "phase16b-buying-gated-semantic-exposure-factorial-v1",
+  "status": "locked_before_diagnostic_execution",
+  "contract_sha256": "055529a6067f1de93376aa16f4fc56fa63400c72936940f2b682ee18e7889c0b",
+  "activation_lock_sha256": "a2bc2dd6d1c501661ace5104d9a594d79aa45e413003b002e42b07c4df703aa0",
+  "input_sha256": {
+    "data/catalog.jsonl": "da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67",
+    "data/public_set.jsonl": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+    "benchmarks/phase16b_semantic_rescue_activation.jsonl": "bacdb749d59776d2507bed8bc982d329353fb80c1bbd9f755d87efe8e3179d6c",
+    "starter/agent.py": "1eb6082202379c4f1af81fbd01cbca4d52c5533858d91d6eaf5450d5a2f6b2d5"
+  },
+  "arm_order": [
+    "baseline",
+    "rescue_only",
+    "buying_gate_only",
+    "combined_v2"
+  ],
+  "source_sha256": {
+    "conversational_search/exact_evidence.py": "0ea292db23c1942d4e16430e667d16e68739ae7b003916485f6f21f0944fd737",
+    "conversational_search/exposure.py": "91286c192e43c7bea792f456ccf4726bcf774711f316c71be394df5d26a4d4cf",
+    "conversational_search/exposure_policy.py": "03d67e952903e0a82ed7b31dfb484ba25f217382519ae58f8d5745dd18e3d2b5",
+    "conversational_search/intent.py": "134cf01b02b8ea25e7f9450bb0ac37a3ded102e5d00aa320973b7428a398c616",
+    "conversational_search/orchestration.py": "18693f11d7c6dfc818a81cd39366c871d87b7d1dc9c5318f1e27dbcb097a05d4",
+    "conversational_search/ranking.py": "a8448f275a6e9ba5eedbeb669f58a27b15dbe4a090425bd2fa9279c379a63eb3",
+    "conversational_search/retrieval.py": "dc37d50ae76e8bea2d87791506b06531d0712e5f022c4ac2c776da674887a6b5",
+    "conversational_search/service.py": "e6340a22e42ffc71c569385e7e56153a3b4584c58dad0f3ced88b9fba5c3fc99",
+    "conversational_search/slates.py": "a0c13c4ec3d4053afbc6d35448527c9b24ef3bce7f4ad378dbd34e7eadbe121b",
+    "conversational_search/strategy.py": "b534103d75bd50fcd5921a1d523151b7338c85db1ef8d9ffd5f55471f5347ac7",
+    "evaluator/local_evaluator.py": "79a5ea06f9a1b8c5036f30efa85dc1f36b8f6b06eb8feb8f545dfa767bc45564",
+    "scripts/build_semantic_rescue_activation_suite.py": "be67b909d3796aaa26084169f7130d0976e37f997d717f3d4f183062870a269f",
+    "scripts/run_semantic_exposure_ablations.py": "8ec824986ce12c8f231dcfb2c5f3483acab8871ac076be2f07293fd29ebefcb7",
+    "scripts/run_semantic_exposure_v2_ablations.py": "dc8972ded8d68957792a6bd03196a3f076a2935b000978aec7022d043c8ac7a7",
+    "starter/agent.py": "1eb6082202379c4f1af81fbd01cbca4d52c5533858d91d6eaf5450d5a2f6b2d5",
+    "tests/test_evidence_exposure.py": "288a1d349bf9330592cad01631b47a52d435f994764f0d393d769ee78f07fa15",
+    "tests/test_semantic_exposure_factorial.py": "e958837543ecaba6497d258a7ff10a60a0761701c91b7be94fb71055d5740e6e",
+    "tests/test_semantic_exposure_v2_ablations.py": "e192bca708e333b644633c1429e6aa550e7ddcd3ba7e2440fc92be7961c3f307",
+    "tests/test_semantic_lexical_rescue.py": "a718280451477eb2f04771ab653978c05bbf75ddcc7f2f8c3b48beaceeb9951b",
+    "tests/test_semantic_rescue_activation_suite.py": "1f40fcb5755ca5829ff438a5b959528024231a97ca9d87354089892b8f2928ee"
+  },
+  "verification": {
+    "focused_test_command": ".venv/bin/python -m unittest tests.test_semantic_exposure_v2_ablations tests.test_semantic_rescue_activation_suite tests.test_evidence_exposure tests.test_semantic_exposure_factorial tests.test_semantic_lexical_rescue -v",
+    "focused_tests_passed": 24,
+    "complete_test_command": ".venv/bin/python -m unittest discover -s tests -q",
+    "complete_tests_passed": 684,
+    "phase13_oracle_command": ".venv/bin/python -m scripts.verify_phase13_slate_oracle",
+    "phase13_oracle_cases": 45600,
+    "phase13_oracle_sha256": "b0b83da7d111ff66c3f3452e64337143ed376a9b9926779cd37259dc9ea114be",
+    "completed_before_lock": true
+  }
+}

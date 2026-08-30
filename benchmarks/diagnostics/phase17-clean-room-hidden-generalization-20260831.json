@@ -1,0 +1,766 @@
+{
+  "arms": {
+    "active-phase16c-buying-prefix-v3": {
+      "health": {
+        "action_summary": {
+          "question_counts": {
+            "budget": 8,
+            "color": 144,
+            "feature": 1966,
+            "material": 237,
+            "none": 251,
+            "other": 178,
+            "size": 9,
+            "style": 25,
+            "use_case": 8
+          },
+          "turn_count": 2826,
+          "width_counts": {
+            "1": 68,
+            "10": 2606,
+            "2": 11,
+            "3": 141
+          }
+        },
+        "evaluation_wall_seconds": 60.099019,
+        "evidence_exposure": {
+          "attempts": 2826,
+          "empty_request": 0,
+          "evidence_fail_open": 13,
+          "final_turn": 128,
+          "no_informative_question": 3,
+          "policy": "buying-only-top3-prefix-question-v3",
+          "question_with_prefix": 107,
+          "question_withheld": 0,
+          "retrieval_fail_open": 0,
+          "top3_confident": 113,
+          "unsafe_state": 2462,
+          "validation_fallbacks": 0,
+          "withheld_turns": 0
+        },
+        "exact_evidence": {
+          "applied": 2731,
+          "applied_reordered": 572,
+          "applied_unchanged": 2159,
+          "attempts": 2826,
+          "candidate_ids_examined": 504145,
+          "capability_unavailable": 0,
+          "consistent_support_ids": 363359,
+          "evidence_errors": 0,
+          "policy": "phase2-lexicographic-exact-evidence-v1",
+          "validation_errors": 0,
+          "zero_support_fail_open": 95
+        },
+        "invalid_api_responses": 0,
+        "orchestration": {
+          "backend_invalidations": 0,
+          "cached_id_references": 45043,
+          "cached_id_utf8_bytes": 450430,
+          "capacity": 256,
+          "capacity_evictions": 544,
+          "cold_misses": 800,
+          "decisions": 2826,
+          "dependency_misses": 1025,
+          "entries": 256,
+          "fault_invalidations": 0,
+          "hits": 1001,
+          "lookups": 2826,
+          "maximum_id_characters": 64,
+          "maximum_ids_per_entry": 200,
+          "policy": "exact_ranking_reuse",
+          "reasons": {
+            "cold_cache": 800,
+            "exact_dependency_hit": 1001,
+            "ranking_dependencies_changed": 1025
+          },
+          "reranks_avoided": 1001,
+          "reset_invalidations": 0,
+          "retained_cache_bytes": 2750385,
+          "retrievals_avoided": 1001,
+          "reuses": 1001,
+          "searches": 1825,
+          "skips": 0,
+          "store_rejections": 0,
+          "stores": 1825
+        },
+        "ranking": {
+          "attempts": 1825,
+          "failures": 0,
+          "policy": "phase2-lexicographic-exact-evidence-v1",
+          "successes": 1825,
+          "unavailable_skips": 0
+        },
+        "reported_tokens_zero": true,
+        "response_exceptions": 0,
+        "runtime_network_attempts": 0,
+        "slate": {
+          "attempts": 2826,
+          "failures": 0,
+          "initializations": 800,
+          "policy": "phase13-intent-epoch-continuation-novelty-v1",
+          "ranking_resets": 1031,
+          "repeat_backfills": 102,
+          "stagnant_turns": 995,
+          "successes": 2826,
+          "unseen_selected_on_stagnant": 9470
+        },
+        "technical_fault_free": true
+      },
+      "metrics": {
+        "efficiency": 0.73125,
+        "hit_rate_at_10": 0.845,
+        "mrr": 0.622242,
+        "mttc": 3.6875,
+        "recommended_technical_score": 0.755423,
+        "reported_token_usage": {
+          "completion_tokens": 0,
+          "prompt_tokens": 0,
+          "total_tokens": 0
+        },
+        "sample_count": 800
+      },
+      "scenario_metrics": {
+        "boundary": {
+          "hit_rate_at_10": 0.875,
+          "mrr": 0.645238,
+          "mttc": 4.45,
+          "sample_count": 40
+        },
+        "browsing": {
+          "hit_rate_at_10": 0.865625,
+          "mrr": 0.606202,
+          "mttc": 3.49375,
+          "sample_count": 320
+        },
+        "buying": {
+          "hit_rate_at_10": 0.921875,
+          "mrr": 0.71107,
+          "mttc": 2.503125,
+          "sample_count": 320
+        },
+        "intent_override": {
+          "hit_rate_at_10": 0.575,
+          "mrr": 0.420473,
+          "mttc": 7.108333,
+          "sample_count": 120
+        }
+      },
+      "surface_metrics": {
+        "clean_room_language_shift": {
+          "efficiency": 0.6215,
+          "hit_rate_at_10": 0.7225,
+          "mrr": 0.469912,
+          "mttc": 4.785,
+          "recommended_technical_score": 0.626524,
+          "sample_count": 400
+        },
+        "official_exact": {
+          "efficiency": 0.841,
+          "hit_rate_at_10": 0.9675,
+          "mrr": 0.774571,
+          "mttc": 2.59,
+          "recommended_technical_score": 0.884321,
+          "sample_count": 400
+        }
+      }
+    },
+    "exact-evidence-without-exposure": {
+      "health": {
+        "action_summary": {
+          "question_counts": {
+            "budget": 7,
+            "color": 197,
+            "feature": 1986,
+            "material": 287,
+            "none": 126,
+            "other": 125,
+            "size": 8,
+            "style": 33,
+            "use_case": 7
+          },
+          "turn_count": 2776,
+          "width_counts": {
+            "10": 2776
+          }
+        },
+        "evaluation_wall_seconds": 58.775308,
+        "evidence_exposure": {
+          "attempts": 0,
+          "empty_request": 0,
+          "evidence_fail_open": 0,
+          "final_turn": 0,
+          "no_informative_question": 0,
+          "policy": "disabled",
+          "question_with_prefix": 0,
+          "question_withheld": 0,
+          "retrieval_fail_open": 0,
+          "top3_confident": 0,
+          "unsafe_state": 0,
+          "validation_fallbacks": 0,
+          "withheld_turns": 0
+        },
+        "exact_evidence": {
+          "applied": 1749,
+          "applied_reordered": 560,
+          "applied_unchanged": 1189,
+          "attempts": 1810,
+          "candidate_ids_examined": 317732,
+          "capability_unavailable": 0,
+          "consistent_support_ids": 208168,
+          "evidence_errors": 0,
+          "policy": "phase2-lexicographic-exact-evidence-v1",
+          "validation_errors": 0,
+          "zero_support_fail_open": 61
+        },
+        "invalid_api_responses": 0,
+        "orchestration": {
+          "backend_invalidations": 0,
+          "cached_id_references": 45081,
+          "cached_id_utf8_bytes": 450810,
+          "capacity": 256,
+          "capacity_evictions": 544,
+          "cold_misses": 800,
+          "decisions": 2776,
+          "dependency_misses": 1010,
+          "entries": 256,
+          "fault_invalidations": 0,
+          "hits": 966,
+          "lookups": 2776,
+          "maximum_id_characters": 64,
+          "maximum_ids_per_entry": 200,
+          "policy": "exact_ranking_reuse",
+          "reasons": {
+            "cold_cache": 800,
+            "exact_dependency_hit": 966,
+            "ranking_dependencies_changed": 1010
+          },
+          "reranks_avoided": 966,
+          "reset_invalidations": 0,
+          "retained_cache_bytes": 2752627,
+          "retrievals_avoided": 966,
+          "reuses": 966,
+          "searches": 1810,
+          "skips": 0,
+          "store_rejections": 0,
+          "stores": 1810
+        },
+        "ranking": {
+          "attempts": 1810,
+          "failures": 0,
+          "policy": "phase2-lexicographic-exact-evidence-v1",
+          "successes": 1810,
+          "unavailable_skips": 0
+        },
+        "reported_tokens_zero": true,
+        "response_exceptions": 0,
+        "runtime_network_attempts": 0,
+        "slate": {
+          "attempts": 2776,
+          "failures": 0,
+          "initializations": 800,
+          "policy": "phase13-intent-epoch-continuation-novelty-v1",
+          "ranking_resets": 1010,
+          "repeat_backfills": 0,
+          "stagnant_turns": 966,
+          "successes": 2776,
+          "unseen_selected_on_stagnant": 9660
+        },
+        "technical_fault_free": true
+      },
+      "metrics": {
+        "efficiency": 0.738375,
+        "hit_rate_at_10": 0.85375,
+        "mrr": 0.60907,
+        "mttc": 3.61625,
+        "recommended_technical_score": 0.757271,
+        "reported_token_usage": {
+          "completion_tokens": 0,
+          "prompt_tokens": 0,
+          "total_tokens": 0
+        },
+        "sample_count": 800
+      },
+      "scenario_metrics": {
+        "boundary": {
+          "hit_rate_at_10": 0.875,
+          "mrr": 0.645238,
+          "mttc": 4.45,
+          "sample_count": 40
+        },
+        "browsing": {
+          "hit_rate_at_10": 0.865625,
+          "mrr": 0.606202,
+          "mttc": 3.49375,
+          "sample_count": 320
+        },
+        "buying": {
+          "hit_rate_at_10": 0.94375,
+          "mrr": 0.678142,
+          "mttc": 2.325,
+          "sample_count": 320
+        },
+        "intent_override": {
+          "hit_rate_at_10": 0.575,
+          "mrr": 0.420473,
+          "mttc": 7.108333,
+          "sample_count": 120
+        }
+      },
+      "surface_metrics": {
+        "clean_room_language_shift": {
+          "efficiency": 0.6215,
+          "hit_rate_at_10": 0.7225,
+          "mrr": 0.469912,
+          "mttc": 4.785,
+          "recommended_technical_score": 0.626524,
+          "sample_count": 400
+        },
+        "official_exact": {
+          "efficiency": 0.85525,
+          "hit_rate_at_10": 0.985,
+          "mrr": 0.748229,
+          "mttc": 2.4475,
+          "recommended_technical_score": 0.888019,
+          "sample_count": 400
+        }
+      }
+    },
+    "protected-phase13": {
+      "health": {
+        "action_summary": {
+          "question_counts": {
+            "budget": 10,
+            "color": 242,
+            "feature": 1990,
+            "material": 288,
+            "none": 130,
+            "other": 165,
+            "size": 19,
+            "style": 64,
+            "use_case": 14
+          },
+          "turn_count": 2922,
+          "width_counts": {
+            "10": 2922
+          }
+        },
+        "evaluation_wall_seconds": 57.834413,
+        "evidence_exposure": {
+          "attempts": 0,
+          "empty_request": 0,
+          "evidence_fail_open": 0,
+          "final_turn": 0,
+          "no_informative_question": 0,
+          "policy": "disabled",
+          "question_with_prefix": 0,
+          "question_withheld": 0,
+          "retrieval_fail_open": 0,
+          "top3_confident": 0,
+          "unsafe_state": 0,
+          "validation_fallbacks": 0,
+          "withheld_turns": 0
+        },
+        "exact_evidence": {
+          "applied": 0,
+          "applied_reordered": 0,
+          "applied_unchanged": 0,
+          "attempts": 0,
+          "candidate_ids_examined": 0,
+          "capability_unavailable": 0,
+          "consistent_support_ids": 0,
+          "evidence_errors": 0,
+          "policy": "stage_a",
+          "validation_errors": 0,
+          "zero_support_fail_open": 0
+        },
+        "invalid_api_responses": 0,
+        "orchestration": {
+          "backend_invalidations": 0,
+          "cached_id_references": 45200,
+          "cached_id_utf8_bytes": 452000,
+          "capacity": 256,
+          "capacity_evictions": 544,
+          "cold_misses": 800,
+          "decisions": 2922,
+          "dependency_misses": 1081,
+          "entries": 256,
+          "fault_invalidations": 0,
+          "hits": 1041,
+          "lookups": 2922,
+          "maximum_id_characters": 64,
+          "maximum_ids_per_entry": 200,
+          "policy": "exact_ranking_reuse",
+          "reasons": {
+            "cold_cache": 800,
+            "exact_dependency_hit": 1041,
+            "ranking_dependencies_changed": 1081
+          },
+          "reranks_avoided": 1041,
+          "reset_invalidations": 0,
+          "retained_cache_bytes": 2759648,
+          "retrievals_avoided": 1041,
+          "reuses": 1041,
+          "searches": 1881,
+          "skips": 0,
+          "store_rejections": 0,
+          "stores": 1881
+        },
+        "ranking": {
+          "attempts": 1881,
+          "failures": 0,
+          "policy": "stage_a",
+          "successes": 1881,
+          "unavailable_skips": 0
+        },
+        "reported_tokens_zero": true,
+        "response_exceptions": 0,
+        "runtime_network_attempts": 0,
+        "slate": {
+          "attempts": 2922,
+          "failures": 0,
+          "initializations": 800,
+          "policy": "phase13-intent-epoch-continuation-novelty-v1",
+          "ranking_resets": 1081,
+          "repeat_backfills": 0,
+          "stagnant_turns": 1041,
+          "successes": 2922,
+          "unseen_selected_on_stagnant": 10410
+        },
+        "technical_fault_free": true
+      },
+      "metrics": {
+        "efficiency": 0.72,
+        "hit_rate_at_10": 0.8525,
+        "mrr": 0.550416,
+        "mttc": 3.8,
+        "recommended_technical_score": 0.735375,
+        "reported_token_usage": {
+          "completion_tokens": 0,
+          "prompt_tokens": 0,
+          "total_tokens": 0
+        },
+        "sample_count": 800
+      },
+      "scenario_metrics": {
+        "boundary": {
+          "hit_rate_at_10": 0.875,
+          "mrr": 0.607044,
+          "mttc": 4.625,
+          "sample_count": 40
+        },
+        "browsing": {
+          "hit_rate_at_10": 0.865625,
+          "mrr": 0.551817,
+          "mttc": 3.703125,
+          "sample_count": 320
+        },
+        "buying": {
+          "hit_rate_at_10": 0.94375,
+          "mrr": 0.623927,
+          "mttc": 2.478125,
+          "sample_count": 320
+        },
+        "intent_override": {
+          "hit_rate_at_10": 0.566667,
+          "mrr": 0.331772,
+          "mttc": 7.308333,
+          "sample_count": 120
+        }
+      },
+      "surface_metrics": {
+        "clean_room_language_shift": {
+          "efficiency": 0.6215,
+          "hit_rate_at_10": 0.7225,
+          "mrr": 0.469912,
+          "mttc": 4.785,
+          "recommended_technical_score": 0.626524,
+          "sample_count": 400
+        },
+        "official_exact": {
+          "efficiency": 0.8185,
+          "hit_rate_at_10": 0.9825,
+          "mrr": 0.63092,
+          "mttc": 2.815,
+          "recommended_technical_score": 0.844226,
+          "sample_count": 400
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "exact-evidence-without-exposure": {
+      "candidate": "active-phase16c-buying-prefix-v3",
+      "candidate_metrics": {
+        "efficiency": 0.73125,
+        "hit_rate_at_10": 0.845,
+        "mrr": 0.622242,
+        "mttc": 3.6875,
+        "recommended_technical_score": 0.755423,
+        "reported_token_usage": {
+          "completion_tokens": 0,
+          "prompt_tokens": 0,
+          "total_tokens": 0
+        },
+        "sample_count": 800
+      },
+      "paired_bootstrap": {
+        "lower_95_one_sided": {
+          "hit_rate_at_10": -0.015,
+          "mrr": 0.003146825,
+          "mttc": 0.0275,
+          "technical_score": -0.007800298
+        },
+        "mean_delta": {
+          "hit_rate_at_10": -0.00875,
+          "mrr": 0.013171131,
+          "mttc": 0.07125,
+          "technical_score": -0.001848661
+        },
+        "replicates": 100000,
+        "seed": 170260831,
+        "strata": 4,
+        "upper_95_one_sided": {
+          "hit_rate_at_10": -0.00375,
+          "mrr": 0.023297123,
+          "mttc": 0.11875,
+          "technical_score": 0.003559524
+        }
+      },
+      "paired_transitions": {
+        "both_hit": 676,
+        "both_miss": 117,
+        "candidate_only_hit": 0,
+        "reference_only_hit": 7
+      },
+      "quality_gates": {
+        "all_quality_gates_pass": false,
+        "hit_rate_lower_95_at_least_minus_0_02": true,
+        "mrr_lower_95_at_least_minus_0_01": true,
+        "mttc_upper_95_at_most_plus_0_25": true,
+        "no_scenario_hit_rate_collapse": true,
+        "no_surface_hit_rate_collapse": true,
+        "technical_score_lower_95_at_least_zero": false
+      },
+      "reference": "exact-evidence-without-exposure",
+      "reference_metrics": {
+        "efficiency": 0.738375,
+        "hit_rate_at_10": 0.85375,
+        "mrr": 0.60907,
+        "mttc": 3.61625,
+        "recommended_technical_score": 0.757271,
+        "reported_token_usage": {
+          "completion_tokens": 0,
+          "prompt_tokens": 0,
+          "total_tokens": 0
+        },
+        "sample_count": 800
+      },
+      "scenario_hit_rate_point_deltas": {
+        "boundary": 0.0,
+        "browsing": 0.0,
+        "buying": -0.021875,
+        "intent_override": 0.0
+      },
+      "surface_hit_rate_point_deltas": {
+        "clean_room_language_shift": 0.0,
+        "official_exact": -0.0175
+      }
+    },
+    "protected-phase13": {
+      "candidate": "active-phase16c-buying-prefix-v3",
+      "candidate_metrics": {
+        "efficiency": 0.73125,
+        "hit_rate_at_10": 0.845,
+        "mrr": 0.622242,
+        "mttc": 3.6875,
+        "recommended_technical_score": 0.755423,
+        "reported_token_usage": {
+          "completion_tokens": 0,
+          "prompt_tokens": 0,
+          "total_tokens": 0
+        },
+        "sample_count": 800
+      },
+      "paired_bootstrap": {
+        "lower_95_one_sided": {
+          "hit_rate_at_10": -0.01375,
+          "mrr": 0.056024306,
+          "mttc": -0.16875,
+          "technical_score": 0.012798363
+        },
+        "mean_delta": {
+          "hit_rate_at_10": -0.0075,
+          "mrr": 0.071825893,
+          "mttc": -0.1125,
+          "technical_score": 0.020047768
+        },
+        "replicates": 100000,
+        "seed": 170260831,
+        "strata": 4,
+        "upper_95_one_sided": {
+          "hit_rate_at_10": -0.0025,
+          "mrr": 0.087698413,
+          "mttc": -0.055,
+          "technical_score": 0.026994345
+        }
+      },
+      "paired_transitions": {
+        "both_hit": 675,
+        "both_miss": 117,
+        "candidate_only_hit": 1,
+        "reference_only_hit": 7
+      },
+      "quality_gates": {
+        "all_quality_gates_pass": true,
+        "hit_rate_lower_95_at_least_minus_0_02": true,
+        "mrr_lower_95_at_least_minus_0_01": true,
+        "mttc_upper_95_at_most_plus_0_25": true,
+        "no_scenario_hit_rate_collapse": true,
+        "no_surface_hit_rate_collapse": true,
+        "technical_score_lower_95_at_least_zero": true
+      },
+      "reference": "protected-phase13",
+      "reference_metrics": {
+        "efficiency": 0.72,
+        "hit_rate_at_10": 0.8525,
+        "mrr": 0.550416,
+        "mttc": 3.8,
+        "recommended_technical_score": 0.735375,
+        "reported_token_usage": {
+          "completion_tokens": 0,
+          "prompt_tokens": 0,
+          "total_tokens": 0
+        },
+        "sample_count": 800
+      },
+      "scenario_hit_rate_point_deltas": {
+        "boundary": 0.0,
+        "browsing": 0.0,
+        "buying": -0.021875,
+        "intent_override": 0.008333
+      },
+      "surface_hit_rate_point_deltas": {
+        "clean_room_language_shift": 0.0,
+        "official_exact": -0.015
+      }
+    }
+  },
+  "decision_gate": {
+    "all_arms_technical_fault_free": true,
+    "all_arms_zero_token": true,
+    "all_gates_pass": false,
+    "both_reference_comparisons_pass": false,
+    "candidate_replay_exact": true,
+    "integrity": true
+  },
+  "execution": {
+    "arm_order": [
+      "active-phase16c-buying-prefix-v3",
+      "exact-evidence-without-exposure",
+      "protected-phase13",
+      "active-phase16c-buying-prefix-v3-replay"
+    ],
+    "bootstrap_replicates": 100000,
+    "bootstrap_seed": 170260831,
+    "external_model_or_api_calls": 0,
+    "fresh_agent_state_per_arm": true,
+    "network_denied": true,
+    "public_200_scored": false,
+    "shadow_source_scored": false,
+    "shared_immutable_backend": true,
+    "single_process_single_thread_cpu": true
+  },
+  "experiment_id": "phase17-clean-room-hidden-generalization-v1",
+  "integrity": {
+    "all_checks_pass": true,
+    "case_count": 800,
+    "dialog_schema_valid": true,
+    "historical_target_overlap": 0,
+    "keyed_commitments_match": true,
+    "scenario_counts": {
+      "boundary": 40,
+      "browsing": 320,
+      "buying": 320,
+      "intent_override": 120
+    },
+    "suite_sha256_matches": true,
+    "surface_counts": {
+      "clean_room_language_shift": 400,
+      "official_exact": 400
+    },
+    "surface_scenario_counts": {
+      "clean_room_language_shift": {
+        "boundary": 20,
+        "browsing": 160,
+        "buying": 160,
+        "intent_override": 60
+      },
+      "official_exact": {
+        "boundary": 20,
+        "browsing": 160,
+        "buying": 160,
+        "intent_override": 60
+      }
+    },
+    "unique_target_count": 800
+  },
+  "interpretation": "the frozen active candidate did not satisfy every predeclared fresh-suite gate; no tuning or rerun is authorized",
+  "next_action": "do not inspect failures or tune on this suite; assess any replacement only on a newly committed disjoint suite",
+  "privacy": {
+    "aggregate_only": true,
+    "contains_rows_messages_profiles_targets_products_queries_ranks_or_action_traces": false,
+    "failed_case_inspection": false
+  },
+  "replay": {
+    "actions_equal": true,
+    "health_equal_except_timing": true,
+    "metrics_equal": true,
+    "responses_equal": true,
+    "scenario_metrics_equal": true,
+    "surface_metrics_equal": true
+  },
+  "report_id": "phase17-clean-room-hidden-generalization-20260831",
+  "reproducibility": {
+    "contract_sha256": "ad3790bc7ef756dc9cb53eccae65bb0ee99a15c4ead2d0a25e19272a52141b75",
+    "implementation_lock_sha256": "56b213fdee496cef68fcc7a4cca4939dca5514a601bf843ab0e32629684fb904",
+    "source_sha256": {
+      "assets/bge-small-en-v1.5-int8/model_manifest.json": "f1130079f60555f7e35dc84344a33cd8e9afdcb4743c42afc94fb42b3991fd76",
+      "assets/search-index-bge-small-en-v1.5-v2/manifest.json": "c9b7291004d6ef78473b24886899ea51f427fc2e179c8216c8e8b65f6cf929b2",
+      "conversational_search/__init__.py": "8646679dd1c711639636d9cac2aab022553408c082409171ba2aeed1568d3e3f",
+      "conversational_search/decision.py": "28e757620c63c1415d2309a80665b34ad8b75e1d50636d49ea7e27b388c247a8",
+      "conversational_search/decision_policy.py": "c5462d27a2dcedca24d724cc0ab95312f1c06ddf9bdc04aeee6f51777f7cc033",
+      "conversational_search/exact_evidence.py": "0ea292db23c1942d4e16430e667d16e68739ae7b003916485f6f21f0944fd737",
+      "conversational_search/exposure.py": "4137c8ba3a706f96f4950f2f8f3b2904f89581165e235cc23cb5575f43758090",
+      "conversational_search/exposure_policy.py": "9bd6b553ce49311c0cb40b1177c6434b7f5a948285115a5a015ac0b9cc11a6f8",
+      "conversational_search/intent.py": "134cf01b02b8ea25e7f9450bb0ac37a3ded102e5d00aa320973b7428a398c616",
+      "conversational_search/orchestration.py": "18693f11d7c6dfc818a81cd39366c871d87b7d1dc9c5318f1e27dbcb097a05d4",
+      "conversational_search/profiles.py": "acc0edf87899aad5310bbc0a61c1230e51e7ca2c18eee3d26f8ce5a72577f5f7",
+      "conversational_search/protocol.py": "90d46271f8986e4da2530f82e7df3beeb16bf16e0d79ba59d65310ffb98c09bc",
+      "conversational_search/questions.py": "900a0a129b12e5a9628cea845dd5e9dd859395d1c8d745b4ccef987ac4964cfd",
+      "conversational_search/ranking.py": "a8448f275a6e9ba5eedbeb669f58a27b15dbe4a090425bd2fa9279c379a63eb3",
+      "conversational_search/retrieval.py": "dc37d50ae76e8bea2d87791506b06531d0712e5f022c4ac2c776da674887a6b5",
+      "conversational_search/service.py": "69d969b380439f4a943b05d2ce43e1cb62d14262fda15ac7f512507ac2c6e944",
+      "conversational_search/slates.py": "a0c13c4ec3d4053afbc6d35448527c9b24ef3bce7f4ad378dbd34e7eadbe121b",
+      "conversational_search/strategy.py": "b534103d75bd50fcd5921a1d523151b7338c85db1ef8d9ffd5f55471f5347ac7",
+      "conversational_search/utility_planner.py": "66383060948b5e04458583db10ba177d60627ad625570a828e73c7bfb12598ad",
+      "docs/agent_api_contract.json": "635563741dd71c273d540722913eccdc595b4af9b47ade79f38cd42ae45c8822",
+      "docs/phase17_hidden_generalization_contract.json": "ad3790bc7ef756dc9cb53eccae65bb0ee99a15c4ead2d0a25e19272a52141b75",
+      "docs/phase17_language_templates.json": "78e3e36c05dec57342382f088b117f543bdf8903a7f102576204921ce59acccc",
+      "evaluator/local_evaluator.py": "79a5ea06f9a1b8c5036f30efa85dc1f36b8f6b06eb8feb8f545dfa767bc45564",
+      "preprocessing/__init__.py": "91cd201c8df6bd13abbc11600b4fb08b8a5511c0b9cf02f64b04f59c8bab5640",
+      "preprocessing/catalog.py": "af0cec88ef751000de19f28fbd90e1903243ecb43bb1e75b36a3894a8f728699",
+      "preprocessing/embeddings.py": "175afbd52325c30e0f719490fb66f8bff550715a42fae40f1f947a2be8d12088",
+      "preprocessing/encoder.py": "bf764f1d62cfa6da415c69a59450bee21f6c813a951530f1e55f1e2157ae81ae",
+      "requirements-runtime.txt": "db8bcb738aa8a27746b78473e7ba0806b9ddb03011917a82285ee7ca0e9523b5",
+      "scripts/build_phase17_clean_room_suite.py": "b6b62a94cebb32febf762c0b48b6c855a446f99878d67773b20f05e6c20a23cf",
+      "scripts/run_phase17_hidden_validation.py": "cf7c0d50056cffeb2ef0a29f1948401847de3376c0cb429086ea7eb36ecf4b14",
+      "starter/agent.py": "76f95f65c87df2691a0f7141cc0920276fc3bf41e617e174672bc98012735afb",
+      "starter/dense.py": "013defff58a9aac956af70ee282c1653d44692309d0131d105514f27aa882ed5",
+      "tests/test_phase17_hidden_validation.py": "5838c62f89ac13b23c8191788544ce3b8316dc981ae33cb9e9712173f49e74c1"
+    },
+    "suite_lock_sha256": "5e0361a6dcc963da8714ae0ffdb69764284238c4f9888b771648a20b29fca113",
+    "suite_sha256": "5c16765b70090fc0a444d96c7e295b3980dc66f296c9893205709885e010bd58"
+  },
+  "schema_version": 1,
+  "status": "failed"
+}

@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "experiment_id": "phase16c-buying-prefix-exposure-ablation-v1",
+  "status": "frozen_exploratory_diagnostic_only",
+  "design_origin": {
+    "phase16b_result_used": true,
+    "observation": "The buying-only zero-width gate improved MRR but lost three hits by ending sessions without any exposed product.",
+    "numeric_threshold_fitted": false,
+    "classification": "post-public exploratory follow-up"
+  },
+  "promotion_authority": {
+    "automatic_promotion_allowed": false,
+    "reason": "The public suite informed this policy revision and is reused only for exploratory diagnosis.",
+    "starter_may_be_changed_by_this_run": false
+  },
+  "frozen_inputs": {
+    "catalog": {
+      "path": "data/catalog.jsonl",
+      "sha256": "da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67"
+    },
+    "public_diagnostic": {
+      "path": "data/public_set.jsonl",
+      "sha256": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+      "expected_cases": 200,
+      "classification": "previously_used_exploratory_public_diagnostic"
+    },
+    "starter": {
+      "path": "starter/agent.py",
+      "sha256": "1eb6082202379c4f1af81fbd01cbca4d52c5533858d91d6eaf5450d5a2f6b2d5",
+      "role": "unchanged_current_exact_evidence_reference"
+    }
+  },
+  "fixed_shared_architecture": {
+    "question_policy": "conservative_early_other",
+    "fusion_policy": "completeness_adaptive",
+    "ranking_policy": "phase2-lexicographic-exact-evidence-v1",
+    "profile_policy": "phase9-bounded-profile-residual-v1",
+    "slate_policy": "phase13-intent-epoch-continuation-novelty-v1",
+    "intent_policy": "robust",
+    "decision_policy": "protected_phase13",
+    "requirement_probe_policy": "disabled",
+    "semantic_lexical_rescue_policy": "disabled",
+    "orchestration_policy": "exact_ranking_reuse"
+  },
+  "arms": [
+    {
+      "id": "baseline",
+      "evidence_exposure": "disabled"
+    },
+    {
+      "id": "buying_withhold_v2",
+      "evidence_exposure": "buying-only-top3-structural-evidence-gate-v2"
+    },
+    {
+      "id": "buying_prefix_v3",
+      "evidence_exposure": "buying-only-top3-prefix-question-v3"
+    }
+  ],
+  "single_varying_axis": "evidence_exposure_policy",
+  "buying_prefix_invariant": {
+    "requires_active_initial_explicit_hard_requirement": true,
+    "answer_only_browsing_session_may_force_a_question": false,
+    "tentative_override_contradiction_or_free_text_may_force_a_question": false,
+    "existing_structural_safety_conditions_still_required": true,
+    "informative_question_branch_exposes_literal_ranked_prefix": true,
+    "maximum_question_prefix_width": 3,
+    "ranking_or_retrieval_may_change": false,
+    "final_turn_and_fail_open_behavior_unchanged": true
+  },
+  "fault_taxonomy": {
+    "technical_faults_block_full_public_diagnostic": [
+      "retrieval route error or fallback",
+      "ranking exact-evidence slate orchestration response or network error",
+      "exposure validation fallback"
+    ],
+    "safe_policy_outcomes_are_reported_but_do_not_block": [
+      "retrieval_fail_open",
+      "evidence_fail_open",
+      "unsafe_state",
+      "no_informative_question",
+      "final_turn"
+    ],
+    "reason": "A safe fail-open is required policy behavior, not an execution failure."
+  },
+  "execution": {
+    "mode": "strictly_sequential_single_process_cpu",
+    "public_arm_order": [
+      "baseline",
+      "buying_withhold_v2",
+      "buying_prefix_v3"
+    ],
+    "public_passes": [
+      "balanced_40_case_smoke",
+      "balanced_40_case_exact_replay",
+      "full_200_case_public_diagnostic_if_technically_safe"
+    ],
+    "fresh_agent_state_per_arm": true,
+    "shared_catalog_backend": true,
+    "metric_direction_does_not_authorize_or_block_full": true,
+    "threads": 1,
+    "processes": 1,
+    "network_access": false,
+    "external_model_calls": 0
+  },
+  "privacy": {
+    "published_results": "aggregate_only",
+    "labels_available_to_agent": false,
+    "forbidden_result_content": [
+      "product identifiers",
+      "messages",
+      "profiles",
+      "queries",
+      "candidate lists",
+      "per-session outcomes"
+    ]
+  }
+}

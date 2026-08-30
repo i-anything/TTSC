@@ -10,7 +10,8 @@ and requires a complete index rebuild.
 
 - Product text: `product-text-v2` (implemented and indexed)
 - Embedding artifacts: schema `2` (implemented and indexed)
-- Intent state: `intent-state-v2` (implemented)
+- Active embedding space: `bge-small-en-v1.5-384-v2`
+- Intent state: `intent-state-v3` (implemented)
 - Intent reducer: `robust-intent-reducer-v1` (implemented; reversible comparator)
 - Query text: `query-text-v1` (implemented)
 - Fusion policy: `completeness-adaptive-rrf-v1` (implemented)
@@ -25,17 +26,21 @@ and requires a complete index rebuild.
 - Orchestration policy: `exact-ranking-reuse-v1` with profile dependency v2
   (implemented)
 
-## Embedding space
+## Active embedding space: `bge-small-en-v1.5-384-v2`
 
 - Model: `BAAI/bge-small-en-v1.5`
 - Revision: `5c38ec7c405ec4b44b94cc5a9bb96e735b38267a`
+- Official source ONNX SHA-256:
+  `828e1496d7fabb79cfa4dcd84fa38625c0d3d21da474a00f08db0f559940cf35`
 - Derived INT8 ONNX SHA-256:
   `f8b2217838ea27564f870f96e377cb6e5ca0fa37dec9599cf305d5de011d6b7f`
+- Model asset manifest SHA-256:
+  `f1130079f60555f7e35dc84344a33cd8e9afdcb4743c42afc94fb42b3991fd76`
 - Tokenizer SHA-256:
   `d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66`
 - Dimension: 384
 - Maximum sequence length: 512 tokens including special tokens
-- Pooling: CLS (`last_hidden_state[:, 0, :]`)
+- Pooling: CLS
 - Output: float32, L2-normalized
 - Product prefix: empty string
 - Query prefix:
@@ -46,6 +51,20 @@ and requires a complete index rebuild.
 Products and runtime queries must use this exact model file, tokenizer,
 pooling rule, and normalization rule. Matching only the model name or vector
 dimension is insufficient.
+
+The model asset manifest covers the model/revision/vector contract, packaged
+graph, and tokenizer. Startup verifies that manifest and every individual asset
+checksum before the encoder can be paired with the index.
+
+### Rejected experimental embedding space
+
+`Snowflake/snowflake-arctic-embed-m-v1.5` at 768 dimensions is implemented only
+for reproducible research. A frozen 2,196-case aggregate comparison produced a
+sample-weighted TechnicalScore delta of `-0.001889`, warm p95 of roughly
+1.51--1.55x BGE, and about 98.3 MiB more observed peak RSS. It therefore failed
+the promotion gates and is not active. See
+`docs/embedding_768_migration_results.json`; its local assets are ignored and
+must not be presented as submitted runtime dependencies.
 
 ## Product text: `product-text-v2`
 
@@ -74,23 +93,23 @@ package dimensions, product dimensions, and bestseller rank are excluded.
 Brand/manufacturer and promoted attributes are not repeated in `Details`.
 Canonical product text is transient and is not persisted beside the vectors.
 
-The encoder uses deterministic right truncation at 512 tokens. In the frozen
-catalog, 4,999 documents are longer than this limit. A local evaluator-focused
-audit observed that the title/category/search-clue prefix was always within the
-limit and found no generated evaluator constraint lost by truncation. This is
-development evidence for the frozen public catalog, not a general guarantee
-for arbitrary catalogs.
+The encoder uses deterministic right truncation at 512 tokens. The finalized
+BGE tokenizer pass measured a maximum of 3,112 tokens and 4,999 documents
+longer than the limit. A local evaluator-focused legacy audit observed that the
+title/category/search-clue prefix was always within the limit and found no
+generated evaluator constraint lost by truncation. This is development evidence
+for the frozen public catalog, not a general guarantee for arbitrary catalogs.
 
 The authoritative implementation is `preprocessing/catalog.py`; the completed
 index manifest records `product-text-v2` and its canonical-text SHA-256.
 
-## Intent state: `intent-state-v2`
+## Intent state: `intent-state-v3`
 
 Each session owns an immutable active-intent state with these fields:
 
 ```text
 category
-requirements[] = {value, source, turn, attribute?}
+requirements[] = {value, source, turn, attribute?, strength}
 excluded
 no_preference
 asked_attributes
@@ -100,10 +119,18 @@ last_turn
 ```
 
 Requirement provenance is one of `initial_explicit`, `initial_tentative`,
-`answer`, `override`, or `free_text`. Attribute is either inferred from a
-high-confidence constraint or copied from the exact clarification field that
-elicited an answer; otherwise it is absent. Unknown values are never
-represented as synthetic `unknown` or `none` tokens.
+`answer`, `override`, or `free_text`. Answer attributes are copied from the
+exact clarification field. Other structured requirements use the conservative
+classifier, whose fallback is `feature`; unparsed `free_text` alone has no
+attribute. Unknown values are never represented as synthetic `unknown` or
+`none` tokens.
+
+Requirement strength is explicitly `hard` or `soft`. Existing provenance keeps
+its prior behavior by default: explicit, answer, and override requirements are
+hard, while tentative and free-text requirements are soft. Strength is a
+ranking, slate-signature, and exact-cache dependency; candidate card fields do
+not determine user commitment. Free-text evidence is always soft and cannot be
+promoted to a structured hard constraint.
 
 Phase 1 state update precedence is:
 
@@ -181,7 +208,22 @@ stored inside the intent state.
 
 ## Per-turn retrieval
 
-On every turn:
+The numbered flow below is the protected Phase 13/default path. The opt-in,
+unpromoted Phase 15 candidate adds a bounded protocol transcript, conditional
+dense execution, structural evidence, shown-item memory, and question/width
+planning. Its retrieval route runs BM25 first and records dense as `skipped`
+only when all six pre-route
+conditions pass and BM25 contains at least one structurally valid candidate.
+The exact-product count is independent of full candidate support: it counts
+distinct supplied values that exactly occur in a structured card field for the
+exact category, even when no one product satisfies the full conjunction.
+Healthy BM25 with zero structural support runs dense and fuses both pools;
+unavailable, empty, or failed BM25 triggers one dense rescue. Unsupported,
+paraphrased, inconsistent, free-text, tentative, override, contradiction, or
+non-exact-category turns retain the complete Phase 13 hybrid path. A session
+that contains a tentative start or any override remains hybrid until reset.
+
+On every protected Phase 13 turn:
 
 1. Parse the latest message into an intent-state delta.
 2. Apply additions, source-aware removals, and boundary answers.
@@ -222,19 +264,23 @@ The normal `search()` API and Agent response remain unchanged. Traces contain
 no target labels, scenario labels, profiles, or raw query text.
 
 The model, memory-mapped index, and in-memory FTS table are initialized once per
-agent instance, not once per session or turn. Startup verifies the model,
-tokenizer, ID array, all four vector-shard checksums, and the runtime catalog's
-SHA-256 against the dense manifest. A mismatch disables dense retrieval instead
-of searching an incompatible space. `reset()` replaces only the named session
-state. If FTS5 is unavailable, the dense route remains usable. If either route
-fails, the other remains available; if neither returns a candidate, the
-retriever returns a deterministic catalog-order fallback.
+agent instance, not once per session or turn. Startup verifies the ONNX graph,
+tokenizer and model manifests, semantic asset identity when present, ID array,
+all four vector-shard checksums, and the runtime catalog's SHA-256 against the
+dense manifest. The active legacy-schema BGE index uses its exact model-manifest
+checksum fallback because it predates `asset_identity_sha256`. The BGE-small
+package uses one verified INT8 ONNX graph and does not require split external
+weight files. A mismatch disables dense
+retrieval instead of searching an incompatible space. `reset()` replaces only
+the named session state. If FTS5 is unavailable, the dense route remains
+usable. If either route fails, the other remains available; if neither returns
+a candidate, the retriever returns a deterministic catalog-order fallback.
 
 ## Fusion policy: `completeness-adaptive-rrf-v1`
 
-The policy uses only active requirement provenance. Strong sources
-(`initial_explicit`, `answer`, and `override`) contribute `1.0`; weak sources
-(`initial_tentative` and `free_text`) contribute `0.5`:
+The policy uses explicit active-requirement strength. Hard requirements
+contribute `1.0`; soft requirements contribute `0.5`. Provenance supplies the
+default strength but does not determine the weight after state construction:
 
 ```text
 C_t = clip((strong + 0.5 * weak) / 3, 0, 1)
@@ -271,9 +317,8 @@ as a second catalog artifact. Orchestration may retain only the resulting
 normalized product-ID order after complete successful retrieval, Stage-A
 ranking, and any eligible profile residual.
 
-The active category is a weak clause with weight `0.5`. Strong requirement
-sources (`initial_explicit`, `answer`, and `override`) have weight `1.0`; weak
-sources (`initial_tentative` and `free_text`) have weight `0.5`. After
+The active category is a weak clause with weight `0.5`. Hard requirements have
+weight `1.0`, and soft requirements have weight `0.5`. After
 case-folding, accent normalization, label removal, and stop-word removal, each
 clause-product match is:
 
@@ -443,8 +488,8 @@ implicit negative feedback. Phase 13 extends the same bounded shown-ID memory
 across changed rankings when `intent_version` is unchanged. It applies only
 after a complete Stage-A ranking succeeds. The signature contains the intent
 version, rendered dense and lexical queries, route weights, active requirement
-values and provenance, exclusions, ranking policy, complete ranked pool, and
-requested result count. It deliberately excludes turn number and clarification
+values, provenance, and strength, exclusions, ranking policy, complete ranked
+pool, and requested result count. It deliberately excludes turn number and clarification
 bookkeeping that cannot affect scoring.
 
 ```text
@@ -484,8 +529,8 @@ and warm-p95 ratio was `1.016139`. The active official record is
 
 Phase 7 separates ranking computation from slate presentation. Phase 9 extends
 the ranking digest with the exact profile policy/mask digest. It otherwise
-contains the category, ordered requirement value/source/attribute, exclusions,
-both rendered queries, exact route weights, ranking policy, and a versioned
+contains the category, ordered requirement value/source/attribute/strength,
+exclusions, both rendered queries, exact route weights, ranking policy, and a versioned
 immutable-backend contract. It deliberately excludes turn and question
 bookkeeping, requirement turn, intent version, and positive Top-K: those do not
 change the complete ranking. Intent version, Top-K, and the ranked pool remain

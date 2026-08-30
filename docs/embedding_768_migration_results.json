@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "migration": "snowflake-arctic-embed-m-v1.5-768-v1",
+  "date": "2026-08-30",
+  "status": "rejected_by_pareto_promotion_gates_inactive",
+  "model_selection_basis": {
+    "selected_before_task_outcomes": true,
+    "criteria": [
+      "768 dimensions",
+      "109M parameter CPU-suitable encoder",
+      "official INT8 ONNX artifact",
+      "512-token contract compatible with existing product text",
+      "Apache-2.0 license",
+      "strong reported general retrieval quality"
+    ],
+    "post_outcome_tuning": false
+  },
+  "artifacts": {
+    "model_manifest_sha256": "1550e4a687613dc0aa2ecbeab11a21b8a7f033c72f67ab10e4850d33ad691959",
+    "index_manifest_sha256": "dda729373b9e496afe50eab31a2f6b06a410685b2ecd76fc510a82210f886cca",
+    "index_build_id": "0c8d4726c6c89830f06c3c4c0ebac458dc2974d69307236a8e07e528cccfea6b",
+    "logical_embedding_sha256": "e21c29996ef118fb5bd1d46643590412f739c68ffa04478c16f8d81f959c73b2",
+    "shape": [50000, 768]
+  },
+  "verification": {
+    "catalog_rows": 50000,
+    "shards": 4,
+    "maximum_norm_error": 1.1920928955078125e-07,
+    "maximum_tokens": 3112,
+    "truncated_documents": 4999,
+    "one_vs_three_thread_sample_bit_exact": true,
+    "real_agent_dense_and_bm25_available": true,
+    "real_agent_reported_tokens": 0,
+    "mismatched_encoder_index_pairs_rejected": true,
+    "label_free_post_turn_maxrss_increase_bytes": 103071744,
+    "complete_unit_tests_passed": 548
+  },
+  "evaluation": {
+    "benchmark": "benchmarks/diagnostics/embedding-package-arctic-768-v1.json",
+    "benchmark_sha256": "65c3725f269df1fc590b22bfff667cac20ac3dc57eb857bf77cb194e202ded28",
+    "aggregate_cases": 2196,
+    "suite_wins": 1,
+    "suite_losses": 2,
+    "sample_weighted_arctic_minus_bge": {
+      "hit_rate_at_10": 0.000911,
+      "mrr": -0.006115,
+      "mttc": 0.025501,
+      "recommended_technical_score": -0.001889
+    },
+    "task_specific_superiority_gate_passed": false
+  },
+  "privacy": {
+    "aggregate_only": true,
+    "individual_outcomes_inspected": false,
+    "individual_sessions_persisted": false,
+    "scenario_metrics_persisted": false
+  },
+  "interpretation": "The 768-dimensional runtime is implemented as a reproducible experiment but is inactive. It regressed sample-weighted TechnicalScore, exceeded the latency ceiling, and added roughly 98.3 MiB of observed peak RSS versus BGE-small 384. BGE-small 384 remains the protected default; local Arctic assets are ignored and are not submission dependencies."
+}

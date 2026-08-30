@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import sqlite3
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Iterable, Literal
+from typing import TYPE_CHECKING, Iterable, Literal
 
 from conversational_search.orchestration import (
     EXACT_RANKING_CACHE_CAPABILITY,
@@ -15,6 +17,9 @@ from conversational_search.orchestration import (
 )
 from conversational_search.ranking import CandidateDocument
 from conversational_search.strategy import RouteWeights
+
+if TYPE_CHECKING:
+    from conversational_search.protocol import ProductProtocolEvidence
 
 
 ROUTE_LIMIT = 100
@@ -24,6 +29,9 @@ DEFAULT_ROUTE_WEIGHTS = RouteWeights(bm25=0.5, dense=0.5)
 MAX_REQUIREMENT_PROBES = 2
 MAX_PROBE_CANDIDATES = 24
 MAX_PROBE_TEXT_CHARACTERS = 1024
+MAX_PROTOCOL_CONSTRAINTS = 8
+MAX_SEMANTIC_EXPANSION_TERMS = 3
+MIN_SHARED_DENSE_HITS = 3
 
 RouteStatus = Literal["unavailable", "ok", "empty", "error", "skipped"]
 RequirementProbeStatus = Literal[
@@ -49,11 +57,47 @@ DISABLED_REQUIREMENT_PROBE_POLICY = RequirementProbePolicy.DISABLED
 CATALOG_IDF_REQUIREMENT_PROBE_POLICY = RequirementProbePolicy.CATALOG_IDF_TOP2
 
 
+class SemanticLexicalRescuePolicy(str, Enum):
+    """Opt-in policies that use dense retrieval without exposing dense IDs."""
+
+    DISABLED = "disabled"
+    SHARED_DENSE_TERMS = "semantic-to-lexical-shared-terms-v1"
+
+
+DISABLED_SEMANTIC_LEXICAL_RESCUE_POLICY = SemanticLexicalRescuePolicy.DISABLED
+SHARED_DENSE_TERMS_RESCUE_POLICY = SemanticLexicalRescuePolicy.SHARED_DENSE_TERMS
+
+
+class SemanticLexicalRescueStatus(str, Enum):
+    """Mutually exclusive outcomes of one bounded semantic rescue attempt."""
+
+    NOT_NEEDED = "not_needed"
+    NO_STRUCTURAL_SUPPORT = "no_structural_support"
+    BM25_UNAVAILABLE = "bm25_unavailable"
+    DENSE_UNAVAILABLE = "dense_unavailable"
+    DENSE_ERROR = "dense_error"
+    DENSE_EMPTY = "dense_empty"
+    NO_COMPATIBLE_DENSE_HITS = "no_compatible_dense_hits"
+    NO_SAFE_TERMS = "no_safe_terms"
+    TERM_EXTRACTION_ERROR = "term_extraction_error"
+    RETRY_ERROR = "retry_error"
+    RETRY_EMPTY = "retry_empty"
+    RETRY_NO_STRUCTURAL_SUPPORT = "retry_no_structural_support"
+    APPLIED = "applied"
+
+
 class _RequirementProbeCapability:
     __slots__ = ()
 
 
 REQUIREMENT_PROBE_CAPABILITY = _RequirementProbeCapability()
+
+
+class _ProtocolEvidenceCapability:
+    __slots__ = ()
+
+
+PROTOCOL_EVIDENCE_CAPABILITY = _ProtocolEvidenceCapability()
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +123,22 @@ class RequirementProbeTrace:
 
 
 @dataclass(frozen=True, slots=True)
+class SemanticLexicalRescueTrace:
+    """Bounded rescue facts; private dense IDs and expansion terms are omitted."""
+
+    status: SemanticLexicalRescueStatus
+    base_bm25_ids: tuple[str, ...]
+    retry_bm25_ids: tuple[str, ...]
+    base_bm25_status: RouteStatus
+    retry_bm25_status: RouteStatus
+    private_dense_status: RouteStatus
+    private_dense_candidate_count: int
+    compatible_dense_candidate_count: int
+    expansion_term_count: int
+    retry_count: int
+
+
+@dataclass(frozen=True, slots=True)
 class RetrievalResult:
     recommendations: tuple[str, ...]
     trace: RetrievalTrace
@@ -89,6 +149,13 @@ class RequirementProbeRetrievalResult(RetrievalResult):
     """Retrieval result carrying probe evidence only when the policy is enabled."""
 
     probe_trace: RequirementProbeTrace
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticLexicalRetrievalResult(RetrievalResult):
+    """Lexical-authority result with aggregate-only semantic rescue evidence."""
+
+    semantic_trace: SemanticLexicalRescueTrace
 
 
 TOKEN_RE = re.compile(r"[a-z0-9]+", re.IGNORECASE)
@@ -163,11 +230,26 @@ class HybridRetriever:
         catalog_path: str | Path,
         encoder: object | None = None,
         dense_index: object | None = None,
+        *,
+        protocol_evidence: bool = False,
     ) -> None:
+        if not isinstance(protocol_evidence, bool):
+            raise TypeError("protocol_evidence must be a boolean")
         self.encoder = encoder
         self.dense_index = dense_index
         self.dense_available = encoder is not None and dense_index is not None
         self._connection = sqlite3.connect(":memory:")
+        self.protocol_evidence_available = False
+        self.protocol_evidence_initialization_error: str | None = None
+        if protocol_evidence:
+            try:
+                self._create_protocol_evidence_table()
+            except Exception as error:
+                self.protocol_evidence_initialization_error = (
+                    f"{type(error).__name__}: {error}"
+                )
+            else:
+                self.protocol_evidence_available = True
         self.bm25_available = True
         self.bm25_initialization_error: str | None = None
         try:
@@ -207,12 +289,40 @@ class HybridRetriever:
 
         return REQUIREMENT_PROBE_CAPABILITY
 
+    @property
+    def protocol_evidence_capability(self) -> object | None:
+        """Expose protocol evidence only when its opt-in index was built."""
+
+        return (
+            PROTOCOL_EVIDENCE_CAPABILITY
+            if self.protocol_evidence_available
+            else None
+        )
+
     def _create_bm25_table(self) -> None:
         self._connection.execute(
             "CREATE VIRTUAL TABLE products USING fts5("
             "parent_asin UNINDEXED, title, categories, features, details, store, "
             "description, tokenize='unicode61 remove_diacritics 2')"
         )
+
+    def _create_protocol_evidence_table(self) -> None:
+        self._connection.execute(
+            "CREATE TABLE protocol_products("
+            "rowid INTEGER PRIMARY KEY, parent_asin TEXT NOT NULL UNIQUE, "
+            "coarse_category TEXT NOT NULL, target_category TEXT NOT NULL, "
+            "hard_0 TEXT, hard_1 TEXT, soft_0 TEXT, soft_1 TEXT, "
+            "price TEXT, popularity INTEGER)"
+        )
+        self._connection.execute(
+            "CREATE INDEX protocol_category_idx "
+            "ON protocol_products(coarse_category COLLATE NOCASE)"
+        )
+        for column in ("hard_0", "hard_1", "soft_0", "soft_1"):
+            self._connection.execute(
+                f"CREATE INDEX protocol_{column}_idx "
+                f"ON protocol_products({column} COLLATE NOCASE)"
+            )
 
     def _create_bm25_vocabulary(self) -> None:
         self._connection.execute(
@@ -239,9 +349,32 @@ class HybridRetriever:
 
     def _build_bm25(self, catalog_path: Path) -> tuple[str, ...]:
         cursor = self._connection.cursor()
+        protocol_builder = None
+        if self.protocol_evidence_available:
+            try:
+                from conversational_search.protocol import (
+                    build_product_protocol_evidence as protocol_builder,
+                )
+            except Exception as error:
+                self._disable_protocol_evidence(error, cursor)
+
         catalog_ids: list[str] = []
         seen_ids: set[str] = set()
         batch: list[tuple[int, str, str, str, str, str, str, str]] = []
+        protocol_batch: list[
+            tuple[
+                int,
+                str,
+                str,
+                str,
+                str | None,
+                str | None,
+                str | None,
+                str | None,
+                str | None,
+                int | None,
+            ]
+        ] = []
         with catalog_path.open(encoding="utf-8") as handle:
             for line_number, line in enumerate(handle, start=1):
                 if not line.strip():
@@ -254,10 +387,11 @@ class HybridRetriever:
                     raise ValueError(f"catalog row {line_number} repeats {parent_asin}")
                 seen_ids.add(parent_asin)
                 catalog_ids.append(parent_asin)
+                rowid = len(catalog_ids)
                 if self.bm25_available:
                     batch.append(
                         (
-                            len(catalog_ids),
+                            rowid,
                             parent_asin,
                             _text(product.get("title")),
                             _text(product.get("categories")),
@@ -267,6 +401,37 @@ class HybridRetriever:
                             _text(product.get("description")),
                         )
                     )
+                if self.protocol_evidence_available:
+                    try:
+                        if protocol_builder is None:
+                            raise RuntimeError("protocol builder is unavailable")
+                        evidence = protocol_builder(
+                            product,
+                            include_text=False,
+                        )
+                        if evidence.parent_asin != parent_asin:
+                            raise ValueError(
+                                "protocol evidence has an unnormalized parent_asin"
+                            )
+                        hard = (*evidence.card.hard_constraints, None, None)
+                        soft = (*evidence.card.soft_preferences, None, None)
+                        protocol_batch.append(
+                            (
+                                rowid,
+                                evidence.parent_asin,
+                                evidence.coarse_category,
+                                evidence.card.target_category,
+                                hard[0],
+                                hard[1],
+                                soft[0],
+                                soft[1],
+                                evidence.price,
+                                evidence.popularity,
+                            )
+                        )
+                    except Exception as error:
+                        protocol_batch.clear()
+                        self._disable_protocol_evidence(error, cursor)
                 if self.bm25_available and len(batch) >= 1000:
                     cursor.executemany(
                         "INSERT INTO products("
@@ -275,6 +440,22 @@ class HybridRetriever:
                         batch,
                     )
                     batch.clear()
+                if (
+                    self.protocol_evidence_available
+                    and len(protocol_batch) >= 1000
+                ):
+                    try:
+                        cursor.executemany(
+                            "INSERT INTO protocol_products("
+                            "rowid, parent_asin, coarse_category, target_category, "
+                            "hard_0, hard_1, soft_0, soft_1, price, popularity) "
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            protocol_batch,
+                        )
+                    except Exception as error:
+                        self._disable_protocol_evidence(error, cursor)
+                    finally:
+                        protocol_batch.clear()
         if self.bm25_available and batch:
             cursor.executemany(
                 "INSERT INTO products("
@@ -282,10 +463,42 @@ class HybridRetriever:
                 "description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 batch,
             )
+        if self.protocol_evidence_available and protocol_batch:
+            try:
+                cursor.executemany(
+                    "INSERT INTO protocol_products("
+                    "rowid, parent_asin, coarse_category, target_category, "
+                    "hard_0, hard_1, soft_0, soft_1, price, popularity) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    protocol_batch,
+                )
+            except Exception as error:
+                self._disable_protocol_evidence(error, cursor)
+            finally:
+                protocol_batch.clear()
         self._connection.commit()
         if not catalog_ids:
             raise ValueError(f"catalog is empty: {catalog_path}")
         return tuple(catalog_ids)
+
+    def _disable_protocol_evidence(
+        self,
+        error: Exception,
+        cursor: sqlite3.Cursor,
+    ) -> None:
+        """Discard a partial opt-in index without affecting protected BM25."""
+
+        self.protocol_evidence_available = False
+        self.protocol_evidence_initialization_error = (
+            f"{type(error).__name__}: {error}"
+        )
+        try:
+            cursor.execute("DELETE FROM protocol_products")
+        except Exception as cleanup_error:
+            self.protocol_evidence_initialization_error += (
+                "; cleanup failed: "
+                f"{type(cleanup_error).__name__}: {cleanup_error}"
+            )
 
     def candidate_documents(
         self,
@@ -356,6 +569,209 @@ class HybridRetriever:
             raise RuntimeError("candidate document rows are missing")
         return tuple(documents_by_id[parent_asin] for parent_asin in ordered_ids)
 
+    def candidate_protocol_evidence(
+        self,
+        parent_asins: Sequence[str],
+    ) -> tuple[ProductProtocolEvidence, ...]:
+        """Return bounded reconstructed-card evidence in caller order."""
+
+        from conversational_search.protocol import (
+            DisclosureCard,
+            ProductProtocolEvidence,
+        )
+
+        if isinstance(parent_asins, (str, bytes)) or not isinstance(
+            parent_asins, Sequence
+        ):
+            raise TypeError("parent_asins must be a sequence of product IDs")
+        requested = tuple(parent_asins)
+        if len(requested) > MAX_CANDIDATE_DOCUMENTS:
+            raise ValueError(
+                f"at most {MAX_CANDIDATE_DOCUMENTS} candidate IDs are supported"
+            )
+        if any(
+            not isinstance(parent_asin, str) or not parent_asin
+            for parent_asin in requested
+        ):
+            raise ValueError("candidate IDs must be non-empty strings")
+        ordered_ids = tuple(dict.fromkeys(requested))
+        unknown = [
+            parent_asin
+            for parent_asin in ordered_ids
+            if parent_asin not in self._valid_ids
+        ]
+        if unknown:
+            raise ValueError(f"unknown candidate product ID: {unknown[0]}")
+        if not ordered_ids or not self.protocol_evidence_available:
+            return ()
+
+        requested_rows = {
+            self._catalog_order[parent_asin] + 1: parent_asin
+            for parent_asin in ordered_ids
+        }
+        placeholders = ", ".join("?" for _ in requested_rows)
+        rows = self._connection.execute(
+            "SELECT rowid, parent_asin, coarse_category, target_category, "
+            "hard_0, hard_1, soft_0, soft_1, price, popularity "
+            f"FROM protocol_products WHERE rowid IN ({placeholders})",
+            tuple(requested_rows),
+        ).fetchall()
+        evidence_by_id: dict[str, ProductProtocolEvidence] = {}
+        for row in rows:
+            rowid = int(row[0])
+            expected_parent_asin = requested_rows.get(rowid)
+            actual_parent_asin = row[1]
+            if (
+                expected_parent_asin is None
+                or actual_parent_asin != expected_parent_asin
+            ):
+                raise RuntimeError("protocol evidence row alignment is invalid")
+            hard = tuple(value for value in row[4:6] if isinstance(value, str))
+            soft = tuple(value for value in row[6:8] if isinstance(value, str))
+            target_category = str(row[3])
+            evidence_by_id[expected_parent_asin] = ProductProtocolEvidence(
+                parent_asin=expected_parent_asin,
+                coarse_category=str(row[2]),
+                card=DisclosureCard(target_category, hard, soft),
+                text=" ".join((target_category, *hard, *soft)),
+                price=row[8] if isinstance(row[8], str) else None,
+                popularity=(
+                    row[9]
+                    if isinstance(row[9], int) and not isinstance(row[9], bool)
+                    else None
+                ),
+            )
+        if len(evidence_by_id) != len(ordered_ids):
+            raise RuntimeError("protocol evidence rows are missing")
+        return tuple(evidence_by_id[parent_asin] for parent_asin in ordered_ids)
+
+    def protocol_exact_candidates(
+        self,
+        category: str,
+        constraints: Sequence[str],
+        *,
+        limit: int = MAX_CANDIDATE_DOCUMENTS,
+    ) -> tuple[str, ...]:
+        """Find exact reconstructed-card matches without hard-filtering retrieval."""
+
+        if not isinstance(category, str):
+            raise TypeError("category must be a string")
+        if category != category.strip():
+            raise ValueError("category must be normalized")
+        if isinstance(constraints, (str, bytes)) or not isinstance(
+            constraints, Sequence
+        ):
+            raise TypeError("constraints must be a sequence of strings")
+        values = tuple(dict.fromkeys(constraints))
+        if len(values) > MAX_PROTOCOL_CONSTRAINTS:
+            raise ValueError(
+                f"at most {MAX_PROTOCOL_CONSTRAINTS} constraints are supported"
+            )
+        if any(
+            not isinstance(value, str)
+            or not value
+            or value != value.strip()
+            for value in values
+        ):
+            raise ValueError("constraints must be normalized non-empty strings")
+        if (
+            isinstance(limit, bool)
+            or not isinstance(limit, int)
+            or not 0 <= limit <= MAX_CANDIDATE_DOCUMENTS
+        ):
+            raise ValueError(
+                f"limit must be an integer from 0 through {MAX_CANDIDATE_DOCUMENTS}"
+            )
+        if (
+            not self.protocol_evidence_available
+            or not values
+            or limit == 0
+        ):
+            return ()
+
+        columns = ("hard_0", "hard_1", "soft_0", "soft_1")
+        clauses: list[str] = []
+        parameters: list[object] = []
+        if category:
+            clauses.append("coarse_category = ? COLLATE NOCASE")
+            parameters.append(category)
+        for value in values:
+            clauses.append(
+                "(" + " OR ".join(
+                    f"{column} = ? COLLATE NOCASE" for column in columns
+                ) + ")"
+            )
+            parameters.extend((value,) * len(columns))
+        parameters.append(limit)
+        rows = self._connection.execute(
+            "SELECT parent_asin FROM protocol_products WHERE "
+            + " AND ".join(clauses)
+            + " ORDER BY COALESCE(popularity, 0) DESC, rowid LIMIT ?",
+            tuple(parameters),
+        ).fetchall()
+        return tuple(str(row[0]) for row in rows)
+
+    def protocol_exact_constraint_count(
+        self,
+        category: str,
+        constraints: Sequence[str],
+    ) -> int:
+        """Count independently exact structured values in one exact category."""
+
+        if not isinstance(category, str):
+            raise TypeError("category must be a string")
+        normalized_category = " ".join(category.split())
+        if isinstance(constraints, (str, bytes)) or not isinstance(
+            constraints,
+            Sequence,
+        ):
+            raise TypeError("constraints must be a sequence of strings")
+        values = tuple(dict.fromkeys(constraints))
+        if len(values) > MAX_PROTOCOL_CONSTRAINTS:
+            raise ValueError(
+                f"at most {MAX_PROTOCOL_CONSTRAINTS} constraints are supported"
+            )
+        if any(
+            not isinstance(value, str)
+            or not value
+            or value != value.strip()
+            for value in values
+        ):
+            raise ValueError("constraints must be normalized non-empty strings")
+        if not self.protocol_evidence_available or not normalized_category:
+            return 0
+
+        columns = ("hard_0", "hard_1", "soft_0", "soft_1")
+        value_clause = " OR ".join(
+            f"{column} = ? COLLATE NOCASE" for column in columns
+        )
+        count = 0
+        for value in values:
+            row = self._connection.execute(
+                "SELECT 1 FROM protocol_products "
+                "WHERE coarse_category = ? COLLATE NOCASE AND ("
+                + value_clause
+                + ") LIMIT 1",
+                (normalized_category, *((value,) * len(columns))),
+            ).fetchone()
+            count += int(row is not None)
+        return count
+
+    def protocol_category_exists(self, category: str) -> bool:
+        """Return whether a category matches using only case/space normalization."""
+
+        if not isinstance(category, str):
+            raise TypeError("category must be a string")
+        normalized = " ".join(category.split())
+        if not normalized or not self.protocol_evidence_available:
+            return False
+        row = self._connection.execute(
+            "SELECT 1 FROM protocol_products "
+            "WHERE coarse_category = ? COLLATE NOCASE LIMIT 1",
+            (normalized,),
+        ).fetchone()
+        return row is not None
+
     def _bm25(self, lexical_text: str) -> list[str]:
         if not self.bm25_available:
             return []
@@ -377,6 +793,270 @@ class HybridRetriever:
         encoded = self.encoder.encode_queries([dense_query_text], batch_size=1)
         hits = self.dense_index.search(encoded[0], top_k=ROUTE_LIMIT)
         return self._sanitize_route(hits)
+
+    def _bm25_has_credible_structural_support(
+        self,
+        bm25_ids: Sequence[str],
+        structural_support: frozenset[str],
+        lexical_text: str,
+        category_text: str,
+    ) -> bool:
+        """Require support beyond tokens that occur only in the category field."""
+
+        supported = tuple(
+            parent_asin
+            for parent_asin in bm25_ids
+            if parent_asin in structural_support
+        )
+        if not supported:
+            return False
+        category_terms = frozenset(_terms(category_text))
+        focus_terms = frozenset(_terms(lexical_text)) - category_terms
+        if not focus_terms:
+            return False
+
+        rowids = tuple(self._catalog_order[parent_asin] + 1 for parent_asin in supported)
+        placeholders = ", ".join("?" for _ in rowids)
+        rows = self._connection.execute(
+            "SELECT title, features, details, store, description FROM products "
+            f"WHERE rowid IN ({placeholders})",
+            rowids,
+        ).fetchall()
+        return any(
+            focus_terms.intersection(_terms(" ".join(str(value) for value in row)))
+            for row in rows
+        )
+
+    def _safe_semantic_expansion_terms(
+        self,
+        compatible_dense_ids: Sequence[str],
+        lexical_text: str,
+        category_text: str,
+    ) -> tuple[str, ...]:
+        """Select shared, bounded catalog terms from features/descriptions only."""
+
+        ordered_ids = tuple(dict.fromkeys(compatible_dense_ids))
+        if len(ordered_ids) < MIN_SHARED_DENSE_HITS:
+            return ()
+        if not self._ensure_bm25_vocabulary():
+            return ()
+
+        rowids = tuple(self._catalog_order[parent_asin] + 1 for parent_asin in ordered_ids)
+        placeholders = ", ".join("?" for _ in rowids)
+        rows = self._connection.execute(
+            "SELECT parent_asin, title, features, description, store FROM products "
+            f"WHERE rowid IN ({placeholders})",
+            rowids,
+        ).fetchall()
+        if len(rows) != len(ordered_ids):
+            raise RuntimeError("semantic expansion rows are missing")
+
+        excluded_terms = set(_terms(lexical_text)) | set(_terms(category_text))
+        excluded_terms.update(
+            term
+            for parent_asin in ordered_ids
+            for term in _terms(parent_asin)
+        )
+        excluded_terms.update(
+            term
+            for row in rows
+            for term in _terms(f"{row[1]} {row[4]}")
+        )
+
+        document_support: Counter[str] = Counter()
+        for row in rows:
+            terms = {
+                term
+                for term in _terms(f"{row[2]} {row[3]}")
+                if term.isalpha()
+                and 2 < len(term) <= 24
+                and term not in excluded_terms
+            }
+            document_support.update(terms)
+        shared_terms = tuple(
+            term
+            for term, count in document_support.items()
+            if count >= MIN_SHARED_DENSE_HITS
+        )
+        if not shared_terms:
+            return ()
+
+        frequency_placeholders = ", ".join("?" for _ in shared_terms)
+        frequency_rows = self._connection.execute(
+            "SELECT term, doc FROM products_vocab "
+            f"WHERE term IN ({frequency_placeholders})",
+            shared_terms,
+        ).fetchall()
+        frequencies = {
+            str(term): int(document_count)
+            for term, document_count in frequency_rows
+            if type(document_count) is int and document_count > 0
+        }
+        minimum_frequency = MIN_SHARED_DENSE_HITS
+        maximum_frequency = max(
+            minimum_frequency,
+            math.floor(len(self._catalog_ids) * 0.05),
+        )
+        ranked = sorted(
+            (
+                term
+                for term in shared_terms
+                if minimum_frequency
+                <= frequencies.get(term, 0)
+                <= maximum_frequency
+            ),
+            key=lambda term: (
+                -document_support[term],
+                frequencies[term],
+                term,
+            ),
+        )
+        return tuple(ranked[:MAX_SEMANTIC_EXPANSION_TERMS])
+
+    def _semantic_lexical_result(
+        self,
+        *,
+        dense_query_text: str,
+        lexical_text: str,
+        category_text: str,
+        top_k: int,
+        structural_support: frozenset[str] | None,
+        base_bm25_ids: tuple[str, ...],
+        base_bm25_status: RouteStatus,
+    ) -> SemanticLexicalRetrievalResult:
+        """Perform at most one private dense lookup and one BM25 retry."""
+
+        final_ids = base_bm25_ids
+        final_status = base_bm25_status
+        retry_ids: tuple[str, ...] = ()
+        retry_status: RouteStatus = "skipped"
+        private_dense_status: RouteStatus = (
+            "skipped" if self.dense_available else "unavailable"
+        )
+        dense_count = 0
+        compatible_count = 0
+        expansion_count = 0
+        retry_count = 0
+
+        if structural_support is None:
+            status = SemanticLexicalRescueStatus.NO_STRUCTURAL_SUPPORT
+        elif base_bm25_status == "unavailable":
+            status = SemanticLexicalRescueStatus.BM25_UNAVAILABLE
+        else:
+            try:
+                credible_support = (
+                    base_bm25_status == "ok"
+                    and self._bm25_has_credible_structural_support(
+                        base_bm25_ids,
+                        structural_support,
+                        lexical_text,
+                        category_text,
+                    )
+                )
+            except Exception:
+                credible_support = False
+            if credible_support:
+                status = SemanticLexicalRescueStatus.NOT_NEEDED
+            elif not self.dense_available:
+                status = SemanticLexicalRescueStatus.DENSE_UNAVAILABLE
+            else:
+                try:
+                    private_dense_ids = tuple(self._dense(dense_query_text))
+                except Exception:
+                    private_dense_ids = ()
+                    private_dense_status = "error"
+                    status = SemanticLexicalRescueStatus.DENSE_ERROR
+                else:
+                    dense_count = len(private_dense_ids)
+                    private_dense_status = "ok" if private_dense_ids else "empty"
+                    if not private_dense_ids:
+                        status = SemanticLexicalRescueStatus.DENSE_EMPTY
+                    else:
+                        compatible_dense_ids = tuple(
+                            parent_asin
+                            for parent_asin in private_dense_ids
+                            if parent_asin in structural_support
+                        )
+                        compatible_count = len(compatible_dense_ids)
+                        if compatible_count < MIN_SHARED_DENSE_HITS:
+                            status = (
+                                SemanticLexicalRescueStatus.NO_COMPATIBLE_DENSE_HITS
+                            )
+                        else:
+                            try:
+                                expansion_terms = self._safe_semantic_expansion_terms(
+                                    compatible_dense_ids,
+                                    lexical_text,
+                                    category_text,
+                                )
+                            except Exception:
+                                expansion_terms = ()
+                                status = (
+                                    SemanticLexicalRescueStatus.TERM_EXTRACTION_ERROR
+                                )
+                            else:
+                                expansion_count = len(expansion_terms)
+                                if not expansion_terms:
+                                    status = SemanticLexicalRescueStatus.NO_SAFE_TERMS
+                                else:
+                                    retry_count = 1
+                                    retry_query = " ".join(
+                                        (lexical_text, *expansion_terms)
+                                    ).strip()
+                                    try:
+                                        retry_ids = tuple(
+                                            self._sanitize_route(
+                                                self._bm25(retry_query)
+                                            )
+                                        )
+                                    except Exception:
+                                        retry_ids = ()
+                                        retry_status = "error"
+                                        status = SemanticLexicalRescueStatus.RETRY_ERROR
+                                    else:
+                                        retry_status = "ok" if retry_ids else "empty"
+                                        if not retry_ids:
+                                            status = SemanticLexicalRescueStatus.RETRY_EMPTY
+                                        elif not structural_support.intersection(
+                                            retry_ids
+                                        ):
+                                            status = (
+                                                SemanticLexicalRescueStatus.RETRY_NO_STRUCTURAL_SUPPORT
+                                            )
+                                        else:
+                                            final_ids = retry_ids
+                                            final_status = "ok"
+                                            status = SemanticLexicalRescueStatus.APPLIED
+
+        used_fallback = not final_ids
+        recommendations = (
+            tuple(self._catalog_ids[:top_k])
+            if used_fallback
+            else final_ids[:top_k]
+        )
+        return SemanticLexicalRetrievalResult(
+            recommendations=recommendations,
+            trace=RetrievalTrace(
+                bm25_ids=final_ids,
+                dense_ids=(),
+                fused_ids=final_ids,
+                bm25_status=final_status,
+                dense_status="skipped",
+                used_fallback=used_fallback,
+            ),
+            semantic_trace=SemanticLexicalRescueTrace(
+                status=status,
+                base_bm25_ids=base_bm25_ids,
+                retry_bm25_ids=retry_ids,
+                base_bm25_status=base_bm25_status,
+                retry_bm25_status=retry_status,
+                private_dense_status=private_dense_status,
+                private_dense_candidate_count=dense_count,
+                compatible_dense_candidate_count=compatible_count,
+                expansion_term_count=expansion_count,
+                retry_count=retry_count,
+            ),
+        )
 
     @staticmethod
     def _validate_probe_candidates(values: Sequence[str]) -> tuple[str, ...]:
@@ -529,19 +1209,31 @@ class HybridRetriever:
         lexical_text: str,
         top_k: int = 10,
         *,
+        use_dense: bool = True,
+        dense_rescue_on_bm25_failure: bool = True,
+        bm25_only_support_ids: Sequence[str] | None = None,
         route_weights: RouteWeights | None = None,
         requirement_probe_policy: RequirementProbePolicy = (
             DISABLED_REQUIREMENT_PROBE_POLICY
         ),
         requirement_probe_candidates: Sequence[str] = (),
+        semantic_lexical_rescue_policy: SemanticLexicalRescuePolicy = (
+            DISABLED_SEMANTIC_LEXICAL_RESCUE_POLICY
+        ),
+        semantic_rescue_category: str = "",
     ) -> list[str]:
         result = self.search_with_trace(
             dense_query_text,
             lexical_text,
             top_k=top_k,
+            use_dense=use_dense,
+            dense_rescue_on_bm25_failure=dense_rescue_on_bm25_failure,
+            bm25_only_support_ids=bm25_only_support_ids,
             route_weights=route_weights,
             requirement_probe_policy=requirement_probe_policy,
             requirement_probe_candidates=requirement_probe_candidates,
+            semantic_lexical_rescue_policy=semantic_lexical_rescue_policy,
+            semantic_rescue_category=semantic_rescue_category,
         )
         return list(result.recommendations)
 
@@ -551,20 +1243,80 @@ class HybridRetriever:
         lexical_text: str,
         top_k: int = 10,
         *,
+        use_dense: bool = True,
+        dense_rescue_on_bm25_failure: bool = True,
+        bm25_only_support_ids: Sequence[str] | None = None,
         route_weights: RouteWeights | None = None,
         requirement_probe_policy: RequirementProbePolicy = (
             DISABLED_REQUIREMENT_PROBE_POLICY
         ),
         requirement_probe_candidates: Sequence[str] = (),
+        semantic_lexical_rescue_policy: SemanticLexicalRescuePolicy = (
+            DISABLED_SEMANTIC_LEXICAL_RESCUE_POLICY
+        ),
+        semantic_rescue_category: str = "",
     ) -> RetrievalResult:
         if isinstance(top_k, bool) or not isinstance(top_k, int):
             raise TypeError("top_k must be an integer")
+        if not isinstance(use_dense, bool):
+            raise TypeError("use_dense must be a boolean")
+        if not isinstance(dense_rescue_on_bm25_failure, bool):
+            raise TypeError("dense_rescue_on_bm25_failure must be a boolean")
+        if bm25_only_support_ids is None:
+            structural_support: frozenset[str] | None = None
+        else:
+            if isinstance(bm25_only_support_ids, (str, bytes)) or not isinstance(
+                bm25_only_support_ids,
+                Sequence,
+            ):
+                raise TypeError("bm25_only_support_ids must be a sequence or None")
+            support_values = tuple(bm25_only_support_ids)
+            if len(support_values) > MAX_CANDIDATE_DOCUMENTS:
+                raise ValueError("too many BM25 structural-support IDs")
+            if any(
+                not isinstance(value, str)
+                or not value
+                or value not in self._valid_ids
+                for value in support_values
+            ):
+                raise ValueError(
+                    "BM25 structural-support IDs must be valid product IDs"
+                )
+            structural_support = frozenset(support_values)
         if route_weights is None:
             route_weights = DEFAULT_ROUTE_WEIGHTS
         elif not isinstance(route_weights, RouteWeights):
             raise TypeError("route_weights must be RouteWeights")
         if not isinstance(requirement_probe_policy, RequirementProbePolicy):
             raise TypeError("requirement_probe_policy must be RequirementProbePolicy")
+        if not isinstance(
+            semantic_lexical_rescue_policy,
+            SemanticLexicalRescuePolicy,
+        ):
+            raise TypeError(
+                "semantic_lexical_rescue_policy must be "
+                "SemanticLexicalRescuePolicy"
+            )
+        if not isinstance(semantic_rescue_category, str):
+            raise TypeError("semantic_rescue_category must be a string")
+        if semantic_rescue_category != " ".join(semantic_rescue_category.split()):
+            raise ValueError("semantic_rescue_category must be normalized")
+        semantic_rescue_enabled = (
+            semantic_lexical_rescue_policy
+            is not DISABLED_SEMANTIC_LEXICAL_RESCUE_POLICY
+        )
+        if semantic_rescue_enabled and use_dense:
+            raise ValueError(
+                "semantic-to-lexical rescue requires the exposed dense route "
+                "to be disabled"
+            )
+        if (
+            semantic_rescue_enabled
+            and requirement_probe_policy is not DISABLED_REQUIREMENT_PROBE_POLICY
+        ):
+            raise ValueError(
+                "semantic rescue and requirement probes are separate ablations"
+            )
         if top_k <= 0:
             result = RetrievalResult(
                 recommendations=(),
@@ -577,6 +1329,23 @@ class HybridRetriever:
                     used_fallback=False,
                 ),
             )
+            if semantic_rescue_enabled:
+                return SemanticLexicalRetrievalResult(
+                    recommendations=result.recommendations,
+                    trace=result.trace,
+                    semantic_trace=SemanticLexicalRescueTrace(
+                        status=SemanticLexicalRescueStatus.NOT_NEEDED,
+                        base_bm25_ids=(),
+                        retry_bm25_ids=(),
+                        base_bm25_status="skipped",
+                        retry_bm25_status="skipped",
+                        private_dense_status="skipped",
+                        private_dense_candidate_count=0,
+                        compatible_dense_candidate_count=0,
+                        expansion_term_count=0,
+                        retry_count=0,
+                    ),
+                )
             if requirement_probe_policy is DISABLED_REQUIREMENT_PROBE_POLICY:
                 return result
             return RequirementProbeRetrievalResult(
@@ -602,7 +1371,31 @@ class HybridRetriever:
             bm25_ids = ()
             bm25_status = "unavailable"
 
-        if self.dense_available:
+        if semantic_rescue_enabled:
+            return self._semantic_lexical_result(
+                dense_query_text=dense_query_text,
+                lexical_text=lexical_text,
+                category_text=semantic_rescue_category,
+                top_k=top_k,
+                structural_support=structural_support,
+                base_bm25_ids=bm25_ids,
+                base_bm25_status=bm25_status,
+            )
+
+        bm25_has_structural_support = (
+            structural_support is None
+            or bool(structural_support.intersection(bm25_ids))
+        )
+        dense_requested = (
+            use_dense
+            or (
+                structural_support is not None
+                and bm25_status == "ok"
+                and not bm25_has_structural_support
+            )
+            or (dense_rescue_on_bm25_failure and bm25_status != "ok")
+        )
+        if self.dense_available and dense_requested:
             try:
                 dense_ids = tuple(self._dense(dense_query_text))
             except Exception:
@@ -610,6 +1403,9 @@ class HybridRetriever:
                 dense_status: RouteStatus = "error"
             else:
                 dense_status = "ok" if dense_ids else "empty"
+        elif self.dense_available:
+            dense_ids = ()
+            dense_status = "skipped"
         else:
             dense_ids = ()
             dense_status = "unavailable"

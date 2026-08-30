@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "rollout_id": "phase16c-buying-prefix-user-directed-rollout-20260830",
+  "status": "active_by_explicit_user_direction",
+  "active_policy": "buying-only-top3-prefix-question-v3",
+  "decision_basis": {
+    "automatic_promotion": false,
+    "explicit_user_direction": true,
+    "fresh_target_disjoint_holdout_completed": false,
+    "interpretation": "The candidate is deployed as the user's selected best measured architecture, not as a claim of statistically confirmed generalization."
+  },
+  "active_flow": {
+    "scope": "stable explicit buying sessions only",
+    "safe_structural_tier_at_most_three": "return the complete tier without a question",
+    "safe_structural_tier_over_three_with_informative_question": "return the literal ranked prefix of at most three and ask the question",
+    "browsing_tentative_override_contradiction_free_text_or_fault": "retain the protected fail-open behavior",
+    "final_turn": "return the available slate without a question",
+    "retrieval_changed": false,
+    "ranking_changed": false
+  },
+  "starter": {
+    "path": "starter/agent.py",
+    "previous_sha256": "1eb6082202379c4f1af81fbd01cbca4d52c5533858d91d6eaf5450d5a2f6b2d5",
+    "active_sha256": "76f95f65c87df2691a0f7141cc0920276fc3bf41e617e174672bc98012735afb"
+  },
+  "post_rollout_conformance": {
+    "sample_count": 200,
+    "hit_rate_at_10": 0.985,
+    "mrr": 0.744397,
+    "mttc": 2.445,
+    "efficiency": 0.8555,
+    "recommended_technical_score": 0.886919,
+    "question_with_prefix": 72,
+    "question_withheld": 0,
+    "exposure_validation_fallbacks": 0,
+    "reported_token_usage": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0
+    },
+    "exactly_matches_frozen_phase16c_candidate": true
+  },
+  "exploratory_comparison": {
+    "technical_score_delta_vs_baseline": 0.018002,
+    "technical_score_delta_vs_withholding_v2": 0.000525,
+    "hit_rate_delta_vs_withholding_v2": 0.005,
+    "mrr_delta_vs_withholding_v2": -0.01225,
+    "mttc_delta_vs_withholding_v2": -0.085,
+    "paired_utility_bootstrap_95": [
+      -0.006275,
+      0.010825
+    ],
+    "confidence_interval_crosses_zero": true
+  },
+  "post_rollout_verification": {
+    "focused_tests_passed": 64,
+    "complete_tests_passed": 692,
+    "phase13_oracle_cases": 45600,
+    "phase13_oracle_sha256": "b0b83da7d111ff66c3f3452e64337143ed376a9b9926779cd37259dc9ea114be",
+    "git_diff_check_passed": true
+  },
+  "reproducibility": {
+    "diagnostic_path": "benchmarks/diagnostics/phase16c-buying-prefix-public-20260830.json",
+    "diagnostic_sha256": "91a6931db0d85989e1f21c6a8d33c998cbdf394212bd98518b6b515895390a26",
+    "historical_pre_rollout_lock": "docs/phase16c_buying_prefix_implementation_lock.json",
+    "historical_pre_rollout_lock_sha256": "cd421af12fe9c2369b4d030b2317f9e64f8e1290bdee10a560151d2de4330f81",
+    "historical_lock_note": "The implementation lock intentionally preserves the exact opt-in candidate evaluated before rollout. The user-authorized starter switch and adapter-conformance test updates are post-lock changes."
+  }
+}

@@ -1,0 +1,327 @@
+{
+  "backend_startup": {
+    "peak_rss_after_bytes": 529448960,
+    "peak_rss_before_bytes": 236077056,
+    "phase0_peak_rss_reference_bytes": 609452032,
+    "wall_seconds": 3.669988
+  },
+  "dataset": {
+    "catalog_sha256": "da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67",
+    "evaluation_sha256": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+    "full_sample_count": 200
+  },
+  "decision": {
+    "adopt": false,
+    "reason": "The smoke run is diagnostic and cannot promote a policy.",
+    "status": "smoke_only"
+  },
+  "experiment_id": "phase2-lexicographic-exact-evidence-v1",
+  "full": {
+    "reason": "smoke_only_requested",
+    "status": "not_run"
+  },
+  "hypothesis": "A lexicographic exact-evidence layer can improve reciprocal rank without changing Phase 13 recall, questions, retrieval, or slate width.",
+  "isolated_change": {
+    "baseline_ranking": "stage_a",
+    "candidate_ranking": "phase2-lexicographic-exact-evidence-v1",
+    "candidate_set_additions_or_filters": 0,
+    "decision_policy": "protected_phase13",
+    "question_policy_changed": false,
+    "recommendation_width_changed": false
+  },
+  "privacy": {
+    "aggregate_only": true,
+    "contains_identifiers_messages_queries_profiles_or_candidate_lists": false,
+    "labels_used_only_after_agent_replay": true,
+    "runtime_received_evaluation_labels": false
+  },
+  "report_id": "phase2-lexicographic-exact-evidence-ab-20260830",
+  "reproducibility": {
+    "phase0_baseline_sha256": "083c0c3ac84324cc03154a3e3bfe3ca52a72f0e8e99c93c8c2d18b850a22dbe3",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14",
+    "source_sha256": {
+      "conversational_search/exact_evidence.py": "877131b059e9e3e5008a720daa178511d5c1fdb061754b93586cb21b6a99dee7",
+      "conversational_search/orchestration.py": "893026f5d09d8731ec882e57832993663a30b557fa810c51dc097eb373ae105b",
+      "conversational_search/ranking.py": "b96ef16be523b08c1ce1c3f1142dc5bb08164aae36119bb9494cb34dd7006b67",
+      "conversational_search/retrieval.py": "cbc9084df49bb520d85e9267327c16faae454fb7a1f4a71d89923be7446ebab9",
+      "conversational_search/service.py": "ea62322932d404bf5637b23ad6a1902fdd0413a30019a0a717d9cb1728eed769",
+      "evaluator/local_evaluator.py": "79a5ea06f9a1b8c5036f30efa85dc1f36b8f6b06eb8feb8f545dfa767bc45564",
+      "scripts/run_phase2_exact_evidence_ablations.py": "25e30dfd903cbe14b322eb00eaa068f81d55a3a8e58738f7666c4cdefcde0e58",
+      "starter/agent.py": "990843888a835ae4101a9c5287d8fa04947029c1a3db51cb157a306e86ba95e2"
+    }
+  },
+  "run_configuration": {
+    "environment": {
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "PYTORCH_ENABLE_MPS_FALLBACK": "0",
+      "TOKENIZERS_PARALLELISM": "false",
+      "TTSC_ONNX_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1"
+    },
+    "execution": "strictly_sequential_cpu",
+    "external_api_calls": 0,
+    "fresh_agent_state_per_variant": true,
+    "gpu_or_mps": false,
+    "processes": 1,
+    "run_order": [
+      "smoke_candidate",
+      "smoke_baseline",
+      "smoke_candidate_replay",
+      "full_candidate_if_authorized",
+      "full_baseline_if_authorized"
+    ],
+    "shared_protocol_capable_backend": true,
+    "threads": 1
+  },
+  "schema_version": 1,
+  "smoke": {
+    "baseline": {
+      "evaluation_wall_seconds": 2.365585,
+      "exact_evidence_health": {
+        "applied": 0,
+        "applied_reordered": 0,
+        "applied_unchanged": 0,
+        "attempts": 0,
+        "candidate_ids_examined": 0,
+        "capability_unavailable": 0,
+        "consistent_support_ids": 0,
+        "evidence_errors": 0,
+        "policy": "stage_a",
+        "validation_errors": 0,
+        "zero_support_fail_open": 0
+      },
+      "official_metrics": {
+        "efficiency": 0.7625,
+        "hit_rate_at_10": 0.975,
+        "mrr": 0.530208,
+        "mttc": 3.375,
+        "recommended_technical_score": 0.799062,
+        "reported_token_usage": {
+          "completion_tokens": 0,
+          "prompt_tokens": 0,
+          "total_tokens": 0
+        },
+        "sample_count": 40
+      },
+      "orchestration_health": {
+        "backend_invalidations": 0,
+        "cached_id_references": 6826,
+        "cached_id_utf8_bytes": 68260,
+        "capacity": 256,
+        "capacity_evictions": 0,
+        "cold_misses": 40,
+        "decisions": 134,
+        "dependency_misses": 52,
+        "entries": 40,
+        "fault_invalidations": 0,
+        "hits": 42,
+        "lookups": 134,
+        "maximum_id_characters": 64,
+        "maximum_ids_per_entry": 200,
+        "policy": "exact_ranking_reuse",
+        "reasons": {
+          "cold_cache": 40,
+          "exact_dependency_hit": 42,
+          "ranking_dependencies_changed": 52
+        },
+        "reranks_avoided": 42,
+        "reset_invalidations": 0,
+        "retained_cache_bytes": 414830,
+        "retrievals_avoided": 42,
+        "reuses": 42,
+        "searches": 92,
+        "skips": 0,
+        "store_rejections": 0,
+        "stores": 92
+      },
+      "peak_rss_bytes": 621903872,
+      "ranking_health": {
+        "attempts": 92,
+        "failures": 0,
+        "policy": "stage_a",
+        "successes": 92,
+        "unavailable_skips": 0
+      },
+      "respond_latency_ms": {
+        "count": 134,
+        "max": 63.046375,
+        "p50": 17.239083,
+        "p90": 37.546213,
+        "p95": 43.667694,
+        "p99": 56.370238,
+        "total": 2355.460246,
+        "warm_count": 133,
+        "warm_p95": 43.758025
+      },
+      "response_audit": {
+        "invalid_api_responses": 0,
+        "response_exceptions": 0
+      },
+      "retained_agent_bytes": 515054,
+      "route_health": {
+        "bm25": {
+          "ok": 92
+        },
+        "candidate_document_calls": 92,
+        "candidate_protocol_evidence_calls": 0,
+        "dense": {
+          "ok": 92
+        },
+        "fallback_turns": 0
+      },
+      "runtime_network_attempts": 0
+    },
+    "candidate": {
+      "evaluation_wall_seconds": 3.016509,
+      "exact_evidence_health": {
+        "applied": 81,
+        "applied_reordered": 81,
+        "applied_unchanged": 0,
+        "attempts": 84,
+        "candidate_ids_examined": 14319,
+        "capability_unavailable": 0,
+        "consistent_support_ids": 2901,
+        "evidence_errors": 0,
+        "policy": "phase2-lexicographic-exact-evidence-v1",
+        "validation_errors": 0,
+        "zero_support_fail_open": 3
+      },
+      "official_metrics": {
+        "efficiency": 0.8125,
+        "hit_rate_at_10": 0.975,
+        "mrr": 0.656558,
+        "mttc": 2.875,
+        "recommended_technical_score": 0.846967,
+        "reported_token_usage": {
+          "completion_tokens": 0,
+          "prompt_tokens": 0,
+          "total_tokens": 0
+        },
+        "sample_count": 40
+      },
+      "orchestration_health": {
+        "backend_invalidations": 0,
+        "cached_id_references": 6807,
+        "cached_id_utf8_bytes": 68070,
+        "capacity": 256,
+        "capacity_evictions": 0,
+        "cold_misses": 40,
+        "decisions": 114,
+        "dependency_misses": 44,
+        "entries": 40,
+        "fault_invalidations": 0,
+        "hits": 30,
+        "lookups": 114,
+        "maximum_id_characters": 64,
+        "maximum_ids_per_entry": 200,
+        "policy": "exact_ranking_reuse",
+        "reasons": {
+          "cold_cache": 40,
+          "exact_dependency_hit": 30,
+          "ranking_dependencies_changed": 44
+        },
+        "reranks_avoided": 30,
+        "reset_invalidations": 0,
+        "retained_cache_bytes": 413709,
+        "retrievals_avoided": 30,
+        "reuses": 30,
+        "searches": 84,
+        "skips": 0,
+        "store_rejections": 0,
+        "stores": 84
+      },
+      "peak_rss_bytes": 620953600,
+      "ranking_health": {
+        "attempts": 84,
+        "failures": 0,
+        "policy": "phase2-lexicographic-exact-evidence-v1",
+        "successes": 84,
+        "unavailable_skips": 0
+      },
+      "respond_latency_ms": {
+        "count": 114,
+        "max": 137.477458,
+        "p50": 26.619521,
+        "p90": 53.474675,
+        "p95": 57.298302,
+        "p99": 84.94298,
+        "total": 3006.309291,
+        "warm_count": 113,
+        "warm_p95": 57.310375
+      },
+      "response_audit": {
+        "invalid_api_responses": 0,
+        "response_exceptions": 0
+      },
+      "retained_agent_bytes": 502435,
+      "route_health": {
+        "bm25": {
+          "ok": 84
+        },
+        "candidate_document_calls": 84,
+        "candidate_protocol_evidence_calls": 84,
+        "dense": {
+          "ok": 84
+        },
+        "fallback_turns": 0
+      },
+      "runtime_network_attempts": 0
+    },
+    "candidate_replay_exactness": {
+      "actions_equal": true,
+      "deterministic_health_equal": true,
+      "evaluator_payload_equal": true,
+      "response_behavior_equal": true
+    },
+    "common_action_equivalence": {
+      "common_turns": 114,
+      "question_or_width_mismatches": 0,
+      "questions_and_widths_equal_on_common_turns": true
+    },
+    "decision_gate": {
+      "all_smoke_variants_fault_free": true,
+      "all_smoke_variants_zero_token": true,
+      "authorize_full": true,
+      "candidate_exercises_exact_evidence": true,
+      "candidate_has_no_baseline_hit_loss": true,
+      "candidate_hit_rate_not_below_baseline": true,
+      "candidate_replay_behavior_exact": true,
+      "candidate_replay_deterministic_health_exact": true,
+      "candidate_replay_evaluator_exact": true,
+      "questions_and_widths_unchanged_on_common_turns": true
+    },
+    "metric_delta": {
+      "efficiency": 0.05,
+      "hit_rate_at_10": 0.0,
+      "mrr": 0.12635,
+      "mttc": -0.5,
+      "recommended_technical_score": 0.047905
+    },
+    "paired_quality": {
+      "bootstrap": {
+        "lower_95": 0.014508929,
+        "replicates": 10000,
+        "seed": 20260830,
+        "strata": 4,
+        "upper_95": 0.082633929
+      },
+      "mcnemar_exact_two_sided_p": 1.0,
+      "mean_utility_delta": 0.047904762,
+      "transitions": {
+        "baseline_only_hit": 0,
+        "both_hit": 39,
+        "both_miss": 1,
+        "candidate_only_hit": 0
+      }
+    },
+    "sample_count": 40,
+    "selection": {
+      "cases_per_scenario": 10,
+      "selection_salt_sha256": "736c5d0ea176345bd199b5a080288baeb8b514533eee2ed52886fbe1acbff689"
+    }
+  }
+}

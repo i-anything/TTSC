@@ -19,6 +19,15 @@ BGE_MAX_SEQUENCE_LENGTH = 512
 BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 BGE_SOURCE_ONNX_SHA256 = "828e1496d7fabb79cfa4dcd84fa38625c0d3d21da474a00f08db0f559940cf35"
 
+ARCTIC_MODEL_ID = "Snowflake/snowflake-arctic-embed-m-v1.5"
+ARCTIC_MODEL_REVISION = "97eab2e17fcb7ccb8bb94d6e547898fa1a6a0f47"
+ARCTIC_DIMENSION = 768
+ARCTIC_MAX_SEQUENCE_LENGTH = 512
+ARCTIC_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+ARCTIC_SOURCE_ONNX_SHA256 = (
+    "a18f437b2466863901a0bdc14904cf93246f5ecce0b656fc773bc2b7b2f84f6e"
+)
+
 
 def sha256_file(path: str | Path) -> str:
     digest = hashlib.sha256()
@@ -47,6 +56,7 @@ class EncoderMetadata:
     license: str
     provider: str
     compute_dtype: str
+    asset_identity_sha256: str = ""
 
 
 class Embedder(Protocol):
@@ -57,8 +67,70 @@ class Embedder(Protocol):
     def encode(self, texts: Sequence[str], batch_size: int) -> np.ndarray: ...
 
 
-class OnnxBgeEncoder:
-    """Offline BGE-small encoder backed only by ONNX Runtime's CPU provider."""
+@dataclass(frozen=True)
+class _ModelContract:
+    model_id: str
+    revision: str
+    source_model_sha256: str
+    dimension: int
+    max_sequence_length: int
+    query_prefix: str
+    license: str
+    output_name: str
+    output_is_sentence_embedding: bool
+    requires_external_data: bool
+
+
+def model_asset_identity_sha256(manifest: object) -> str:
+    """Return a host-independent identity for runtime-relevant model assets."""
+
+    if not isinstance(manifest, dict):
+        raise CatalogError("model manifest must be an object")
+    model = manifest.get("model")
+    tokenizer = manifest.get("tokenizer")
+    if not isinstance(model, dict) or not isinstance(tokenizer, dict):
+        raise CatalogError("model manifest is missing model or tokenizer metadata")
+    payload = {
+        "schema_version": manifest.get("schema_version"),
+        "model": model,
+        "tokenizer": tokenizer,
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
+    return hashlib.sha256(encoded).hexdigest()
+
+
+_MODEL_CONTRACTS = {
+    (BGE_MODEL_ID, BGE_MODEL_REVISION): _ModelContract(
+        model_id=BGE_MODEL_ID,
+        revision=BGE_MODEL_REVISION,
+        source_model_sha256=BGE_SOURCE_ONNX_SHA256,
+        dimension=BGE_DIMENSION,
+        max_sequence_length=BGE_MAX_SEQUENCE_LENGTH,
+        query_prefix=BGE_QUERY_PREFIX,
+        license="MIT",
+        output_name="last_hidden_state",
+        output_is_sentence_embedding=False,
+        requires_external_data=False,
+    ),
+    (ARCTIC_MODEL_ID, ARCTIC_MODEL_REVISION): _ModelContract(
+        model_id=ARCTIC_MODEL_ID,
+        revision=ARCTIC_MODEL_REVISION,
+        source_model_sha256=ARCTIC_SOURCE_ONNX_SHA256,
+        dimension=ARCTIC_DIMENSION,
+        max_sequence_length=ARCTIC_MAX_SEQUENCE_LENGTH,
+        query_prefix=ARCTIC_QUERY_PREFIX,
+        license="Apache-2.0",
+        output_name="sentence_embedding",
+        output_is_sentence_embedding=True,
+        requires_external_data=True,
+    ),
+}
+
+
+class OnnxTextEncoder:
+    """Pinned offline text encoder using only ONNX Runtime's CPU provider."""
 
     def __init__(
         self,
@@ -83,7 +155,7 @@ class OnnxBgeEncoder:
         if not manifest_path.is_file():
             raise CatalogError(f"missing model manifest: {manifest_path}")
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        self._validate_manifest(manifest)
+        contract = self._validate_manifest(manifest)
 
         model_path = self._asset_path(root, manifest["model"]["file"])
         tokenizer_path = self._asset_path(root, manifest["tokenizer"]["file"])
@@ -92,6 +164,7 @@ class OnnxBgeEncoder:
                 raise CatalogError("ONNX model checksum mismatch")
             if sha256_file(tokenizer_path) != manifest["tokenizer"]["sha256"]:
                 raise CatalogError("tokenizer checksum mismatch")
+            self._verify_external_data(root, manifest["model"])
 
         session_options = ort.SessionOptions()
         session_options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
@@ -119,8 +192,14 @@ class OnnxBgeEncoder:
             raise CatalogError(f"unexpected ONNX inputs: {self._input_names}")
 
         output_names = {item.name for item in self._session.get_outputs()}
-        if "last_hidden_state" not in output_names:
-            raise CatalogError(f"missing last_hidden_state output: {sorted(output_names)}")
+        if contract.output_name not in output_names:
+            raise CatalogError(
+                f"missing {contract.output_name} output: {sorted(output_names)}"
+            )
+        self._output_name = contract.output_name
+        self._output_is_sentence_embedding = (
+            contract.output_is_sentence_embedding
+        )
 
         self._tokenizer = Tokenizer.from_file(str(tokenizer_path))
         self._pad_id = self._tokenizer.token_to_id("[PAD]")
@@ -135,15 +214,16 @@ class OnnxBgeEncoder:
             source_model_sha256=manifest["model"]["source_sha256"],
             asset_manifest_sha256=sha256_file(manifest_path),
             tokenizer_sha256=manifest["tokenizer"]["sha256"],
-            dimension=BGE_DIMENSION,
-            max_sequence_length=BGE_MAX_SEQUENCE_LENGTH,
+            dimension=contract.dimension,
+            max_sequence_length=contract.max_sequence_length,
             pooling="cls",
             normalization="l2_float32",
             document_prefix="",
-            query_prefix=BGE_QUERY_PREFIX,
-            license="MIT",
+            query_prefix=contract.query_prefix,
+            license=contract.license,
             provider="CPUExecutionProvider",
             compute_dtype="int8_weights_float32_output",
+            asset_identity_sha256=model_asset_identity_sha256(manifest),
         )
 
     @staticmethod
@@ -164,32 +244,70 @@ class OnnxBgeEncoder:
             raise ValueError("ONNX thread count must be positive")
         return value
 
-    @staticmethod
-    def _validate_manifest(manifest: object) -> None:
+    @classmethod
+    def _validate_manifest(cls, manifest: object) -> _ModelContract:
         if not isinstance(manifest, dict) or manifest.get("schema_version") != 1:
             raise CatalogError("unsupported model manifest schema")
         model = manifest.get("model")
         tokenizer = manifest.get("tokenizer")
         if not isinstance(model, dict) or not isinstance(tokenizer, dict):
             raise CatalogError("model manifest is missing model or tokenizer metadata")
+        contract = _MODEL_CONTRACTS.get(
+            (model.get("id"), model.get("revision"))
+        )
+        if contract is None:
+            raise CatalogError("model manifest identifies an unsupported encoder")
         expected = {
-            "id": BGE_MODEL_ID,
-            "revision": BGE_MODEL_REVISION,
-            "source_sha256": BGE_SOURCE_ONNX_SHA256,
-            "dimension": BGE_DIMENSION,
-            "max_sequence_length": BGE_MAX_SEQUENCE_LENGTH,
+            "id": contract.model_id,
+            "revision": contract.revision,
+            "source_sha256": contract.source_model_sha256,
+            "dimension": contract.dimension,
+            "max_sequence_length": contract.max_sequence_length,
             "pooling": "cls",
             "document_prefix": "",
-            "query_prefix": BGE_QUERY_PREFIX,
+            "query_prefix": contract.query_prefix,
         }
         for key, value in expected.items():
             if model.get(key) != value:
                 raise CatalogError(
                     f"model manifest {key} mismatch: {model.get(key)!r} != {value!r}"
                 )
-        for section, key in ((model, "file"), (model, "sha256"), (tokenizer, "file"), (tokenizer, "sha256")):
+        for section, key in (
+            (model, "file"),
+            (model, "sha256"),
+            (tokenizer, "file"),
+            (tokenizer, "sha256"),
+        ):
             if not isinstance(section.get(key), str) or not section[key]:
                 raise CatalogError(f"model manifest has invalid {key}")
+        external_data = model.get("external_data", [])
+        if not isinstance(external_data, list) or (
+            contract.requires_external_data != bool(external_data)
+        ):
+            raise CatalogError("model manifest external-data contract mismatch")
+        for record in external_data:
+            if (
+                not isinstance(record, dict)
+                or set(record) != {"file", "bytes", "sha256"}
+                or not isinstance(record.get("file"), str)
+                or Path(record["file"]).name != record["file"]
+                or isinstance(record.get("bytes"), bool)
+                or not isinstance(record.get("bytes"), int)
+                or record["bytes"] <= 0
+                or not isinstance(record.get("sha256"), str)
+                or len(record["sha256"]) != 64
+            ):
+                raise CatalogError("model manifest has invalid external data")
+        return contract
+
+    @classmethod
+    def _verify_external_data(cls, root: Path, model: dict) -> None:
+        for record in model.get("external_data", []):
+            path = cls._asset_path(root, record["file"])
+            if path.stat().st_size != record["bytes"]:
+                raise CatalogError("ONNX external-data size mismatch")
+            if sha256_file(path) != record["sha256"]:
+                raise CatalogError("ONNX external-data checksum mismatch")
 
     def token_lengths(self, texts: Sequence[str]) -> Sequence[int]:
         self._tokenizer.no_truncation()
@@ -252,10 +370,15 @@ class OnnxBgeEncoder:
                 ),
             }
             feeds = {name: arrays[name] for name in self._input_names}
-            output = self._session.run(["last_hidden_state"], feeds)[0]
-            if output.ndim != 3 or output.shape[0] != len(indexes):
-                raise CatalogError(f"unexpected ONNX output shape: {output.shape}")
-            pooled = np.asarray(output[:, 0, :], dtype=np.float32)
+            output = self._session.run([self._output_name], feeds)[0]
+            if self._output_is_sentence_embedding:
+                pooled = np.asarray(output, dtype=np.float32)
+            else:
+                if output.ndim != 3 or output.shape[0] != len(indexes):
+                    raise CatalogError(
+                        f"unexpected ONNX output shape: {output.shape}"
+                    )
+                pooled = np.asarray(output[:, 0, :], dtype=np.float32)
             if pooled.shape != (len(indexes), self.metadata.dimension):
                 raise CatalogError(f"unexpected pooled embedding shape: {pooled.shape}")
             if not np.isfinite(pooled).all():
@@ -266,3 +389,7 @@ class OnnxBgeEncoder:
             pooled /= norms
             result[indexes] = pooled
         return result
+
+
+class OnnxBgeEncoder(OnnxTextEncoder):
+    """Backward-compatible name for the manifest-selected ONNX encoder."""

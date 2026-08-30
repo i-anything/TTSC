@@ -106,7 +106,13 @@ def ranking_signature(
         route_weights.dense,
         ranking_policy,
         tuple(
-            (requirement.value, requirement.source, requirement.attribute)
+            (
+                requirement.value,
+                requirement.source,
+                requirement.attribute,
+                requirement.strength,
+                requirement.importance.value,
+            )
             for requirement in state.requirements
         ),
         state.excluded,

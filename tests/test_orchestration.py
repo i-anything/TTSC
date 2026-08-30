@@ -6,7 +6,11 @@ from collections.abc import Mapping
 from dataclasses import replace
 from enum import Enum
 
-from conversational_search.intent import IntentState, Requirement
+from conversational_search.intent import (
+    IntentState,
+    Requirement,
+    RequirementImportance,
+)
 from conversational_search.orchestration import (
     ALWAYS_SEARCH_ORCHESTRATION_POLICY,
     BackendSnapshotToken,
@@ -66,6 +70,7 @@ def _decide(
     backend_snapshot_token: BackendSnapshotToken | None = _SNAPSHOT,
     cache_eligible: bool = True,
     profile_digest: bytes = DEFAULT_PROFILE_DEPENDENCY_DIGEST,
+    retrieval_policy: str | None = None,
 ) -> TurnDecision:
     return planner.decide(
         session_id,
@@ -78,6 +83,7 @@ def _decide(
         backend_snapshot_token,
         cache_eligible,
         profile_digest=profile_digest,
+        retrieval_policy=retrieval_policy,
     )
 
 
@@ -94,6 +100,7 @@ def _prime(
     backend_snapshot_token: BackendSnapshotToken = _SNAPSHOT,
     ranked_ids: tuple[str, ...] = _RANKED_IDS,
     profile_digest: bytes = DEFAULT_PROFILE_DEPENDENCY_DIGEST,
+    retrieval_policy: str | None = None,
 ) -> TurnDecision:
     decision = _decide(
         planner,
@@ -106,6 +113,7 @@ def _prime(
         result_count=result_count,
         backend_snapshot_token=backend_snapshot_token,
         profile_digest=profile_digest,
+        retrieval_policy=retrieval_policy,
     )
     if decision.action is not QueryAction.SEARCH:
         raise AssertionError(f"expected cold SEARCH, got {decision.action!r}")
@@ -322,6 +330,34 @@ class RankingDependencyTests(unittest.TestCase):
         )
         self.assertIs(_decide(planner).action, QueryAction.SEARCH)
 
+    def test_dense_routing_policy_is_an_exact_cache_dependency(self) -> None:
+        planner = OrchestrationPlanner()
+        _prime(planner, retrieval_policy="dense-always-v1")
+
+        changed = _decide(
+            planner,
+            retrieval_policy="protocol-bm25-first-structural-gate-v2:abc123",
+        )
+
+        self.assertIs(changed.action, QueryAction.SEARCH)
+        self.assertEqual(changed.reason, "ranking_dependencies_changed")
+        self.assertTrue(
+            planner.commit("session", changed, _SNAPSHOT, _RANKED_IDS)
+        )
+        self.assertIs(
+            _decide(
+                planner,
+                retrieval_policy=(
+                    "protocol-bm25-first-structural-gate-v2:abc123"
+                ),
+            ).action,
+            QueryAction.REUSE,
+        )
+        self.assertIs(
+            _decide(planner, retrieval_policy="dense-always-v1").action,
+            QueryAction.SEARCH,
+        )
+
     def test_profile_dependency_must_be_exactly_thirty_two_bytes(self) -> None:
         planner = OrchestrationPlanner()
         for invalid in (b"", b"x" * 31, b"x" * 33):
@@ -365,6 +401,27 @@ class RankingDependencyTests(unittest.TestCase):
                     _BASE_STATE,
                     requirements=(
                         replace(requirements[0], attribute="feature"),
+                        requirements[1],
+                    ),
+                )
+            },
+            "requirement strength": {
+                "state": replace(
+                    _BASE_STATE,
+                    requirements=(
+                        replace(requirements[0], strength="soft"),
+                        requirements[1],
+                    ),
+                )
+            },
+            "requirement importance": {
+                "state": replace(
+                    _BASE_STATE,
+                    requirements=(
+                        replace(
+                            requirements[0],
+                            importance=RequirementImportance.PREFER,
+                        ),
                         requirements[1],
                     ),
                 )

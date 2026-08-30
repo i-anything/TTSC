@@ -11,8 +11,14 @@ from unittest import mock
 from conversational_search.retrieval import (
     HybridRetriever,
     MAX_CANDIDATE_DOCUMENTS,
+    PROTOCOL_EVIDENCE_CAPABILITY,
     RetrievalResult,
     RetrievalTrace,
+)
+from conversational_search.protocol import (
+    MAX_EVIDENCE_TEXT_CHARACTERS,
+    DisclosureCard,
+    ProductProtocolEvidence,
 )
 from conversational_search.ranking import CandidateDocument
 from conversational_search.strategy import RouteWeights
@@ -80,6 +86,8 @@ class HybridRetrieverTest(unittest.TestCase):
                 "details": {},
                 "store": "Third",
                 "description": [],
+                "price": 59.99,
+                "rating_number": 25,
             },
             {
                 "parent_asin": "B000000004",
@@ -215,6 +223,113 @@ class HybridRetrieverTest(unittest.TestCase):
         self.assertEqual(len(encoder.calls), 1)
         self.assertEqual(dense.calls, [])
 
+    def test_conditional_dense_skips_encoder_when_bm25_is_healthy(self) -> None:
+        encoder = FakeEncoder()
+        dense = FakeDenseIndex([FakeHit("B000000003")])
+        retriever = HybridRetriever(self.catalog_path, encoder, dense)
+
+        result = retriever.search_with_trace(
+            "dense alpha query",
+            "alpha",
+            top_k=2,
+            use_dense=False,
+        )
+
+        self.assertEqual(encoder.calls, [])
+        self.assertEqual(dense.calls, [])
+        self.assertEqual(result.trace.bm25_status, "ok")
+        self.assertEqual(result.trace.dense_status, "skipped")
+        self.assertEqual(result.trace.dense_ids, ())
+        self.assertFalse(result.trace.used_fallback)
+
+    def test_structural_gate_skips_dense_only_when_bm25_contains_support(
+        self,
+    ) -> None:
+        encoder = FakeEncoder()
+        dense = FakeDenseIndex([FakeHit("B000000003")])
+        retriever = HybridRetriever(self.catalog_path, encoder, dense)
+
+        supported = retriever.search_with_trace(
+            "dense alpha query",
+            "alpha",
+            top_k=3,
+            use_dense=False,
+            bm25_only_support_ids=("B000000001",),
+        )
+
+        self.assertEqual(supported.trace.bm25_status, "ok")
+        self.assertEqual(supported.trace.dense_status, "skipped")
+        self.assertEqual(encoder.calls, [])
+
+        unsupported = retriever.search_with_trace(
+            "dense alpha query",
+            "alpha",
+            top_k=3,
+            use_dense=False,
+            bm25_only_support_ids=("B000000003",),
+        )
+
+        self.assertEqual(unsupported.trace.bm25_status, "ok")
+        self.assertEqual(unsupported.trace.dense_status, "ok")
+        self.assertEqual(encoder.calls, [(["dense alpha query"], 1)])
+        self.assertIn("B000000003", unsupported.trace.dense_ids)
+
+    def test_structural_gate_rescues_once_after_bm25_error(self) -> None:
+        encoder = FakeEncoder()
+        dense = FakeDenseIndex([FakeHit("B000000003")])
+        retriever = HybridRetriever(self.catalog_path, encoder, dense)
+        retriever._connection.close()
+
+        result = retriever.search_with_trace(
+            "semantic rescue",
+            "alpha",
+            top_k=2,
+            use_dense=False,
+            bm25_only_support_ids=("B000000001",),
+        )
+
+        self.assertEqual(result.trace.bm25_status, "error")
+        self.assertEqual(result.trace.dense_status, "ok")
+        self.assertEqual(encoder.calls, [(["semantic rescue"], 1)])
+        self.assertEqual(len(dense.calls), 1)
+        self.assertEqual(result.recommendations, ("B000000003",))
+
+    def test_conditional_dense_runs_once_when_bm25_is_empty(self) -> None:
+        encoder = FakeEncoder()
+        dense = FakeDenseIndex([FakeHit("B000000003")])
+        retriever = HybridRetriever(self.catalog_path, encoder, dense)
+
+        result = retriever.search_with_trace(
+            "semantic paraphrase",
+            "the and please",
+            top_k=2,
+            use_dense=False,
+        )
+
+        self.assertEqual(encoder.calls, [(["semantic paraphrase"], 1)])
+        self.assertEqual(len(dense.calls), 1)
+        self.assertEqual(result.trace.bm25_status, "empty")
+        self.assertEqual(result.trace.dense_status, "ok")
+        self.assertEqual(result.recommendations, ("B000000003",))
+
+    def test_conditional_dense_rescue_can_be_disabled_explicitly(self) -> None:
+        encoder = FakeEncoder()
+        dense = FakeDenseIndex([FakeHit("B000000003")])
+        retriever = HybridRetriever(self.catalog_path, encoder, dense)
+
+        result = retriever.search_with_trace(
+            "semantic paraphrase",
+            "the and please",
+            top_k=2,
+            use_dense=False,
+            dense_rescue_on_bm25_failure=False,
+        )
+
+        self.assertEqual(encoder.calls, [])
+        self.assertEqual(dense.calls, [])
+        self.assertEqual(result.trace.dense_status, "skipped")
+        self.assertTrue(result.trace.used_fallback)
+
     def test_explicit_route_weights_change_cross_route_order(self) -> None:
         encoder = FakeEncoder()
         dense = FakeDenseIndex([FakeHit("B000000003")])
@@ -324,6 +439,226 @@ class HybridRetrieverTest(unittest.TestCase):
         )
         with self.assertRaises(FrozenInstanceError):
             documents[0].text = "changed"  # type: ignore[misc]
+
+    def test_protocol_evidence_is_strictly_opt_in(self) -> None:
+        protected = HybridRetriever(self.catalog_path, None, None)
+        enabled = HybridRetriever(
+            self.catalog_path,
+            None,
+            None,
+            protocol_evidence=True,
+        )
+
+        self.assertIsNone(protected.protocol_evidence_capability)
+        self.assertEqual(
+            protected.candidate_protocol_evidence(("B000000003",)),
+            (),
+        )
+        self.assertIs(
+            enabled.protocol_evidence_capability,
+            PROTOCOL_EVIDENCE_CAPABILITY,
+        )
+        self.assertEqual(
+            enabled.candidate_protocol_evidence(
+                ("B000000003", "B000000001", "B000000003")
+            ),
+            (
+                ProductProtocolEvidence(
+                    parent_asin="B000000003",
+                    coarse_category="Boots",
+                    card=DisclosureCard(
+                        "Third product",
+                        ("Waterproof", "budget around $59.99"),
+                        ("Waterproof",),
+                    ),
+                    text=(
+                        "Third product Waterproof budget around $59.99 "
+                        "Waterproof"
+                    ),
+                    price="59.99",
+                    popularity=25,
+                ),
+                ProductProtocolEvidence(
+                    parent_asin="B000000001",
+                    coarse_category="Shoes",
+                    card=DisclosureCard(
+                        "Alpha trail shoe",
+                        ("Alpha trail shoe",),
+                        ("Alpha trail shoe",),
+                    ),
+                    text=(
+                        "Alpha trail shoe Alpha trail shoe Alpha trail shoe"
+                    ),
+                ),
+            ),
+        )
+
+    def test_protocol_builder_failure_preserves_the_protected_bm25_index(
+        self,
+    ) -> None:
+        with mock.patch(
+            "conversational_search.protocol.build_product_protocol_evidence",
+            side_effect=RuntimeError("candidate-only failure"),
+        ) as builder:
+            retriever = HybridRetriever(
+                self.catalog_path,
+                None,
+                None,
+                protocol_evidence=True,
+            )
+
+        self.assertEqual(builder.call_count, 1)
+        self.assertFalse(builder.call_args.kwargs["include_text"])
+        self.assertTrue(retriever.bm25_available)
+        self.assertIsNone(retriever.protocol_evidence_capability)
+        self.assertIn(
+            "RuntimeError: candidate-only failure",
+            retriever.protocol_evidence_initialization_error or "",
+        )
+        self.assertEqual(
+            retriever.search("ignored", "Alpha", top_k=1),
+            ["B000000001"],
+        )
+        self.assertEqual(
+            retriever.candidate_protocol_evidence(("B000000001",)),
+            (),
+        )
+
+    def test_protocol_table_failure_preserves_the_protected_bm25_index(
+        self,
+    ) -> None:
+        with mock.patch.object(
+            HybridRetriever,
+            "_create_protocol_evidence_table",
+            side_effect=RuntimeError("candidate table failure"),
+        ):
+            retriever = HybridRetriever(
+                self.catalog_path,
+                None,
+                None,
+                protocol_evidence=True,
+            )
+
+        self.assertTrue(retriever.bm25_available)
+        self.assertIsNone(retriever.protocol_evidence_capability)
+        self.assertIn(
+            "RuntimeError: candidate table failure",
+            retriever.protocol_evidence_initialization_error or "",
+        )
+        self.assertEqual(
+            retriever.search("ignored", "Alpha", top_k=1),
+            ["B000000001"],
+        )
+
+    def test_protocol_import_failure_preserves_the_protected_bm25_index(
+        self,
+    ) -> None:
+        real_import = __import__
+
+        def guarded_import(name: str, *args: object, **kwargs: object) -> object:
+            if name == "conversational_search.protocol":
+                raise ImportError("candidate import failure")
+            return real_import(name, *args, **kwargs)
+
+        with mock.patch("builtins.__import__", side_effect=guarded_import):
+            retriever = HybridRetriever(
+                self.catalog_path,
+                None,
+                None,
+                protocol_evidence=True,
+            )
+
+        self.assertTrue(retriever.bm25_available)
+        self.assertIsNone(retriever.protocol_evidence_capability)
+        self.assertIn(
+            "ImportError: candidate import failure",
+            retriever.protocol_evidence_initialization_error or "",
+        )
+        self.assertEqual(
+            retriever.search("ignored", "Alpha", top_k=1),
+            ["B000000001"],
+        )
+
+    def test_protocol_exact_candidates_are_conjunctive_and_fail_open(self) -> None:
+        retriever = HybridRetriever(
+            self.catalog_path,
+            None,
+            None,
+            protocol_evidence=True,
+        )
+
+        self.assertEqual(
+            retriever.protocol_exact_candidates("Boots", ("Waterproof",)),
+            ("B000000003",),
+        )
+        self.assertEqual(
+            retriever.protocol_exact_candidates(
+                "Boots",
+                ("Waterproof", "budget around $59.99"),
+            ),
+            ("B000000003",),
+        )
+        self.assertEqual(
+            retriever.protocol_exact_candidates("Shoes", ("Waterproof",)),
+            (),
+        )
+        self.assertEqual(
+            retriever.protocol_exact_constraint_count(
+                "Boots",
+                ("Waterproof", "budget around $59.99", "not present"),
+            ),
+            2,
+        )
+        self.assertEqual(
+            retriever.protocol_exact_constraint_count(
+                "Shoes",
+                ("Waterproof",),
+            ),
+            0,
+        )
+        self.assertEqual(
+            HybridRetriever(self.catalog_path, None, None).protocol_exact_candidates(
+                "Boots",
+                ("Waterproof",),
+            ),
+            (),
+        )
+        self.assertTrue(retriever.protocol_category_exists("  bOoTs  "))
+        self.assertTrue(retriever.protocol_category_exists("Shoes"))
+        self.assertFalse(retriever.protocol_category_exists("Shoe"))
+        self.assertFalse(retriever.protocol_category_exists(""))
+
+    def test_protocol_evidence_does_not_materialize_an_overlong_fts_document(
+        self,
+    ) -> None:
+        large_catalog = Path(self.temporary_directory.name) / "large.jsonl"
+        large_catalog.write_text(
+            json.dumps(
+                {
+                    "parent_asin": "LARGE",
+                    "title": "Compact protocol card",
+                    "categories": ["Shoes"],
+                    "features": ["waterproof"],
+                    "details": {},
+                    "store": "Fixture",
+                    "description": ["x" * 40_000],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        retriever = HybridRetriever(
+            large_catalog,
+            None,
+            None,
+            protocol_evidence=True,
+        )
+
+        evidence = retriever.candidate_protocol_evidence(("LARGE",))
+
+        self.assertEqual(len(evidence), 1)
+        self.assertLess(len(evidence[0].text), MAX_EVIDENCE_TEXT_CHARACTERS)
+        self.assertNotIn("x" * 100, evidence[0].text)
 
     def test_candidate_document_field_labels_and_order_are_exact(self) -> None:
         complete_catalog = Path(self.temporary_directory.name) / "complete.jsonl"

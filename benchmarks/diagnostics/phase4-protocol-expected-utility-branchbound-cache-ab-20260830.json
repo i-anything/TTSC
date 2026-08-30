@@ -1,0 +1,474 @@
+{
+  "backend_startup": {
+    "peak_rss_after_bytes": 533954560,
+    "peak_rss_before_bytes": 236077056,
+    "phase2_peak_rss_reference_bytes": 632963072,
+    "wall_seconds": 3.706524
+  },
+  "dataset": {
+    "catalog_sha256": "da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67",
+    "evaluation_sha256": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+    "full_sample_count": 200
+  },
+  "decision": {
+    "adopt": false,
+    "reason": "The candidate failed at least one frozen smoke safety gate.",
+    "status": "rejected_at_smoke"
+  },
+  "experiment_id": "phase4-protocol-expected-utility-v3-bounded-normalization-cache",
+  "full": {
+    "reason": "smoke_gate_rejected",
+    "status": "not_run"
+  },
+  "hypothesis": "A protocol-aware, reply-simulating expected-utility planner can improve reciprocal rank and conversion decisions over the accepted Phase 2 exact-evidence agent without reducing recall.",
+  "isolated_change": {
+    "baseline_decision_policy": "protected_phase13",
+    "candidate_decision_policy": "phase4-protocol-expected-utility-v1",
+    "candidate_set_additions_or_filters": 0,
+    "external_model_or_api_added": false,
+    "shared_ranking_policy": "phase2-lexicographic-exact-evidence-v1",
+    "shared_slate_policy": "phase13-intent-epoch-continuation-novelty-v1"
+  },
+  "privacy": {
+    "aggregate_only": true,
+    "contains_identifiers_messages_queries_profiles_or_candidate_lists": false,
+    "labels_joined_to_agent_outputs_only_after_replay": true,
+    "labels_used_for_deterministic_subset_selection": true,
+    "runtime_received_labels_directly": false
+  },
+  "report_id": "phase4-protocol-expected-utility-branchbound-cache-ab-20260830",
+  "reproducibility": {
+    "phase2_baseline_sha256": "1e348899c4cc3502b44f6961c8b6bbb7bac70821b5414ba2905f3b9ac0bfedc6",
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14",
+    "source_sha256": {
+      "conversational_search/decision.py": "1d8fee78b78831e4bb9680ab55651cb54107b5505c06b3afe127a1154131d264",
+      "conversational_search/decision_policy.py": "c5462d27a2dcedca24d724cc0ab95312f1c06ddf9bdc04aeee6f51777f7cc033",
+      "conversational_search/exact_evidence.py": "0ea292db23c1942d4e16430e667d16e68739ae7b003916485f6f21f0944fd737",
+      "conversational_search/protocol.py": "81f82131e6bcd2a3994fb67769a6cae980328b0d858cbf3f4231b0b949bf5620",
+      "conversational_search/service.py": "52dc63711e4c0c859fd5a0b53c63b73ee01483d5e50f611390750e5ba4842e79",
+      "conversational_search/utility_planner.py": "66383060948b5e04458583db10ba177d60627ad625570a828e73c7bfb12598ad",
+      "evaluator/local_evaluator.py": "79a5ea06f9a1b8c5036f30efa85dc1f36b8f6b06eb8feb8f545dfa767bc45564",
+      "scripts/run_phase4_expected_utility_ablation.py": "93450cfb2d06d7874b9efa5e25668c9515bf785f157647213bed44b16ee5b3f8",
+      "starter/agent.py": "1eb6082202379c4f1af81fbd01cbca4d52c5533858d91d6eaf5450d5a2f6b2d5"
+    }
+  },
+  "run_configuration": {
+    "environment": {
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "PYTORCH_ENABLE_MPS_FALLBACK": "0",
+      "TOKENIZERS_PARALLELISM": "false",
+      "TTSC_ONNX_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1"
+    },
+    "execution": "strictly_sequential_cpu",
+    "external_api_calls": 0,
+    "fresh_agent_state_per_variant": true,
+    "gpu_or_mps": false,
+    "processes": 1,
+    "run_order": [
+      "smoke_candidate",
+      "smoke_baseline",
+      "smoke_candidate_replay",
+      "full_candidate_if_authorized",
+      "full_baseline_if_authorized"
+    ],
+    "shared_protocol_capable_backend": true,
+    "threads": 1
+  },
+  "schema_version": 1,
+  "smoke": {
+    "action_changes": {
+      "common_turns": 113,
+      "narrower_candidate_slates": 68,
+      "question_changes": 94,
+      "width_changes": 68,
+      "zero_width_candidate_slates": 26
+    },
+    "baseline": {
+      "decision_trace_health": {
+        "fallback_reason": {},
+        "planner_outcome": {},
+        "pruned_questions": {},
+        "simulated_reply_partitions": {},
+        "world_mode": {}
+      },
+      "evaluation_wall_seconds": 2.51129,
+      "exact_evidence_health": {
+        "applied": 81,
+        "applied_reordered": 61,
+        "applied_unchanged": 20,
+        "attempts": 84,
+        "candidate_ids_examined": 14319,
+        "capability_unavailable": 0,
+        "consistent_support_ids": 2901,
+        "evidence_errors": 0,
+        "policy": "phase2-lexicographic-exact-evidence-v1",
+        "validation_errors": 0,
+        "zero_support_fail_open": 3
+      },
+      "official_metrics": {
+        "efficiency": 0.81,
+        "hit_rate_at_10": 0.975,
+        "mrr": 0.67878,
+        "mttc": 2.9,
+        "recommended_technical_score": 0.853134,
+        "reported_token_usage": {
+          "completion_tokens": 0,
+          "prompt_tokens": 0,
+          "total_tokens": 0
+        },
+        "sample_count": 40
+      },
+      "orchestration_health": {
+        "backend_invalidations": 0,
+        "cached_id_references": 6807,
+        "cached_id_utf8_bytes": 68070,
+        "capacity": 256,
+        "capacity_evictions": 0,
+        "cold_misses": 40,
+        "decisions": 115,
+        "dependency_misses": 44,
+        "entries": 40,
+        "fault_invalidations": 0,
+        "hits": 31,
+        "lookups": 115,
+        "maximum_id_characters": 64,
+        "maximum_ids_per_entry": 200,
+        "policy": "exact_ranking_reuse",
+        "reasons": {
+          "cold_cache": 40,
+          "exact_dependency_hit": 31,
+          "ranking_dependencies_changed": 44
+        },
+        "reranks_avoided": 31,
+        "reset_invalidations": 0,
+        "retained_cache_bytes": 413709,
+        "retrievals_avoided": 31,
+        "reuses": 31,
+        "searches": 84,
+        "skips": 0,
+        "store_rejections": 0,
+        "stores": 84
+      },
+      "peak_rss_bytes": 621838336,
+      "protocol_decision_health": {
+        "applied": 0,
+        "candidate_or_evidence_error": 0,
+        "capability_unavailable": 0,
+        "fail_open_evidence": 0,
+        "fail_open_no_candidates": 0,
+        "fail_open_no_support": 0,
+        "fail_open_validation": 0,
+        "policy": "protected_phase13",
+        "presented_total": 0,
+        "question_action_counts": {
+          "budget": 0,
+          "color": 0,
+          "feature": 0,
+          "material": 0,
+          "none": 0,
+          "other": 0,
+          "size": 0,
+          "style": 0,
+          "use_case": 0
+        },
+        "requested_total": 0,
+        "turns": 0,
+        "unsupported_or_disabled": 0,
+        "width_action_counts": {
+          "0": 0,
+          "1": 0,
+          "10": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        }
+      },
+      "ranking_health": {
+        "attempts": 84,
+        "failures": 0,
+        "policy": "phase2-lexicographic-exact-evidence-v1",
+        "successes": 84,
+        "unavailable_skips": 0
+      },
+      "respond_latency_ms": {
+        "count": 115,
+        "max": 76.3345,
+        "p50": 21.975292,
+        "p90": 43.558442,
+        "p95": 49.986954,
+        "p99": 64.530262,
+        "total": 2501.058585,
+        "warm_count": 114,
+        "warm_p95": 50.067252
+      },
+      "response_audit": {
+        "invalid_api_responses": 0,
+        "response_exceptions": 0
+      },
+      "retained_agent_bytes": 503821,
+      "route_health": {
+        "bm25": {
+          "ok": 84
+        },
+        "candidate_document_calls": 84,
+        "candidate_protocol_evidence_calls": 84,
+        "dense": {
+          "ok": 84
+        },
+        "fallback_turns": 0
+      },
+      "runtime_network_attempts": 0
+    },
+    "candidate": {
+      "decision_trace_health": {
+        "fallback_reason": {
+          "initial_browsing_boundary_ambiguity": 15,
+          "no_in_pool_protocol_support": 8,
+          "none": 118,
+          "reply_simulation_budget": 5
+        },
+        "planner_outcome": {
+          "applied": 129,
+          "fail_open_evidence": 4,
+          "fail_open_no_support": 8,
+          "fail_open_validation": 5
+        },
+        "pruned_questions": {
+          "0": 106,
+          "1": 3,
+          "2": 8,
+          "3": 7,
+          "4": 6,
+          "5": 14,
+          "6": 2
+        },
+        "simulated_reply_partitions": {
+          "0": 99,
+          "100": 1,
+          "101": 2,
+          "107": 1,
+          "109": 1,
+          "111": 1,
+          "113": 1,
+          "114": 2,
+          "14": 1,
+          "15": 1,
+          "2": 2,
+          "22": 1,
+          "24": 1,
+          "26": 1,
+          "3": 2,
+          "36": 1,
+          "38": 1,
+          "4": 2,
+          "42": 1,
+          "44": 1,
+          "54": 1,
+          "57": 1,
+          "6": 2,
+          "60": 1,
+          "63": 1,
+          "7": 1,
+          "71": 1,
+          "72": 2,
+          "77": 1,
+          "8": 3,
+          "82": 3,
+          "84": 1,
+          "9": 2,
+          "93": 2,
+          "94": 1
+        },
+        "world_mode": {
+          "ambiguous": 20,
+          "exact": 114,
+          "recovery": 12
+        }
+      },
+      "evaluation_wall_seconds": 7.291356,
+      "exact_evidence_health": {
+        "applied": 142,
+        "applied_reordered": 114,
+        "applied_unchanged": 28,
+        "attempts": 146,
+        "candidate_ids_examined": 25051,
+        "capability_unavailable": 0,
+        "consistent_support_ids": 5004,
+        "evidence_errors": 0,
+        "policy": "phase2-lexicographic-exact-evidence-v1",
+        "validation_errors": 0,
+        "zero_support_fail_open": 4
+      },
+      "official_metrics": {
+        "efficiency": 0.7325,
+        "hit_rate_at_10": 0.975,
+        "mrr": 0.916667,
+        "mttc": 3.675,
+        "recommended_technical_score": 0.909,
+        "reported_token_usage": {
+          "completion_tokens": 0,
+          "prompt_tokens": 0,
+          "total_tokens": 0
+        },
+        "sample_count": 40
+      },
+      "orchestration_health": {
+        "backend_invalidations": 0,
+        "cached_id_references": 6830,
+        "cached_id_utf8_bytes": 68300,
+        "capacity": 256,
+        "capacity_evictions": 0,
+        "cold_misses": 40,
+        "decisions": 146,
+        "dependency_misses": 47,
+        "entries": 40,
+        "fault_invalidations": 0,
+        "hits": 59,
+        "lookups": 146,
+        "maximum_id_characters": 64,
+        "maximum_ids_per_entry": 200,
+        "policy": "exact_ranking_reuse",
+        "reasons": {
+          "cold_cache": 40,
+          "exact_dependency_hit": 59,
+          "ranking_dependencies_changed": 47
+        },
+        "reranks_avoided": 59,
+        "reset_invalidations": 0,
+        "retained_cache_bytes": 415066,
+        "retrievals_avoided": 59,
+        "reuses": 59,
+        "searches": 87,
+        "skips": 0,
+        "store_rejections": 0,
+        "stores": 87
+      },
+      "peak_rss_bytes": 621838336,
+      "protocol_decision_health": {
+        "applied": 129,
+        "candidate_or_evidence_error": 0,
+        "capability_unavailable": 0,
+        "fail_open_evidence": 4,
+        "fail_open_no_candidates": 0,
+        "fail_open_no_support": 8,
+        "fail_open_validation": 5,
+        "policy": "phase4-protocol-expected-utility-v1",
+        "presented_total": 790,
+        "question_action_counts": {
+          "budget": 0,
+          "color": 4,
+          "feature": 19,
+          "material": 6,
+          "none": 90,
+          "other": 25,
+          "size": 0,
+          "style": 1,
+          "use_case": 1
+        },
+        "requested_total": 1460,
+        "turns": 146,
+        "unsupported_or_disabled": 0,
+        "width_action_counts": {
+          "0": 26,
+          "1": 32,
+          "10": 68,
+          "2": 9,
+          "3": 3,
+          "4": 1,
+          "5": 2,
+          "6": 0,
+          "7": 3,
+          "8": 2,
+          "9": 0
+        }
+      },
+      "ranking_health": {
+        "attempts": 87,
+        "failures": 0,
+        "policy": "phase2-lexicographic-exact-evidence-v1",
+        "successes": 87,
+        "unavailable_skips": 0
+      },
+      "respond_latency_ms": {
+        "count": 146,
+        "max": 282.264,
+        "p50": 29.299125,
+        "p90": 152.026001,
+        "p95": 183.45025,
+        "p99": 256.171694,
+        "total": 7278.5405,
+        "warm_count": 145,
+        "warm_p95": 183.730117
+      },
+      "response_audit": {
+        "invalid_api_responses": 0,
+        "response_exceptions": 0
+      },
+      "retained_agent_bytes": 659612,
+      "route_health": {
+        "bm25": {
+          "ok": 87
+        },
+        "candidate_document_calls": 87,
+        "candidate_protocol_evidence_calls": 146,
+        "dense": {
+          "ok": 87
+        },
+        "fallback_turns": 0
+      },
+      "runtime_network_attempts": 0
+    },
+    "candidate_replay_exactness": {
+      "actions_equal": true,
+      "deterministic_health_equal": true,
+      "evaluator_payload_equal": true,
+      "response_behavior_equal": true
+    },
+    "decision_gate": {
+      "all_smoke_variants_fault_free": false,
+      "all_smoke_variants_zero_token": true,
+      "authorize_full": false,
+      "candidate_exercises_expected_utility": true,
+      "candidate_has_no_baseline_hit_loss": true,
+      "candidate_hit_rate_not_below_baseline": true,
+      "candidate_replay_behavior_exact": true,
+      "candidate_replay_deterministic_health_exact": true,
+      "candidate_replay_evaluator_exact": true
+    },
+    "metric_delta": {
+      "efficiency": -0.0775,
+      "hit_rate_at_10": 0.0,
+      "mrr": 0.237887,
+      "mttc": 0.775,
+      "recommended_technical_score": 0.055866
+    },
+    "paired_quality": {
+      "bootstrap": {
+        "lower_95": 0.030303571,
+        "replicates": 10000,
+        "seed": 20260830,
+        "strata": 4,
+        "upper_95": 0.081598214
+      },
+      "mcnemar_exact_two_sided_p": 1.0,
+      "mean_utility_delta": 0.055866071,
+      "transitions": {
+        "baseline_only_hit": 0,
+        "both_hit": 39,
+        "both_miss": 1,
+        "candidate_only_hit": 0
+      }
+    },
+    "sample_count": 40
+  }
+}

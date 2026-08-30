@@ -30,7 +30,7 @@ def _scan_payload(path: str, expected_rows: int | None) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Build deterministic BGE-small catalog search artifacts"
+        description="Build deterministic catalog search artifacts"
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -65,7 +65,7 @@ def main() -> None:
     build.add_argument(
         "--fail-on-truncation",
         action="store_true",
-        help="diagnostic mode: reject documents longer than BGE's 512-token limit",
+        help="diagnostic mode: reject documents longer than the model token limit",
     )
 
     verify = subparsers.add_parser("verify", help="verify an existing artifact bundle")
@@ -86,9 +86,9 @@ def main() -> None:
         )
     else:
         from preprocessing.embeddings import build_embedding_artifacts
-        from preprocessing.encoder import OnnxBgeEncoder
+        from preprocessing.encoder import OnnxTextEncoder
 
-        encoder = OnnxBgeEncoder(args.model_assets, threads=args.threads)
+        encoder = OnnxTextEncoder(args.model_assets, threads=args.threads)
         payload = build_embedding_artifacts(
             args.catalog,
             args.output,
@@ -98,6 +98,7 @@ def main() -> None:
             chunk_size=args.chunk_size,
             shard_count=4,
             allow_truncation=not args.fail_on_truncation,
+            compute_threads=args.threads,
         )
     print(json.dumps(payload, indent=2, sort_keys=True))
 

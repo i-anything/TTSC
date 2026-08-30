@@ -28,6 +28,170 @@ RequirementSource = Literal[
     "override",
     "free_text",
 ]
+RequirementStrength = Literal["hard", "soft"]
+
+
+class RequirementImportance(str, Enum):
+    """Ordinal user importance, independent of interpretation confidence."""
+
+    MUST = "must"
+    SHOULD = "should"
+    PREFER = "prefer"
+
+_DEFAULT_REQUIREMENT_STRENGTH: dict[RequirementSource, RequirementStrength] = {
+    "initial_explicit": "hard",
+    "initial_tentative": "soft",
+    "answer": "hard",
+    "override": "hard",
+    "free_text": "soft",
+}
+
+_DEFAULT_REQUIREMENT_IMPORTANCE: dict[
+    RequirementSource,
+    RequirementImportance,
+] = {
+    "initial_explicit": RequirementImportance.MUST,
+    "initial_tentative": RequirementImportance.PREFER,
+    "answer": RequirementImportance.SHOULD,
+    "override": RequirementImportance.MUST,
+    "free_text": RequirementImportance.PREFER,
+}
+_NEGATED_IMPORTANCE_RE = re.compile(
+    r"\b(?:not|no)\s+(?:(?:a|an)\s+)?(?:must(?:[- ]have)?|required|"
+    r"requirement|needed?|important|preference|preferred)\b",
+    re.IGNORECASE,
+)
+_IMPORTANCE_CUE_PATTERNS: tuple[
+    tuple[RequirementImportance, re.Pattern[str]],
+    ...,
+] = (
+    (
+        RequirementImportance.MUST,
+        re.compile(
+            r"^\s*(?:i\s+)?(?:must|need|require)(?:\s+it)?(?:\s+to)?"
+            r"(?:\s+be|\s+have)?\s+(?P<payload>.+?)\s*$",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        RequirementImportance.MUST,
+        re.compile(
+            r"^\s*(?:must[- ]have|required|non[- ]?negotiable)"
+            r"(?:\s*[:\u2014-]\s*|\s+)(?P<payload>.+?)\s*$",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        RequirementImportance.MUST,
+        re.compile(
+            r"^\s*(?P<payload>.+?)\s+(?:is\s+)?(?:required|"
+            r"non[- ]?negotiable|a\s+must(?:[- ]have)?)\s*$",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        RequirementImportance.SHOULD,
+        re.compile(
+            r"^\s*(?:i\s+)?strongly\s+prefer(?:\s+it)?(?:\s+to)?"
+            r"(?:\s+be|\s+have)?\s+(?P<payload>.+?)\s*$",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        RequirementImportance.SHOULD,
+        re.compile(
+            r"^\s*(?:important)(?:\s*[:\u2014-]\s*|\s+)"
+            r"(?P<payload>.+?)\s*$",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        RequirementImportance.SHOULD,
+        re.compile(
+            r"^\s*(?P<payload>.+?)\s+is\s+important\s*$",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        RequirementImportance.SHOULD,
+        re.compile(
+            r"^\s*(?:it\s+)?should\s+(?:be|have)\s+"
+            r"(?P<payload>.+?)\s*$",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        RequirementImportance.PREFER,
+        re.compile(
+            r"^\s*(?:ideally|maybe|perhaps|preferably|tentatively)"
+            r"(?:\s*[:\u2014-]\s*|\s+)(?P<payload>.+?)\s*$",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        RequirementImportance.PREFER,
+        re.compile(
+            r"^\s*(?:i\s+)?(?:prefer|would\s+like)(?:\s+it)?"
+            r"(?:\s+to)?(?:\s+be|\s+have)?\s+(?P<payload>.+?)\s*$",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        RequirementImportance.PREFER,
+        re.compile(
+            r"^\s*(?P<payload>.+?)\s+would\s+be\s+"
+            r"(?:nice|ideal)\s*$",
+            re.IGNORECASE,
+        ),
+    ),
+)
+_MAXIMUM_BUDGET_RE = re.compile(
+    r"(?:\bunder\b|\bless\s+than\b|\bat\s+most\b|\bmaximum\b|\bmax\b|"
+    r"\bno\s+more\s+than\b|<=)\s*\$?\s*\d",
+    re.IGNORECASE,
+)
+
+
+def _importance_signal(
+    value: str,
+) -> tuple[RequirementImportance | None, str]:
+    stripped = value.strip()
+    if _NEGATED_IMPORTANCE_RE.search(stripped):
+        return None, stripped
+    for importance, pattern in _IMPORTANCE_CUE_PATTERNS:
+        match = pattern.fullmatch(stripped)
+        if match is not None:
+            payload = match.group("payload").strip()
+            if payload:
+                return importance, payload
+    return None, stripped
+
+
+def requirement_semantic_payload(value: str) -> str:
+    """Remove only an anchored importance cue, retaining the requested value."""
+
+    if not isinstance(value, str):
+        raise TypeError("requirement value must be a string")
+    return _importance_signal(value)[1]
+
+
+def infer_requirement_importance(
+    value: str,
+    source: RequirementSource,
+    attribute: str | None,
+) -> RequirementImportance:
+    """Infer one bounded ordinal level from explicit language and provenance."""
+
+    if not isinstance(value, str):
+        raise TypeError("requirement value must be a string")
+    if source not in _DEFAULT_REQUIREMENT_IMPORTANCE:
+        raise ValueError(f"unsupported requirement source: {source!r}")
+    if attribute == "budget" and _MAXIMUM_BUDGET_RE.search(value):
+        return RequirementImportance.MUST
+    explicit, _payload = _importance_signal(value)
+    if explicit is not None:
+        return explicit
+    return _DEFAULT_REQUIREMENT_IMPORTANCE[source]
 
 
 class IntentParsingPolicy(str, Enum):
@@ -62,6 +226,37 @@ class Requirement:
     source: RequirementSource
     turn: int
     attribute: str | None = None
+    strength: RequirementStrength | None = None
+    importance: RequirementImportance | None = None
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.source, str)
+            or self.source not in _DEFAULT_REQUIREMENT_STRENGTH
+        ):
+            raise ValueError(f"unsupported requirement source: {self.source!r}")
+        if self.strength is None:
+            strength = _DEFAULT_REQUIREMENT_STRENGTH[self.source]
+            object.__setattr__(self, "strength", strength)
+        elif self.strength not in {"hard", "soft"}:
+            raise ValueError("strength must be 'hard' or 'soft'")
+        if self.source == "free_text" and self.strength != "soft":
+            raise ValueError("free_text requirements must remain soft")
+        if self.importance is None:
+            importance = infer_requirement_importance(
+                self.value,
+                self.source,
+                self.attribute,
+            )
+            object.__setattr__(self, "importance", importance)
+        elif not isinstance(self.importance, RequirementImportance):
+            raise TypeError("importance must be a RequirementImportance")
+        if (
+            self.attribute == "budget"
+            and _MAXIMUM_BUDGET_RE.search(self.value)
+            and self.importance is not RequirementImportance.MUST
+        ):
+            object.__setattr__(self, "importance", RequirementImportance.MUST)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1034,7 +1229,8 @@ def _apply_candidate_atoms(
         requirements = [
             requirement
             for requirement in requirements
-            if requirement.source not in {"initial_explicit", "initial_tentative"}
+            if requirement.source
+            not in {"initial_explicit", "initial_tentative", "override"}
         ]
     elif envelope.mode == "replace_last":
         if requirements:
@@ -1271,7 +1467,8 @@ def apply_user_message(
         retained = tuple(
             requirement
             for requirement in next_state.requirements
-            if requirement.source not in {"initial_explicit", "initial_tentative"}
+            if requirement.source
+            not in {"initial_explicit", "initial_tentative", "override"}
         )
         if value:
             retained = _append_requirement(
@@ -1471,12 +1668,11 @@ def render_requirement_probe_candidates(state: IntentState) -> tuple[str, ...]:
     if len(state.requirements) > _MULTI_MAX_ACTIVE_REQUIREMENTS:
         return ()
 
-    strong_sources = frozenset({"initial_explicit", "answer", "override"})
     values: list[str] = []
     seen: set[str] = set()
     total_characters = 0
     for requirement in state.requirements:
-        if requirement.source not in strong_sources or requirement.attribute == "budget":
+        if requirement.strength != "hard" or requirement.attribute == "budget":
             continue
         value = requirement.value
         if requirement.attribute:

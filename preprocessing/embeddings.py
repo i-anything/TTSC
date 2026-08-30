@@ -228,9 +228,12 @@ def build_embedding_artifacts(
     chunk_size: int = 512,
     shard_count: int = DEFAULT_SHARD_COUNT,
     allow_truncation: bool = True,
+    compute_threads: int | None = None,
 ) -> dict:
     if batch_size <= 0 or chunk_size <= 0 or chunk_size < batch_size:
         raise ValueError("batch_size and chunk_size must be positive; chunk_size >= batch_size")
+    if compute_threads is not None and compute_threads <= 0:
+        raise ValueError("compute_threads must be positive when provided")
 
     output = Path(output_dir)
     if output.exists():
@@ -399,6 +402,7 @@ def build_embedding_artifacts(
                 "allow_truncation": allow_truncation,
                 "batch_size": batch_size,
                 "chunk_size": chunk_size,
+                "compute_threads": compute_threads,
                 "duration_seconds": round(elapsed, 3),
                 "documents_per_second": round(scan.row_count / elapsed, 3),
                 "maximum_tokens": maximum_tokens,

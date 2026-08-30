@@ -3,12 +3,18 @@ from __future__ import annotations
 import unittest
 from unittest import mock
 
+from conversational_search.exposure_policy import (
+    BUYING_ONLY_TOP3_PREFIX_EXPOSURE_POLICY,
+)
 from conversational_search.intent import (
     LOSSLESS_MULTI_SLOT_INTENT_POLICY,
     ROBUST_INTENT_POLICY,
 )
 from conversational_search.orchestration import (
     EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
+)
+from conversational_search.ranking import (
+    LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
 )
 from conversational_search.service import ConversationalSearchAgent
 from conversational_search.slates import INTENT_EPOCH_NOVELTY_SLATE_POLICY
@@ -190,7 +196,9 @@ class MultiSlotServiceIntegrationTest(unittest.TestCase):
             Agent()
         initialize.assert_called_once_with(
             DEFAULT_CATALOG_PATH,
+            evidence_exposure_policy=BUYING_ONLY_TOP3_PREFIX_EXPOSURE_POLICY,
             orchestration_policy=EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
+            ranking_policy=LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
             slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
         )
 

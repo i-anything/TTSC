@@ -1,0 +1,533 @@
+{
+  "schema_version": 3,
+  "experiment_id": "phase15-decision-aware-evidence-acquisition-v2",
+  "status": "v2_implementation_present_opt_in_inactive_unlocked_execution_blocked",
+  "baseline_lock": "docs/phase15_baseline_lock.json",
+  "research_plan": "docs/phase15_research_plan.md",
+  "competitor_diagnostic": "benchmarks/diagnostics/phase15-competitor-audit.json",
+  "supersedes": {
+    "experiment_id": "phase15-precision-first-evidence-acquisition-v1",
+    "reason": "fixed one-other and four-result schedule predates the verified decision-aware public frontier",
+    "candidate_or_baseline_data_execution_performed": false,
+    "v1_is_promotable": false,
+    "v1_uncommitted_source_and_tests_removed_before_v2": true
+  },
+  "protected_baseline": {
+    "active_policy": "phase13-intent-epoch-continuation-novelty-v1",
+    "submission_path": "starter/agent.py",
+    "submission_sha256": "990843888a835ae4101a9c5287d8fa04947029c1a3db51cb157a306e86ba95e2",
+    "changed_by_phase15_v2_design": false,
+    "live_worktree_matches_locked_submission": false,
+    "restore_or_relock_before_data_execution": true
+  },
+  "candidate": {
+    "promotable_arm": "combined_v2",
+    "implemented": true,
+    "enabled_by_default": false,
+    "runtime_status": "opt_in_inactive_non_promotable",
+    "score_or_improvement_claimed": false,
+    "protocol_world_model": {
+      "name": "phase15-official-disclosure-transition-model-v2",
+      "source_allowlist": [
+        "official evaluator",
+        "official agent API contract",
+        "official competition specification",
+        "frozen catalog"
+      ],
+      "runtime_target_or_label_access": false,
+      "candidate_scope": "bounded base-ranking-first union of the selected lexical or hybrid route and exact rescue IDs",
+      "catalog_mutation": false,
+      "deterministic": true,
+      "hand_built_card_oracle_required": true,
+      "protocol_event_log": {
+        "independent_of_intent_state": true,
+        "maximum_events": 10,
+        "maximum_values_per_event": 2,
+        "opaque_disclosure_payload": {
+          "preserved_as_serialized_bounded_text": true,
+          "semicolon_split_inference": false,
+          "replayed_against_exact_evaluator_serialization": true
+        },
+        "event_kinds": [
+          "initial_browsing",
+          "initial_explicit",
+          "initial_tentative",
+          "disclosure",
+          "override",
+          "no_additional",
+          "boundary_decline",
+          "need_attribute"
+        ],
+        "purpose": "replay official disclosures without loss from intent-slot clearing, semicolon splitting, or deduplication",
+        "authoritative_for_positive_protocol_evidence_when_present": true,
+        "mirrored_intent_state_positive_slots_merged_when_present": false,
+        "initial_tentative_parser": "non-greedy category sentence followed by the complete remaining multi-sentence payload",
+        "overbound_event_value_behavior": "reject and select hybrid; never truncate into BM25-only eligibility"
+      },
+      "intent_requirement_strength": {
+        "explicit_field": true,
+        "allowed_values": ["hard", "soft"],
+        "default_hard_sources": ["initial_explicit", "answer", "override"],
+        "default_soft_sources": ["initial_tentative", "free_text"],
+        "free_text_may_be_hard": false,
+        "candidate_card_fields_determine_user_commitment": false,
+        "ranking_slate_and_cache_dependency": true
+      }
+    },
+    "exact_evidence_ranking": {
+      "name": "phase15-candidate-local-exact-evidence-v2",
+      "lexicographic_tiers": [
+        "explicit-negative safety",
+        "exact protocol-reply compatibility",
+        "hard-budget non-violation with unknown prices retained",
+        "complete active-constraint coverage",
+        "at-least-two exact hard-constraint coverage",
+        "exact hard-constraint coverage count",
+        "category compatibility",
+        "exact non-budget field coverage",
+        "exact phrase affinity",
+        "total multi-constraint coverage",
+        "general budget compatibility"
+      ],
+      "tie_break_after_structural_tiers": "distinct selected base-route rank: Phase 13 BM25+dense on hybrid or fail-open turns, deterministic BM25 on intentional dense-skip turns",
+      "popularity": {
+        "position": "after selected base-route rank as a theoretical final equivalence fallback",
+        "can_displace_a_distinct_base_rank": false,
+        "active_reranking_signal": false
+      },
+      "preserve_phase13_bm25_dense_pool_on_fail_open": true,
+      "protected_phase13_dense_routing_unchanged": true,
+      "conditional_dense_gating": "execute BM25 first; skip dense only when every precondition passes and the BM25 pool intersects structurally valid support; run dense for unsupported language, inconsistent state, non-exact category or constraints, free text, tentative or override history, contradiction, zero BM25 structural support, or BM25 unavailable/empty/error",
+      "no_product_evidence_preserves_selected_base_route_order": true,
+      "no_signal_events_do_not_activate_popularity": [
+        "initial_browsing",
+        "boundary_decline",
+        "need_attribute"
+      ],
+      "conjunctive_route_is_union_only": true,
+      "conjunctive_route_may_hard_filter": false,
+      "explicit_negative_override_and_budget_semantics_dominate": true,
+      "public_label_fitted_weights_or_thresholds": false
+    },
+    "retrieval_integration": {
+      "protocol_index": "compact in-memory SQLite reconstructed-card table",
+      "protocol_index_is_opt_in_only": true,
+      "built_in_same_catalog_scan_as_bm25": true,
+      "duplicate_raw_catalog_copy": false,
+      "candidate_evidence": "compact reconstructed target/coarse category, hard and soft values, price, popularity, and synthesized bounded card text",
+      "full_fts_candidate_text_fetched": false,
+      "maximum_protocol_candidate_union": 200,
+      "complete_phase13_ranking_computed_on_hybrid_fail_open": true,
+      "union_order": "complete selected base-route ranking first, exact rescue IDs second",
+      "selected_base_candidates_may_be_displaced_during_union_construction": false,
+      "surviving_rescue_may_be_promoted_by_structural_ranking": true,
+      "selected_base_prefix_invariant_validated": true,
+      "additional_dense_calls_per_turn": 0,
+      "exact_route_is_bounded_union_only": true,
+      "protected_phase13_dense_route_schedule_or_logic_changed": false,
+      "conditional_dense_gating_in_scope": true,
+      "conditional_dense_policy": "protocol-bm25-first-structural-gate-v2",
+      "bm25_only_conditions": [
+        "message_is_exact_protocol",
+        "session_state_is_consistent",
+        "category_is_exactly_recognized",
+        "exact_product_constraints_gte_one",
+        "no_unparsed_or_free_text_requirement",
+        "no_tentative_override_or_contradiction",
+        "bm25_contains_structurally_valid_candidate"
+      ],
+      "exact_product_constraint_count": "number of distinct supplied values independently matching a structured card field in the exact category; not conditioned on a joint candidate",
+      "bm25_executes_before_dense_decision": true,
+      "healthy_bm25_zero_structural_support_runs_dense": true,
+      "routing_dependency": "hash of six pre-BM25 conditions, complete bounded protocol events, and at most 200 catalog-derived structural-support IDs; observed BM25 intersection is derived after BM25",
+      "tentative_or_override_session_is_hybrid_until_reset": true,
+      "dense_execution_bound_per_search": 1,
+      "dense_skip_status_is_explicit": true,
+      "residual": "an exact rescue outside the 200-candidate union cannot enter protocol reasoning"
+    },
+    "belief_state": {
+      "scope": "current bounded candidate pool",
+      "inputs": [
+        "best protocol-consistent exact structural evidence tier",
+        "deterministic exact-evidence order",
+        "bounded observed protocol event log",
+        "shown-product state"
+      ],
+      "exact_transform": "normalize reciprocal-rank weights 1/r within the best structural evidence tier; zero mass outside that tier",
+      "requirements": [
+        "normalized",
+        "finite",
+        "monotone in evidence",
+        "deterministic under ties",
+        "defined for equal or degenerate scores",
+        "stale evidence invalidated on contradiction retraction or category override"
+      ],
+      "trained_or_calibrated_on_public_sessions": false,
+      "exact_transform_predeclared_before_execution": true,
+      "source_hash_lock_pending": true,
+      "calibration_diagnostics": {
+        "metrics": [
+          "Brier score",
+          "expected calibration error"
+        ],
+        "target_disjoint_aggregate_only": true,
+        "learned_calibration": false,
+        "promotion_gate": false,
+        "policy_input": false,
+        "may_change_beliefs_or_thresholds": false,
+        "observer_returns_ranking_payload_unchanged": true,
+        "observer_failure_raised_only_after_evaluator_call": true
+      },
+      "residual": "the fixed reciprocal-rank belief is uncalibrated",
+      "shown_candidate_conditioning": {
+        "scope": "entire surviving protocol session",
+        "shown_ids_removed_from_belief_support": true,
+        "shown_ids_removed_from_available_order": true,
+        "reset_only_with_session_reset": true
+      }
+    },
+    "planner": {
+      "name": "phase15-one-step-receding-horizon-question-width-utility-v2",
+      "action": "(legal_question, prefix_width), with no question on the terminal turn",
+      "questions": "every legal named question and other when legal",
+      "prefix_widths": "every integer in 1..normalized_top_k, plus zero only while the protocol prevents a hit",
+      "normalized_top_k": "min(max(requested_top_k, 0), 10)",
+      "immediate_value": "sum over exposed ranks r of belief(product_at_r) * official_hit_utility(turn, r)",
+      "continuation_value": "sum over modeled answers of P(answer and target not exposed) * next-turn full-width utility within the conditioned answer partition",
+      "terminal_value": "immediate full-width exposure value at the official turn limit",
+      "runtime_target_or_label_access": false,
+      "external_model_calls": 0,
+      "monte_carlo_sampling": false,
+      "catalog_scale_rollout": false,
+      "recursive_rollout": false,
+      "replanning": "from observed evidence on every real turn",
+      "deterministic_tie_break_and_degenerate_behavior_must_be_locked_before_execution": true,
+      "tie_break": {
+        "question_order_starts_with": "other",
+        "other_wins_only_exact_expected_utility_ties": true,
+        "named_question_wins_when_strictly_greater": true,
+        "equal_value_width_choice": "smallest legal width"
+      },
+      "approximation": {
+        "horizon": "one modeled observation followed by full-width continuation value",
+        "replans_after_real_observation": true,
+        "solves_complete_remaining_turn_process": false,
+        "declared_residual": "multi-step information interactions can be valued imperfectly"
+      },
+      "sticky_override_lock": {
+        "scope": "planner pre-override exposure",
+        "created_by_initial_tentative_event": true,
+        "cleared_only_by_observed_override_event": true,
+        "independent_of_intent_reducer_deduplication": true,
+        "zero_width_legal_while_locked": true
+      },
+      "sticky_hybrid_route_lock": {
+        "created_by_initial_tentative_event": true,
+        "created_by_any_override_event": true,
+        "cleared_only_by_session_reset": true,
+        "independent_of_planner_override_lock": true
+      },
+      "turn_one_browsing_world_prior": {
+        "candidate_conditioned_browsing": 0.5,
+        "candidate_independent_boundary_decline": 0.5,
+        "fitted_from_sessions": false,
+        "applies_only_while_boundary_world_is_protocol_compatible": true,
+        "calibrated": false,
+        "aggregate_diagnostics_may_modify_prior": false
+      },
+      "execution_order": "validated planner available-candidate order after session-wide shown-ID conditioning",
+      "selected_width_controls": [
+        "returned recommendation prefix",
+        "shown-product memory after every exposed protocol-consistent response, including planner fail-open"
+      ],
+      "requested_width_still_controls": [
+        "legal planner and presentation width bounds",
+        "slate signature and presentation",
+        "non-positive width skips retrieval; positive width is excluded from route-pool and ranking-cache dependencies"
+      ]
+    },
+    "dual_mode": {
+      "protocol_mode_requires_all_logical_invariants": [
+        "every observed answer is recognized by the official transition model",
+        "observation is compatible with at least one unexposed candidate hypothesis",
+        "no unresolved contradiction retraction or category override",
+        "belief is finite normalized and non-empty",
+        "ranked candidate pool is complete",
+        "requested width and remaining turns satisfy the API contract"
+      ],
+      "fitted_confidence_threshold": false,
+      "any_invariant_failure_selects_fail_open": true,
+      "startup_and_import_fail_open": {
+        "protected_phase13_imports_protocol_world_model_or_planner": false,
+        "protected_phase13_builds_protocol_index": false,
+        "protocol_index_structure": "one compact table plus five explicit indexes",
+        "table_or_index_failure_disables_protocol_capability": true,
+        "phase13_bm25_dense_backend_retained": true,
+        "lazy_import_or_runtime_candidate_failure_returns_selected_base_response": true,
+        "fresh_process_asserts_protected_candidate_modules_absent": true,
+        "fresh_process_asserts_candidate_protocol_module_present": true,
+        "session_state_may_be_corrupted": false
+      },
+      "fail_open": {
+        "aggressive_withholding": false,
+        "retrieval": "broad Phase 13 BM25 plus dense for unsupported or inconsistent language; exact structural BM25 with a one-call dense rescue for a failed lexical route",
+        "hard_constraints": "conservative explicit constraints only",
+        "question": "valid candidate-conditioned natural clarification or protected Phase 13 fallback",
+        "presentation_width": "normalized_top_k",
+        "state_on_exception": "validated no-corruption fallback retaining the selected base route; exact Phase 13 only when the hybrid route was selected",
+        "exact_phase13_ranking_retained_for_prequery_fail_open": true,
+        "second_dense_call": false
+      }
+    },
+    "privacy_safe_aggregate_telemetry": [
+      "planner_decisions",
+      "protocol_mode_turns",
+      "fail_open_turns_by_reason_code",
+      "question_action_counts",
+      "width_action_counts",
+      "requested_total",
+      "presented_total"
+    ],
+    "sanitized_last_action_trace": {
+      "evaluator_response_field": false,
+      "published_by_evaluation_harness": false,
+      "retains_only_latest_turn_per_session": true,
+      "fields": [
+        "protocol mode",
+        "retrieval action and reason",
+        "dense policy",
+        "derived retrieval track",
+        "seven auditable BM25-only condition values",
+        "BM25 and dense status",
+        "planner outcome",
+        "question",
+        "requested and presented width",
+        "retrieval fallback flag"
+      ],
+      "forbidden": [
+        "product IDs",
+        "query or message text",
+        "profiles",
+        "targets or labels",
+        "scores or candidate lists"
+      ]
+    }
+  },
+  "compared_policies": {
+    "implemented": [
+      "phase13",
+      "combined_v2"
+    ],
+    "only_promotable_candidate": "combined_v2",
+    "component_arms": {
+      "exact_evidence_only": "implemented_separate_non_promotable_ablation; currently selected by the live uncommitted starter and incompatible with combined_v2",
+      "planner_only": "deferred_unimplemented_non_promotable"
+    }
+  },
+  "exactness_checks": {
+    "combined_v2_replay": "deterministic check, not a policy arm",
+    "combined_v2_independent": "independent-construction check, not a policy arm",
+    "score_bearing": false
+  },
+  "validation": {
+    "target_disjoint_required": true,
+    "forbidden_target_sources": [
+      "public",
+      "development",
+      "validation",
+      "phase14_fresh"
+    ],
+    "forbidden_sources_are_exclusion_only_and_may_overlap_one_another": true,
+    "legacy_development_and_validation_are_not_promotion_sources": true,
+    "mutually_disjoint_phase15_suite_targets": true,
+    "suite_generator": "scripts/build_phase15_protocol_robustness_suites.py",
+    "selection_contract": {
+      "method": "deterministic textual salted SHA256 ranking without replacement",
+      "salt": "phase15-protocol-robustness-target-disjoint-v2",
+      "numeric_random_seed_used": false,
+      "source_hash_required_before_target_read": true,
+      "phase14_fresh_source_hash_and_targets_required": true,
+      "generator_evaluator_and_phase14_builder_hashes_required": true,
+      "builder_manifest_outputs_and_target_proofs_recomputed": true
+    },
+    "suite_manifest_and_hash_lock_required_before_candidate_execution": true,
+    "prerequisite_artifacts_bind_expected_suite_and_current_lock_hashes": true,
+    "ordered_suite_gates": [
+      "fresh_exact",
+      "paraphrase_fail_open",
+      "card_perturbed",
+      "scenario_balanced",
+      "target_disjoint_development",
+      "target_disjoint_validation",
+      "public_confirmation_once"
+    ],
+    "gate_source_mapping": {
+      "fresh_exact": "fresh_exact",
+      "paraphrase_fail_open": "paraphrase_fail_open",
+      "card_perturbed": "card_perturbed",
+      "scenario_balanced": "scenario_balanced",
+      "target_disjoint_development": "target_disjoint_development",
+      "target_disjoint_validation": "target_disjoint_validation",
+      "public_confirmation_once": "public"
+    },
+    "generated_cases_per_family_popularity_cell": {
+      "fresh_exact": 4,
+      "paraphrase_fail_open": 4,
+      "card_perturbed": 4,
+      "scenario_balanced": 4,
+      "target_disjoint_development": 12,
+      "target_disjoint_validation": 12
+    },
+    "fresh_exact": {
+      "exact_official_card_shapes": true
+    },
+    "paraphrase_fail_open": {
+      "released_template_surface_forms_excluded": true,
+      "semantic_intent_preserved": true,
+      "expected_mode": "logical fail-open"
+    },
+    "card_perturbed": {
+      "target_semantics_preserved": true,
+      "perturbations": [
+        "constraint order",
+        "optional soft-card absence",
+        "opaque-semicolon serialization"
+      ]
+    },
+    "scenario_balanced": {
+      "scenarios": [
+        "buying",
+        "browsing",
+        "boundary",
+        "intent_override"
+      ]
+    },
+    "every_generated_suite_balances_families": [
+      "apparel",
+      "footwear",
+      "jewelry_and_accessories"
+    ],
+    "every_generated_suite_balances_catalog_only_popularity_strata": [
+      "head",
+      "torso",
+      "tail"
+    ],
+    "aggregate_only": true,
+    "row_level_failure_inspection": false
+  },
+  "quality_gates": {
+    "baseline_hit_to_candidate_miss": 0,
+    "candidate_hit_rate_not_below_baseline": true,
+    "candidate_mrr_not_below_baseline": true,
+    "candidate_mttc_not_above_baseline": true,
+    "candidate_technical_score_not_below_baseline": true,
+    "candidate_technical_score_strictly_improves_on_fresh_development_validation": true,
+    "candidate_mrr_or_mttc_strictly_improves": true,
+    "bootstrap_replicates": 10000,
+    "bootstrap_seed": 150260830,
+    "robustness_suite_lower_95_at_least": 0.0,
+    "development_and_validation_lower_95_strictly_above": 0.0,
+    "protocol_mode_improves_protocol_consistent_stratum": true,
+    "fail_open_does_not_regress_paraphrased_or_card_perturbed_strata": true,
+    "calibration_diagnostics": {
+      "Brier_score": "aggregate target-disjoint diagnostic only",
+      "expected_calibration_error": "aggregate target-disjoint diagnostic only",
+      "promotion_gate": false,
+      "may_trigger_calibration_or_policy_change": false,
+      "instrumentation_may_change_evaluator_output": false
+    }
+  },
+  "operational_gates": {
+    "no_duplicate_catalog_copy": true,
+    "candidate_metadata_is_compact_card_only": true,
+    "candidate_metadata_fetches_full_fts_documents": false,
+    "additional_external_model_or_api_calls_per_turn": 0,
+    "model_and_api_tokens": 0,
+    "candidate_warm_p95_ratio_at_most": 1.1,
+    "candidate_wall_time_ratio_at_most": 1.1,
+    "candidate_startup_ratio_at_most": 1.1,
+    "candidate_additional_startup_rss_bytes_at_most": 67108864,
+    "candidate_additional_post_warm_peak_rss_bytes_at_most": 67108864,
+    "candidate_additional_retained_session_bytes_at_most": 65536,
+    "retained_session_state_measurement": {
+      "gate_source": "deep size of bounded candidate-only _protocol_* fields",
+      "whole_agent_net_delta": "diagnostic only"
+    },
+    "protocol_index_startup_measurement": {
+      "structure": "one table plus five explicit indexes",
+      "order_sequences": [
+        "protected_then_candidate",
+        "candidate_then_protected"
+      ],
+      "conservative_accounting": "maximum candidate observation versus minimum protected observation",
+      "startup_time_measured": false,
+      "additional_RSS_measured": false,
+      "must_pass_before_promotion": true
+    },
+    "response_exceptions": 0,
+    "invalid_api_responses": 0,
+    "runtime_network_attempts": 0,
+    "faults": 0,
+    "replay_exact": true,
+    "independent_construction_exact": true
+  },
+  "declared_residuals": {
+    "planner": "one-step expected-utility approximation can miss multi-step information interactions",
+    "startup": "time and RSS for the protocol table plus five explicit indexes are unmeasured",
+    "candidate_union": "exact rescue is bounded to 200 candidates",
+    "beliefs": "fixed 0.5 browsing-boundary prior and reciprocal-rank mass are uncalibrated",
+    "opaque_semicolon": "safe no-split replay can lose recall for genuinely separate values",
+    "dense_routing": "the label-free conditional route is unpromoted until target-disjoint quality and resource gates pass; protected Phase 13 dense routing is unchanged"
+  },
+  "clean_room": {
+    "competitor_code_copied": false,
+    "competitor_constants_or_schedules_copied": false,
+    "competitor_source_license_required_for_copying": true,
+    "public_rows_targets_failures_queries_or_trajectories_may_be_inspected": false,
+    "public_metrics_used_for_parameter_fitting": false,
+    "post_outcome_policy_formula_threshold_or_tie_break_changes": false
+  },
+  "thermal_safety": {
+    "catalog_scale_or_data_suite_work_currently_authorized": false,
+    "maximum_local_cpu_processes_for_verification": 3,
+    "numerical_library_threads_per_process": 1,
+    "mps_or_gpu_enabled": false,
+    "allowed_before_authorization": [
+      "static design",
+      "source edits",
+      "formatting checks",
+      "focused unit tests in at most three CPU processes"
+    ],
+    "prohibited_before_authorization": [
+      "full catalog scan",
+      "index build",
+      "catalog-scale signature generation",
+      "ONNX or local model inference",
+      "development validation robustness or public evaluator"
+    ]
+  },
+  "promotion": {
+    "all_gates_are_conjunctive": true,
+    "one_shot_sequential_suites": true,
+    "public_run_limit": 1,
+    "public_score_is_comparison_only_not_a_fitting_gate": true,
+    "final_authority_loads_fixed_result_paths": true,
+    "final_authority_revalidates_current_implementation_and_suite_locks": true,
+    "final_authority_binds_every_dataset_fingerprint_and_complete_gate_schema": true,
+    "final_authority_recomputes_every_gate_from_metrics_health_exactness_and_resource_evidence": true,
+    "asserted_gate_booleans_without_complete_cross_validated_evidence_are_rejected": true,
+    "prerequisite_suites_use_the_same_complete_result_validator": true,
+    "checked_public_frontier_stretch_score": 0.9791,
+    "starter_change_only_after_all_suites_pass": true,
+    "push_requires_explicit_user_permission": true
+  },
+  "execution_blockers": [
+    "live starter/agent.py does not match the locked Phase 13 submission hash and must be restored or deliberately relocked",
+    "v2 implementation source hashes are not yet locked",
+    "v2 focused-test hashes and final focused verification are not yet locked",
+    "frozen Phase 14 fresh target source hash and exclusion are not yet locked",
+    "target-disjoint suite manifests and hashes are not yet locked",
+    "candidate startup time and RSS are unmeasured",
+    "real-data execution remains blocked despite the three-process verification allowance"
+  ]
+}

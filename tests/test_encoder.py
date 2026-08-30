@@ -16,6 +16,12 @@ except ImportError:  # Keep catalog-only test discovery usable without runtime e
 
 if np is not None:
     from preprocessing.encoder import (
+        ARCTIC_DIMENSION,
+        ARCTIC_MAX_SEQUENCE_LENGTH,
+        ARCTIC_MODEL_ID,
+        ARCTIC_MODEL_REVISION,
+        ARCTIC_QUERY_PREFIX,
+        ARCTIC_SOURCE_ONNX_SHA256,
         BGE_DIMENSION,
         BGE_MAX_SEQUENCE_LENGTH,
         BGE_MODEL_ID,
@@ -23,6 +29,8 @@ if np is not None:
         BGE_QUERY_PREFIX,
         BGE_SOURCE_ONNX_SHA256,
         OnnxBgeEncoder,
+        OnnxTextEncoder,
+        model_asset_identity_sha256,
     )
 
 from preprocessing.catalog import CatalogError
@@ -39,7 +47,13 @@ class _Encoding:
         self.type_ids = [0] * len(ids)
 
 
-def _fake_runtime(state: dict, reported_providers: list[str] | None = None) -> dict:
+def _fake_runtime(
+    state: dict,
+    reported_providers: list[str] | None = None,
+    *,
+    output_name: str = "last_hidden_state",
+    dimension: int = BGE_DIMENSION,
+) -> dict:
     ort = types.ModuleType("onnxruntime")
     tokenizers = types.ModuleType("tokenizers")
 
@@ -78,17 +92,22 @@ def _fake_runtime(state: dict, reported_providers: list[str] | None = None) -> d
             return [Node("input_ids"), Node("attention_mask"), Node("token_type_ids")]
 
         def get_outputs(self) -> list[Node]:
-            return [Node("last_hidden_state")]
+            return [Node(output_name)]
 
         def run(self, output_names: list[str], feeds: dict[str, np.ndarray]) -> list[np.ndarray]:
             state["runs"].append({"output_names": list(output_names), "feeds": feeds})
             batch, sequence = feeds["input_ids"].shape
-            output = np.zeros((batch, sequence, BGE_DIMENSION), dtype=np.float64)
-            output[:, 0, 0] = 3.0
-            output[:, 0, 1] = 4.0
-            if sequence > 1:
-                # A mean-pooling implementation would produce a visibly different result.
-                output[:, 1:, 2] = 100.0
+            if output_name == "sentence_embedding":
+                output = np.zeros((batch, dimension), dtype=np.float64)
+                output[:, 0] = 3.0
+                output[:, 1] = 4.0
+            else:
+                output = np.zeros((batch, sequence, dimension), dtype=np.float64)
+                output[:, 0, 0] = 3.0
+                output[:, 0, 1] = 4.0
+                if sequence > 1:
+                    # Mean pooling would produce a visibly different result.
+                    output[:, 1:, 2] = 100.0
             return [output]
 
     class Tokenizer:
@@ -292,6 +311,107 @@ class OnnxBgeEncoderTest(unittest.TestCase):
                 self._state(),
                 reported_providers=["CPUExecutionProvider", "AzureExecutionProvider"],
             )
+
+
+@unittest.skipIf(np is None, "NumPy is not installed")
+class OnnxArcticEncoderTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary_directory.cleanup)
+        self.asset_dir = Path(self.temporary_directory.name)
+        self.model_bytes = b"fake-arctic-int8-onnx-graph"
+        self.external_bytes = b"fake-external-weights"
+        self.tokenizer_bytes = b'{"fake": "arctic-tokenizer"}'
+        (self.asset_dir / "model_int8.onnx").write_bytes(self.model_bytes)
+        (self.asset_dir / "model_int8.weights-000.bin").write_bytes(
+            self.external_bytes
+        )
+        (self.asset_dir / "tokenizer.json").write_bytes(self.tokenizer_bytes)
+        self.manifest = {
+            "schema_version": 1,
+            "model": {
+                "id": ARCTIC_MODEL_ID,
+                "revision": ARCTIC_MODEL_REVISION,
+                "file": "model_int8.onnx",
+                "sha256": _sha256(self.model_bytes),
+                "source_sha256": ARCTIC_SOURCE_ONNX_SHA256,
+                "dimension": ARCTIC_DIMENSION,
+                "max_sequence_length": ARCTIC_MAX_SEQUENCE_LENGTH,
+                "pooling": "cls",
+                "document_prefix": "",
+                "query_prefix": ARCTIC_QUERY_PREFIX,
+                "external_data": [
+                    {
+                        "file": "model_int8.weights-000.bin",
+                        "bytes": len(self.external_bytes),
+                        "sha256": _sha256(self.external_bytes),
+                    }
+                ],
+            },
+            "tokenizer": {
+                "file": "tokenizer.json",
+                "sha256": _sha256(self.tokenizer_bytes),
+            },
+        }
+        self._write_manifest()
+
+    def _write_manifest(self) -> None:
+        (self.asset_dir / "model_manifest.json").write_text(
+            json.dumps(self.manifest),
+            encoding="utf-8",
+        )
+
+    @staticmethod
+    def _state() -> dict:
+        return OnnxBgeEncoderTest._state()
+
+    def _encoder(self, state: dict) -> OnnxTextEncoder:
+        modules = _fake_runtime(
+            state,
+            output_name="sentence_embedding",
+            dimension=ARCTIC_DIMENSION,
+        )
+        with mock.patch.dict(sys.modules, modules):
+            return OnnxTextEncoder(self.asset_dir, threads=1)
+
+    def test_768_dimension_direct_sentence_output_and_query_prefix(self) -> None:
+        state = self._state()
+        encoder = self._encoder(state)
+        vectors = encoder.encode_queries(["waterproof work shoes"], batch_size=1)
+
+        self.assertEqual(encoder.metadata.model_id, ARCTIC_MODEL_ID)
+        self.assertEqual(encoder.metadata.dimension, 768)
+        self.assertEqual(encoder.metadata.license, "Apache-2.0")
+        self.assertEqual(vectors.shape, (1, 768))
+        np.testing.assert_allclose(vectors[0, :3], [0.6, 0.8, 0.0], atol=1e-7)
+        self.assertEqual(
+            state["tokenizers"][0].calls[-1]["texts"],
+            [ARCTIC_QUERY_PREFIX + "waterproof work shoes"],
+        )
+        self.assertEqual(
+            state["runs"][-1]["output_names"],
+            ["sentence_embedding"],
+        )
+
+    def test_external_weight_checksum_is_required(self) -> None:
+        self._encoder(self._state())
+        (self.asset_dir / "model_int8.weights-000.bin").write_bytes(b"corrupt")
+        with self.assertRaisesRegex(
+            CatalogError,
+            "external-data size mismatch|external-data checksum mismatch",
+        ):
+            self._encoder(self._state())
+
+    def test_asset_identity_ignores_host_validation_telemetry(self) -> None:
+        first = model_asset_identity_sha256(self.manifest)
+        self.manifest["validation"] = {
+            "single_thread_startup_seconds": 0.123,
+            "single_thread_batch2_inference_seconds": 0.456,
+        }
+        self.manifest["build_environment"] = {"python": "different-host"}
+        second = model_asset_identity_sha256(self.manifest)
+
+        self.assertEqual(first, second)
 
 
 if __name__ == "__main__":

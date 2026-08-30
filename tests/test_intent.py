@@ -37,6 +37,56 @@ class IntentStateTest(unittest.TestCase):
         self.assertEqual(render_dense_query(state), "")
         self.assertEqual(render_lexical_query(state), "")
 
+    def test_requirement_strength_is_explicit_and_defaults_from_provenance(
+        self,
+    ) -> None:
+        expected = {
+            "initial_explicit": "hard",
+            "initial_tentative": "soft",
+            "answer": "hard",
+            "override": "hard",
+            "free_text": "soft",
+        }
+
+        for source, strength in expected.items():
+            with self.subTest(source=source):
+                requirement = Requirement("value", source, 1, "feature")
+                self.assertEqual(requirement.strength, strength)
+
+        self.assertEqual(
+            Requirement(
+                "consider this",
+                "answer",
+                1,
+                "feature",
+                strength="soft",
+            ).strength,
+            "soft",
+        )
+        with self.assertRaises(ValueError):
+            Requirement(
+                "value",
+                "answer",
+                1,
+                "feature",
+                strength="tentative",  # type: ignore[arg-type]
+            )
+        with self.assertRaises(ValueError):
+            Requirement(
+                "value",
+                "unknown",  # type: ignore[arg-type]
+                1,
+                "feature",
+                strength="hard",
+            )
+        with self.assertRaises(ValueError):
+            Requirement(
+                "opaque prose",
+                "free_text",
+                1,
+                strength="hard",
+            )
+
     def test_buying_message_extracts_category_and_explicit_requirement(self) -> None:
         empty = IntentState()
         state = apply_user_message(

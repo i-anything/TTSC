@@ -24,7 +24,7 @@ from conversational_search.slates import MAX_SLATE_CANDIDATES
 from conversational_search.strategy import RouteWeights, intent_completeness
 
 
-RANKING_DEPENDENCY_VERSION = "exact-ranking-dependencies-v2"
+RANKING_DEPENDENCY_VERSION = "exact-ranking-dependencies-v4"
 DEFAULT_RANKING_CACHE_CAPACITY = 256
 MAX_CACHED_RANKED_IDS = MAX_SLATE_CANDIDATES
 MAX_CACHED_ID_CHARACTERS = 64
@@ -158,7 +158,13 @@ def ranking_dependency_digest(
         "backend_contract": EXACT_RANKING_BACKEND_CONTRACT,
         "category": state.category,
         "requirements": [
-            [requirement.value, requirement.source, requirement.attribute]
+            [
+                requirement.value,
+                requirement.source,
+                requirement.attribute,
+                requirement.strength,
+                requirement.importance.value,
+            ]
             for requirement in state.requirements
         ],
         "excluded": list(state.excluded),

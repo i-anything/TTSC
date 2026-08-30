@@ -1,0 +1,147 @@
+{
+  "artifacts": {
+    "catalog_sha256": "da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67",
+    "dataset_sha256": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+    "dimension": 384,
+    "index_bytes": 77304740,
+    "index_manifest_sha256": "c9b7291004d6ef78473b24886899ea51f427fc2e179c8216c8e8b65f6cf929b2",
+    "index_ready_sha256": "c9b7291004d6ef78473b24886899ea51f427fc2e179c8216c8e8b65f6cf929b2",
+    "model_asset_identity_sha256": "e6e6f34fe9d2abb304808488cede45a15d325fd685facc3985649bf63d90f188",
+    "model_bytes": 35062663,
+    "model_manifest_sha256": "f1130079f60555f7e35dc84344a33cd8e9afdcb4743c42afc94fb42b3991fd76",
+    "source_tree": {
+      "file_count": 25,
+      "sha256": "0be57c247982630d6cf7a1eb3f2c228ef95d5352751ffbfa902a6fea802abf7c"
+    }
+  },
+  "environment": {
+    "external_api_calls": 0,
+    "tokenizers_parallelism": "false"
+  },
+  "experiment": "embedding-package-ablation-v1",
+  "metrics": {
+    "efficiency": 0.809,
+    "hit_rate_at_10": 0.99,
+    "mrr": 0.556748,
+    "mttc": 2.91,
+    "recommended_technical_score": 0.823824,
+    "sample_count": 200
+  },
+  "policy_freeze": {
+    "decision": "protected_phase13",
+    "fusion": "completeness_adaptive",
+    "intent": "robust",
+    "orchestration": "exact_ranking_reuse",
+    "profile": "phase9-bounded-profile-residual-v1",
+    "question": "conservative_early_other",
+    "ranking": "stage_a",
+    "requirement_probe": "disabled",
+    "slate": "phase13-intent-epoch-continuation-novelty-v1"
+  },
+  "privacy": {
+    "individual_outcomes_inspected": false,
+    "individual_sessions_persisted": false,
+    "scenario_metrics_persisted": false
+  },
+  "phase0_verification": {
+    "advanced_runtime_connectivity": {
+      "exact_evidence": false,
+      "protocol_world_model": false,
+      "utility_planner": false
+    },
+    "focused_test_command": ".venv-bge/bin/python -m unittest tests.test_service tests.test_orchestration tests.test_slates tests.test_intent_epoch_slates tests.test_service_intent_epoch_slates",
+    "focused_test_count": 93,
+    "focused_test_result": "passed",
+    "submitted_entry_point": "starter/agent.py",
+    "submitted_entry_point_sha256": "990843888a835ae4101a9c5287d8fa04947029c1a3db51cb157a306e86ba95e2"
+  },
+  "process_resources": {
+    "absolute_peak_rss_bytes": 609452032,
+    "macos_peak_memory_footprint_bytes": 502662080,
+    "measurement_command": "/usr/bin/time -lp",
+    "process_real_seconds": 13.75,
+    "process_system_seconds": 0.53,
+    "process_user_seconds": 12.99
+  },
+  "reported_token_usage": {
+    "completion_tokens": 0,
+    "prompt_tokens": 0,
+    "total_tokens": 0
+  },
+  "repository_state_before_baseline_output": {
+    "branch": "main",
+    "commit": "8591d3c4c0ad977b7b1b248b9b20a832dd29ad85",
+    "dirty": true,
+    "modified_tracked_files": 14,
+    "starter_entry_point_modified": false,
+    "total_dirty_paths": 40,
+    "untracked_files": 26
+  },
+  "runtime": {
+    "cpu_only": true,
+    "evaluation_wall_seconds": 11.779406,
+    "onnx_threads": 1,
+    "orchestration_health": {
+      "backend_invalidations": 0,
+      "cached_id_references": 33907,
+      "cached_id_utf8_bytes": 339070,
+      "capacity": 256,
+      "capacity_evictions": 0,
+      "cold_misses": 200,
+      "decisions": 580,
+      "dependency_misses": 267,
+      "entries": 200,
+      "fault_invalidations": 0,
+      "hits": 113,
+      "lookups": 580,
+      "maximum_id_characters": 64,
+      "maximum_ids_per_entry": 200,
+      "policy": "exact_ranking_reuse",
+      "reasons": {
+        "cold_cache": 200,
+        "exact_dependency_hit": 113,
+        "ranking_dependencies_changed": 267
+      },
+      "reranks_avoided": 113,
+      "reset_invalidations": 0,
+      "retained_cache_bytes": 2065609,
+      "retrievals_avoided": 113,
+      "reuses": 113,
+      "searches": 467,
+      "skips": 0,
+      "store_rejections": 0,
+      "stores": 467
+    },
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14",
+    "ranking_health": {
+      "attempts": 467,
+      "failures": 0,
+      "policy": "stage_a",
+      "successes": 467,
+      "unavailable_skips": 0
+    },
+    "response_latency_ms": {
+      "count": 580,
+      "max": 90.333,
+      "p50": 20.716562,
+      "p90": 35.223554,
+      "p95": 43.065973,
+      "p99": 63.450417,
+      "total": 11736.740205,
+      "warm_count": 579,
+      "warm_p95": 43.075821
+    },
+    "route_health": {
+      "bm25": {
+        "ok": 467
+      },
+      "dense": {
+        "ok": 467
+      },
+      "fallback_turns": 0
+    }
+  },
+  "schema_version": 1,
+  "variant": "phase0-active-phase13-baseline-20260830"
+}

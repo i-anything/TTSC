@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import unittest
 
-from conversational_search.intent import IntentState, Requirement
+from conversational_search.intent import (
+    IntentState,
+    Requirement,
+    RequirementImportance,
+)
 from conversational_search.slates import (
     REPEAT_TOP_SLATE_POLICY,
     STAGNATION_AWARE_SLATE_POLICY,
@@ -107,6 +111,72 @@ class RankingSignatureTest(unittest.TestCase):
         self.assertNotEqual(
             ranking_signature(IntentState(), *arguments),
             ranking_signature(IntentState(intent_version=1), *arguments),
+        )
+
+    def test_requirement_strength_changes_the_signature(self) -> None:
+        arguments = (
+            "Category: Shoes\nSearch Clues: flexible",
+            "Shoes flexible",
+            RouteWeights(bm25=0.5, dense=0.5),
+            "stage_a",
+            ("A",),
+            10,
+        )
+        hard = IntentState(
+            category="Shoes",
+            requirements=(
+                Requirement("flexible", "answer", 2, "feature", "hard"),
+            ),
+        )
+        soft = IntentState(
+            category="Shoes",
+            requirements=(
+                Requirement("flexible", "answer", 2, "feature", "soft"),
+            ),
+        )
+
+        self.assertNotEqual(
+            ranking_signature(hard, *arguments),
+            ranking_signature(soft, *arguments),
+        )
+
+    def test_requirement_importance_changes_the_signature(self) -> None:
+        arguments = (
+            "Category: Shoes\nAttributes: Feature: flexible",
+            "Shoes flexible",
+            RouteWeights(bm25=0.5, dense=0.5),
+            "importance-aware-satisfaction-lexicographic-v1",
+            ("A",),
+            10,
+        )
+        should = IntentState(
+            category="Shoes",
+            requirements=(
+                Requirement(
+                    "flexible",
+                    "answer",
+                    2,
+                    "feature",
+                    importance=RequirementImportance.SHOULD,
+                ),
+            ),
+        )
+        prefer = IntentState(
+            category="Shoes",
+            requirements=(
+                Requirement(
+                    "flexible",
+                    "answer",
+                    2,
+                    "feature",
+                    importance=RequirementImportance.PREFER,
+                ),
+            ),
+        )
+
+        self.assertNotEqual(
+            ranking_signature(should, *arguments),
+            ranking_signature(prefer, *arguments),
         )
 
     def test_ranked_pool_order_and_membership_change_the_signature(self) -> None:

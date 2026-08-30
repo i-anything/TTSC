@@ -9,10 +9,6 @@ from enum import Enum
 from .intent import IntentState
 
 
-_STRONG_SOURCES = frozenset({"initial_explicit", "answer", "override"})
-_WEAK_SOURCES = frozenset({"initial_tentative", "free_text"})
-
-
 @dataclass(frozen=True, slots=True)
 class RouteWeights:
     """Normalized weights for lexical and dense reciprocal-rank fusion."""
@@ -35,7 +31,7 @@ class RouteWeights:
 
 
 def intent_completeness(state: IntentState) -> float:
-    """Return bounded intent evidence from active-requirement provenance.
+    """Return bounded intent evidence from explicit requirement strength.
 
     Strong requirements contribute one point and weak requirements contribute
     half a point. Three points constitute complete intent for this policy.
@@ -43,12 +39,14 @@ def intent_completeness(state: IntentState) -> float:
 
     evidence = 0.0
     for requirement in state.requirements:
-        if requirement.source in _STRONG_SOURCES:
+        if requirement.strength == "hard":
             evidence += 1.0
-        elif requirement.source in _WEAK_SOURCES:
+        elif requirement.strength == "soft":
             evidence += 0.5
         else:
-            raise ValueError(f"unsupported requirement source: {requirement.source!r}")
+            raise ValueError(
+                f"unsupported requirement strength: {requirement.strength!r}"
+            )
     return min(1.0, max(0.0, evidence / 3.0))
 
 

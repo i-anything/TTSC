@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "report_id": "phase3-protocol-world-model-20260830",
+  "phase": 3,
+  "status": "accepted_structural_not_yet_activated",
+  "hypothesis": "A typed, observable-reply world model can make the later planner uncertainty-aware without changing the accepted Phase 2 runtime until the planner is integrated and evaluated.",
+  "isolated_change": {
+    "runtime_activation": false,
+    "files": [
+      "conversational_search/protocol.py",
+      "tests/test_protocol.py"
+    ],
+    "active_submitted_policy_unchanged": true,
+    "active_graph": "robust intent -> hybrid retrieval -> Stage-A -> lexicographic exact evidence -> Phase 13 intent-epoch novelty -> fixed width/question"
+  },
+  "world_model_contract": {
+    "official_actions_modeled": 10,
+    "actions": [
+      "other",
+      "feature",
+      "material",
+      "color",
+      "size",
+      "style",
+      "use_case",
+      "budget",
+      "category",
+      "brand"
+    ],
+    "protocol_modes": [
+      "exact",
+      "ambiguous",
+      "free_form",
+      "recovery"
+    ],
+    "reply_classes": [
+      "disclosure",
+      "boundary_decline",
+      "need_attribute",
+      "no_additional"
+    ],
+    "candidate_partitions_use_observable_serialized_replies": true,
+    "candidate_probability_plus_out_of_pool_probability_equals_one": true,
+    "question_outcome_probability_equals_one": true,
+    "boundary_decline_is_an_explicit_candidate_independent_world": true,
+    "unseen_reply_requires_broad_retrieval": true,
+    "target_or_session_labels_used": false
+  },
+  "validation": {
+    "command": "OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 TOKENIZERS_PARALLELISM=false .venv/bin/python -m unittest tests.test_protocol tests.test_decision tests.test_exact_evidence tests.test_utility_planner -q",
+    "tests_run": 70,
+    "tests_passed": 70,
+    "tests_failed": 0,
+    "elapsed_seconds": 0.008,
+    "independent_reviewer": {
+      "targeted_tests_passed": 12,
+      "targeted_tests_failed": 0,
+      "counterexample_probes_passed": 6
+    },
+    "specific_properties": [
+      "all ten legal actions agree with the official customer reply oracle",
+      "partitions are deterministic, disjoint, exhaustive, and grouped by visible reply",
+      "candidate and residual mass are normalized",
+      "ordinary, unknown, and shared-boundary outcomes are normalized",
+      "accumulated disclosures are never redisclosed",
+      "initial tentative and override values replay against candidate cards",
+      "impossible boundary and override histories are rejected",
+      "free-form or unsupported turns retain only out-of-pool uncertainty",
+      "unseen replies enter explicit recovery",
+      "resolved, repeated, and invariant questions are ineligible",
+      "empty and all-out-of-pool worlds return typed recovery"
+    ]
+  },
+  "active_runtime_metrics_inherited_from_phase2": {
+    "source": "benchmarks/diagnostics/phase2-lexicographic-exact-evidence-replayplan-ab-20260830.json",
+    "sample_count": 200,
+    "hit_rate_at_10": 0.995,
+    "mrr": 0.65298,
+    "mttc": 2.3,
+    "efficiency": 0.87,
+    "recommended_technical_score": 0.867394,
+    "evaluation_wall_seconds": 10.403903,
+    "warm_p95_ms": 43.9739,
+    "peak_rss_bytes": 632963072,
+    "reported_tokens": 0
+  },
+  "resource_effect": {
+    "benchmark_processes_run_for_phase3": 0,
+    "reason": "The accepted submitted path is unchanged; Phase 3 is a pure inactive model layer and structural benchmark. Runtime A/B begins only when Phase 4 wires it into decisions.",
+    "new_external_dependencies": 0,
+    "network_calls": 0,
+    "model_or_embedding_regeneration": false
+  },
+  "acceptance": {
+    "accepted": true,
+    "reason": "The model is label-free, bounded, deterministic, simulator-equivalent on supported actions, uncertainty-preserving, and isolated from the active Phase 2 behavior.",
+    "known_integration_work": [
+      "replace the simplified order-preserving utility planner with state-update and rerank simulation",
+      "wire world-model confidence and residual mass into runtime action selection",
+      "unify Phase 2 exact ranking and protocol planning without double evidence passes",
+      "repair stale assertions in the inactive pre-existing protocol-service experiment during Phase 4 integration"
+    ]
+  }
+}

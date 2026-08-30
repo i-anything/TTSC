@@ -7,6 +7,9 @@ __pycache__/
 data/catalog.jsonl
 data/processed/
 data/releases/
+assets/.*.partial-*/
+/assets/snowflake-arctic-embed-m-v1.5-int8/
+/assets/search-index-snowflake-arctic-embed-m-v1.5-768-v1/
 # Organizer-only code, private evaluation data, manifests, and build reports.
 organizer/
 secure/

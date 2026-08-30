@@ -27,8 +27,6 @@ MAX_CLAUSES = 32
 MAX_CLAUSE_CHARACTERS = 1_024
 MAX_CLAUSE_TOKENS = 64
 
-_STRONG_SOURCES = frozenset({"initial_explicit", "answer", "override"})
-_WEAK_SOURCES = frozenset({"initial_tentative", "free_text"})
 _SIGNIFICANT_STOPWORDS = frozenset(
     {
         "a",
@@ -185,6 +183,12 @@ class RankingPolicy(Enum):
     ROUTE_REDUNDANCY_CORRECTED = (
         "phase12-route-redundancy-corrected-stage-a-v1"
     )
+    LEXICOGRAPHIC_EXACT_EVIDENCE = (
+        "phase2-lexicographic-exact-evidence-v1"
+    )
+    IMPORTANCE_AWARE_SATISFACTION = (
+        "importance-aware-satisfaction-lexicographic-v1"
+    )
 
 
 FUSED_ONLY_RANKING_POLICY = RankingPolicy.FUSED_ONLY
@@ -194,6 +198,12 @@ COMPLETENESS_BM25_RESCUE_RANKING_POLICY = (
 )
 ROUTE_REDUNDANCY_CORRECTED_RANKING_POLICY = (
     RankingPolicy.ROUTE_REDUNDANCY_CORRECTED
+)
+LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY = (
+    RankingPolicy.LEXICOGRAPHIC_EXACT_EVIDENCE
+)
+IMPORTANCE_AWARE_SATISFACTION_RANKING_POLICY = (
+    RankingPolicy.IMPORTANCE_AWARE_SATISFACTION
 )
 
 
@@ -387,6 +397,24 @@ def _candidate_theme_mask(
     return ProductTheme(mask)
 
 
+def recognize_candidate_themes(
+    document_text: str,
+    requested_themes: ProductTheme,
+) -> ProductTheme:
+    """Return bounded profile themes represented in one candidate document."""
+
+    if not isinstance(document_text, str):
+        raise TypeError("candidate document text must be a string")
+    if len(document_text) > MAX_CANDIDATE_TEXT_CHARACTERS:
+        raise ValueError("candidate document text exceeds the Stage-A limit")
+    if not isinstance(requested_themes, ProductTheme):
+        raise TypeError("requested_themes must be a ProductTheme")
+    return _candidate_theme_mask(
+        _significant_tokens(document_text),
+        requested_themes,
+    )
+
+
 def _clauses(state: IntentState) -> tuple[_AtomicClause, ...]:
     clauses: list[_AtomicClause] = []
 
@@ -412,13 +440,13 @@ def _clauses(state: IntentState) -> tuple[_AtomicClause, ...]:
         # a false signal, so typed budget clauses remain retrieval-only.
         if requirement.attribute == "budget":
             continue
-        if requirement.source in _STRONG_SOURCES:
+        if requirement.strength == "hard":
             provenance_weight = 1.0
-        elif requirement.source in _WEAK_SOURCES:
+        elif requirement.strength == "soft":
             provenance_weight = 0.5
         else:
             raise ValueError(
-                f"unsupported requirement source: {requirement.source!r}"
+                f"unsupported requirement strength: {requirement.strength!r}"
             )
         append_values(requirement.value, provenance_weight)
     return tuple(clauses)

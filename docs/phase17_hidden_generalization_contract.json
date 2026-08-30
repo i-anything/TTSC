@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "experiment_id": "phase17-clean-room-hidden-generalization-v1",
+  "status": "frozen_after_pre_execution_activation_coverage_review_before_generator_lock_or_evaluation",
+  "date": "2026-08-31",
+  "objective": "Evaluate the already-active submission on one fresh target-disjoint, language-shifted 800-case suite without using public outcomes for generation, thresholds, tuning, or reruns.",
+  "candidate": {
+    "id": "active-phase16c-buying-prefix-v3",
+    "starter_path": "starter/agent.py",
+    "starter_sha256": "76f95f65c87df2691a0f7141cc0920276fc3bf41e617e174672bc98012735afb",
+    "frozen_before_suite_generation": true,
+    "runtime_source_hash_lock_required": true,
+    "runtime_changes_allowed_by_phase17": false
+  },
+  "references": [
+    {
+      "id": "exact-evidence-without-exposure",
+      "purpose": "isolate the Phase 16c exposure policy",
+      "ranking_policy": "phase2-lexicographic-exact-evidence-v1",
+      "evidence_exposure_policy": "disabled",
+      "slate_policy": "phase13-intent-epoch-continuation-novelty-v1",
+      "orchestration_policy": "exact-ranking-reuse-v1"
+    },
+    {
+      "id": "protected-phase13",
+      "purpose": "test the complete public-informed exact-evidence plus exposure stack",
+      "ranking_policy": "stage_a",
+      "evidence_exposure_policy": "disabled",
+      "slate_policy": "phase13-intent-epoch-continuation-novelty-v1",
+      "orchestration_policy": "exact-ranking-reuse-v1"
+    }
+  ],
+  "suite": {
+    "case_count": 800,
+    "unique_target_count": 800,
+    "scenario_counts": {
+      "buying": 320,
+      "browsing": 320,
+      "intent_override": 120,
+      "boundary": 40
+    },
+    "surface_counts": {
+      "official_exact": 400,
+      "clean_room_language_shift": 400
+    },
+    "scenario_counts_per_surface": {
+      "buying": 160,
+      "browsing": 160,
+      "intent_override": 60,
+      "boundary": 20
+    },
+    "target_source": "frozen catalog only",
+    "target_selection": "keyed deterministic selection without replacement, balanced as evenly as possible across three broad catalog families and within-family catalog-popularity thirds",
+    "eligibility": "catalog-valid products for which the official evaluator constructs a non-empty category and at least two distinct textual hard constraints",
+    "scenario_and_surface_assignment": "keyed deterministic shuffle independent of target attributes, with the official scenario mix reproduced inside each surface half",
+    "profiles": "neutral contract-valid profiles to avoid synthetic target-profile leakage",
+    "hidden_fields": "official evaluator intent_card, behavior, constraint classification, category, disclosure, override timing, normalization, hit eligibility, and metrics",
+    "language_surface": "400 rows use the exact official evaluator surface so the active exposure path is exercised; 400 rows use a new fixed eight-template bank per semantic event to exercise conservative fail-open behavior; assignment is keyed and deterministic; semantic slots remain verbatim; no model or LLM generation",
+    "semantic_events": [
+      "buying_open",
+      "exploring_open",
+      "override_open",
+      "override_event",
+      "need_attribute",
+      "disclosure",
+      "no_additional",
+      "boundary_indifference"
+    ],
+    "template_requirements": {
+      "templates_per_event": 8,
+      "required_slots_exactly_once": true,
+      "undisclosed_constraints_forbidden": true,
+      "official_template_duplicates_forbidden": true
+    }
+  },
+  "historical_target_exclusions": [
+    "data/public_set.jsonl",
+    "/Users/limzichao/Downloads/public_plus_synthetic_1200.jsonl",
+    "/Users/limzichao/Downloads/public_plus_synthetic_scenario_aware_1200.jsonl",
+    "/private/tmp/ttsc-phase14-explicit-card-v1.jsonl",
+    "benchmarks/phase16b_semantic_rescue_activation.jsonl",
+    "/Users/limzichao/Downloads/ttsc_shadow_1000.jsonl"
+  ],
+  "shadow_source_policy": {
+    "reason": "provenance is unknown",
+    "evaluation_allowed": false,
+    "target_exclusion_only": true,
+    "outcomes_or_rows_may_inform_policy": false
+  },
+  "pre_execution_integrity": [
+    "candidate, references, catalog, evaluator, API schema, generator, template bank, thresholds, and secret-seed commitment are hash locked",
+    "suite contains exactly 800 unique catalog-valid targets",
+    "suite target overlap with every historical exclusion is zero",
+    "suite scenario counts equal 320 buying, 320 browsing, 120 intent override, and 40 boundary",
+    "each surface contains 160 buying, 160 browsing, 60 intent override, and 20 boundary cases",
+    "selected and forbidden target sets are published only as keyed HMAC commitments",
+    "generator never imports or executes starter or conversational_search code",
+    "no candidate retrieval or ranking is used during selection or generation"
+  ],
+  "execution": {
+    "arm_order": [
+      "active-phase16c-buying-prefix-v3",
+      "exact-evidence-without-exposure",
+      "protected-phase13",
+      "active-phase16c-buying-prefix-v3-replay"
+    ],
+    "fresh_agent_state_per_arm": true,
+    "shared_immutable_backend": true,
+    "deterministic_opaque_session_ids": true,
+    "processes": 1,
+    "threads": 1,
+    "gpu_or_mps": false,
+    "network_access": false,
+    "external_model_or_api_calls": 0,
+    "aggregate_output_only": true,
+    "per_case_failure_or_rank_inspection": false,
+    "one_decision_run": true
+  },
+  "paired_statistics": {
+    "bootstrap": "scenario-stratified paired bootstrap",
+    "replicates": 100000,
+    "seed_must_be_locked_before_execution": true,
+    "confidence": "one-sided 95 percent"
+  },
+  "promotion_gates": {
+    "conjunctive": true,
+    "applied_against_each_reference": true,
+    "technical_score_delta_lower_95_at_least": 0.0,
+    "hit_rate_delta_lower_95_at_least": -0.02,
+    "mrr_delta_lower_95_at_least": -0.01,
+    "mttc_delta_upper_95_at_most": 0.25,
+    "scenario_hit_rate_maximum_point_decline": {
+      "buying": 0.05,
+      "browsing": 0.05,
+      "intent_override": 0.05,
+      "boundary": 0.1
+    },
+    "surface_hit_rate_maximum_point_decline": {
+      "official_exact": 0.05,
+      "clean_room_language_shift": 0.05
+    },
+    "candidate_replay_exact": true,
+    "uncaught_exceptions_or_timeouts": 0,
+    "invalid_api_responses": 0,
+    "cross_session_contamination": 0,
+    "runtime_network_attempts": 0,
+    "reported_model_or_api_tokens": 0,
+    "all_integrity_checks_pass": true
+  },
+  "decision_policy": {
+    "pass": "Retain the active candidate and describe it as fresh target- and language-shift-validated, while still not claiming mathematical certainty about the organizer distribution.",
+    "fail": "Do not tune or rerun on the consumed suite. Mark the active candidate unvalidated and require a newly committed target-disjoint suite before any replacement is assessed.",
+    "automatic_runtime_change": false,
+    "public_200_rerun": false,
+    "post_outcome_policy_or_threshold_change": false,
+    "failed_case_inspection": false
+  },
+  "limitations": [
+    "The local catalog cannot prove that selected targets follow the organizer's private purchase distribution.",
+    "The official evaluator defines hidden-card semantics, so the suite is language-surface independent but not a wholly independent behavioral simulator.",
+    "Passing supplies strong finite-sample evidence, not a 100 percent proof over every possible hidden input."
+  ]
+}

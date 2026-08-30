@@ -175,7 +175,8 @@ from `0.534880` to `0.526749`, TechnicalScore fell from `0.815283` to
 The candidate was rejected immediately; validation and public confirmation
 were not run. See `docs/phase12_results.json`.
 
-Phase 13 is the active submission. It treats `intent_version` as an explicit
+Phase 13 is the latest fully evaluated policy baseline. It treats
+`intent_version` as an explicit
 replacement boundary and carries the existing bounded shown-product set across
 ordinary same-epoch ranking refinements. This removes repeated exposure without
 changing retrieval, scores, questions, dependencies, or state shape; overrides
@@ -188,10 +189,28 @@ zero fallbacks, exact replay and independent behavior, no new calls, and a
 warm-p95 ratio of `1.016139`. See `docs/phase13_results.json` and
 `benchmarks/phase13.json`.
 
+Phase 15 is an opt-in, unpromoted Pareto candidate. It combines exact
+disclosure evidence, a bounded candidate belief, and a one-step utility planner
+that jointly chooses the next question and recommendation width. Its dual-world
+router skips dense query encoding only when the official protocol is recognized,
+session evidence is consistent, and a non-empty exact structural route exists;
+unsupported or paraphrased language uses the full hybrid route, while an empty
+or failed BM25 route receives one dense rescue. Route identity is part of the
+exact cache dependency, every failure returns a valid full-width base result,
+and a sanitized diagnostic trace exposes decisions without IDs, queries,
+profiles, or targets. The protected `starter.Agent` still uses Phase 13 until
+all target-disjoint quality, fail-open, latency, memory, determinism, zero-token,
+and zero-network gates pass. See `docs/phase15_research_plan.md`.
+
 Before enabling dense search, runtime startup verifies the pinned model and
 tokenizer, every vector shard, the ID array, and the exact catalog checksum.
 Dense and BM25 routes degrade independently; a build without SQLite FTS5 can
 still use dense retrieval and deterministic fallback results.
+
+The Phase 1--13 figures above were measured with the active BGE-small
+384-dimensional embedding space. They remain the protected scored baseline.
+Any replacement encoder must pass the same target-disjoint quality, latency,
+memory, determinism, and fail-open gates before its defaults can change.
 
 ## Offline Dense-Retrieval Foundation
 
@@ -201,17 +220,27 @@ PyTorch, Transformers, SentenceTransformers, CUDA, or MPS.
 
 - Encoder: `BAAI/bge-small-en-v1.5`, pinned to revision
   `5c38ec7c405ec4b44b94cc5a9bb96e735b38267a`
-- Runtime graph: deterministic per-channel dynamic INT8 ONNX, 384 dimensions
+- Runtime graph: a verified INT8 ONNX graph, 384 dimensions
 - Query instruction: `Represent this sentence for searching relevant passages: `
 - Pooling: normalized CLS vector
 - Runtime: NumPy, ONNX Runtime CPU, and the Rust `tokenizers` package
-- Model bundle: `assets/bge-small-en-v1.5-int8` (about 33 MB)
+- Model bundle: `assets/bge-small-en-v1.5-int8` (about 33.4 MiB)
 
-The submitted model is derived from the upstream FP32 ONNX graph whose SHA-256
-is `828e1496d7fabb79cfa4dcd84fa38625c0d3d21da474a00f08db0f559940cf35`.
-Its own manifest records every input file, checksum, quantization argument,
-package version, CPU smoke test, and FP32 fidelity result. See
-`BGE_MODEL_ATTRIBUTION.md` for the MIT attribution.
+The derived INT8 graph SHA-256 is
+`f8b2217838ea27564f870f96e377cb6e5ca0fa37dec9599cf305d5de011d6b7f`.
+The bundle is below GitHub's per-file limit and is loaded directly, with no
+runtime download, API call, or billed token usage. The manifest checks the
+graph, tokenizer, pinned revision, and vector contract. See
+`BGE_MODEL_ATTRIBUTION.md` for MIT attribution.
+
+A frozen 2,196-case package A/B rejected the proposed Arctic 768-dimensional
+migration. Arctic won one suite and lost two; its sample-weighted
+TechnicalScore delta was `-0.001889`, warm p95 was about 1.51--1.55x BGE, and
+a fresh-process label-free turn raised observed peak RSS by about 98.3 MiB.
+No post-outcome weights or policies were tuned. Arctic support is retained only
+as ignored, local research tooling; it is not an active or submitted runtime
+asset. The complete aggregate-only evidence is in
+`benchmarks/diagnostics/embedding-package-arctic-768-v1.json`.
 
 ### Runtime setup
 
@@ -228,11 +257,13 @@ embeddings.
 
 ### Catalog embedding artifacts
 
-The frozen 50,000-product catalog has been encoded into the finalized bundle at
-`assets/search-index-bge-small-en-v1.5-v2`. Its manifest records build identity
-`fdfcd830321690d96cd87754db62161b5264485803a08ed1b30f4a0c33c227c8` and
-logical embedding SHA-256
+The frozen 50,000-product catalog is encoded into the finalized 384-dimensional
+bundle at `assets/search-index-bge-small-en-v1.5-v2`. Its
+build identity is
+`fdfcd830321690d96cd87754db62161b5264485803a08ed1b30f4a0c33c227c8`,
+and its logical embedding SHA-256 is
 `beaabadaa1f13cf0177f7ca02b6aa9a869392c2f7ed4fa8e9b9e30c6467d0ebb`.
+The manifest and `READY` marker are authoritative for every file checksum.
 
 The reproducible preprocessing command is:
 
@@ -244,12 +275,13 @@ python3 -m scripts.preprocess_catalog build \
 ```
 
 The build streams the 50,000 JSONL rows, constructs deterministic search text
-transiently, and writes exactly four row-aligned float32 embedding shards. It
-never stores a second copy of the product text. At runtime,
-`starter/dense.py` memory-maps and scores one shard at a time, so all vectors
-are never duplicated in RAM. The preprocessing command defaults to one ONNX
-compute thread and sequential batches of four products to keep laptop thermal
-load conservative; faster settings must be requested explicitly.
+transiently, and writes exactly four row-aligned float32 embedding shards
+(about 73.3 MiB of vectors). It never stores a second copy of the product text. At
+runtime, `starter/dense.py` memory-maps and scores one shard at a time, so all
+vectors are never duplicated in RAM. The preprocessing command defaults to one
+ONNX compute thread and sequential batches of four products to keep laptop
+thermal load conservative. The submitted artifact records its actual build
+settings in its manifest.
 
 Model derivation is maintainer-only. If the vendored model ever needs to be
 reproduced from its immutable upstream revision, use a clean environment with
@@ -358,10 +390,12 @@ conversational_search/slates.py   active bounded intent-epoch novelty policy
 conversational_search/orchestration.py exact SEARCH/REUSE/SKIP planner
 conversational_search/service.py  Agent orchestration and strategy execution
 preprocessing/catalog.py          deterministic catalog text normalization
-preprocessing/encoder.py          offline CPU BGE query/document encoder
+preprocessing/encoder.py          offline CPU ONNX query/document encoder
 preprocessing/embeddings.py       atomic four-shard artifact builder
-scripts/prepare_bge_model.py      reproducible pinned INT8 model derivation
+scripts/prepare_arctic_model.py   rejected Arctic research reproduction
+scripts/prepare_bge_model.py      active BGE artifact reproduction
 scripts/preprocess_catalog.py     catalog scan/build/verification CLI
+scripts/run_embedding_package_ablation.py aggregate-only encoder A/B
 scripts/run_policy_ablations.py   sequential shared-backend policy comparison
 scripts/run_fusion_ablations.py   sequential route-weight A/B comparison
 scripts/run_reranking_ablations.py sequential fused-only versus Stage-A A/B

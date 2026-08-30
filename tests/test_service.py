@@ -7,6 +7,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+from conversational_search.exposure_policy import (
+    BUYING_ONLY_TOP3_PREFIX_EXPOSURE_POLICY,
+)
 from conversational_search.intent import (
     CANONICAL_INTENT_POLICY,
     ROBUST_INTENT_POLICY,
@@ -19,13 +22,17 @@ from conversational_search.orchestration import (
 )
 from conversational_search.ranking import (
     FUSED_ONLY_RANKING_POLICY,
+    LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
     STAGE_A_RANKING_POLICY,
     CandidateDocument,
 )
 from conversational_search.retrieval import RetrievalResult, RetrievalTrace
 from conversational_search.service import (
+    DEFAULT_DENSE_INDEX,
+    DEFAULT_MODEL_ASSETS,
     ConversationalSearchAgent,
     _validate_catalog_pair,
+    _validate_dense_pair,
 )
 from conversational_search.slates import (
     INTENT_EPOCH_NOVELTY_SLATE_POLICY,
@@ -1355,6 +1362,63 @@ class ConversationalSearchAgentTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "catalog checksum"):
                 _validate_catalog_pair(catalog_path, dense_index)
 
+    def test_dense_pair_prefers_stable_asset_identity_over_manifest_telemetry(self) -> None:
+        metadata = SimpleNamespace(
+            model_id="model",
+            revision="revision",
+            model_sha256="a" * 64,
+            source_model_sha256="b" * 64,
+            asset_manifest_sha256="c" * 64,
+            asset_identity_sha256="d" * 64,
+            tokenizer_sha256="e" * 64,
+            dimension=768,
+            max_sequence_length=512,
+            pooling="cls",
+            normalization="l2_float32",
+            document_prefix="",
+            query_prefix="query: ",
+            provider="CPUExecutionProvider",
+            compute_dtype="int8_weights_float32_output",
+        )
+        index_model = dict(vars(metadata))
+        index_model["asset_manifest_sha256"] = "f" * 64
+        dense_index = SimpleNamespace(
+            dimension=768,
+            manifest={"model": index_model},
+        )
+
+        _validate_dense_pair(SimpleNamespace(metadata=metadata), dense_index)
+        index_model["asset_identity_sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "asset_identity_sha256"):
+            _validate_dense_pair(SimpleNamespace(metadata=metadata), dense_index)
+
+    def test_missing_dense_assets_fail_open_without_hiding_the_reason(self) -> None:
+        fallback = RecordingRetriever()
+        with (
+            mock.patch(
+                "conversational_search.service._load_dense_runtime",
+                side_effect=OSError("missing model part"),
+            ),
+            mock.patch(
+                "conversational_search.service.HybridRetriever",
+                return_value=fallback,
+            ),
+        ):
+            agent = ConversationalSearchAgent("unused.jsonl")
+
+        self.assertEqual(
+            agent.dense_initialization_error,
+            "OSError: missing model part",
+        )
+        self.assertIs(agent.retrieval_backend, fallback)
+
+    def test_protected_default_uses_the_promoted_bge_384_assets(self) -> None:
+        self.assertEqual(DEFAULT_MODEL_ASSETS.name, "bge-small-en-v1.5-int8")
+        self.assertEqual(
+            DEFAULT_DENSE_INDEX.name,
+            "search-index-bge-small-en-v1.5-v2",
+        )
+
     def test_default_agent_catalog_path_is_working_directory_independent(self) -> None:
         from starter.agent import Agent, DEFAULT_CATALOG_PATH
 
@@ -1367,7 +1431,9 @@ class ConversationalSearchAgentTest(unittest.TestCase):
             Agent()
         initialize.assert_called_once_with(
             DEFAULT_CATALOG_PATH,
+            evidence_exposure_policy=BUYING_ONLY_TOP3_PREFIX_EXPOSURE_POLICY,
             orchestration_policy=EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
+            ranking_policy=LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
             slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
         )
 
