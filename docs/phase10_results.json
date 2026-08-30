@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "experiment_id": "phase10-completeness-gated-bm25-rescue-v1",
+  "candidate": "phase10-completeness-gated-bm25-rescue-v1",
+  "comparator": "phase9-bounded-profile-residual-v1",
+  "decision": "rejected_and_rolled_back_to_phase9",
+  "active_submission": "phase9-bounded-profile-residual-v1",
+  "evaluation": {
+    "date": "2026-08-30",
+    "command": ".venv/bin/python -m scripts.run_bm25_rescue_ablations --catalog data/catalog.jsonl --dataset data/public_set.jsonl --output results-phase10-bm25-rescue.json",
+    "public_samples": 200,
+    "execution": "strictly_sequential",
+    "backend_warmup": "one_fixed_unlabeled_request",
+    "run_order": [
+      "phase10-completeness-gated-bm25-rescue-v1",
+      "phase9-bounded-profile-residual-v1",
+      "phase10-completeness-gated-bm25-rescue-v1 exact replay",
+      "independent starter.Agent verification"
+    ],
+    "fresh_agent_state_per_variant": true,
+    "shared_immutable_backend": true,
+    "onnx_threads": 1,
+    "external_api_calls": 0,
+    "reported_prompt_tokens": 0,
+    "reported_completion_tokens": 0,
+    "one_shot_attempts_consumed": 1
+  },
+  "strategy": {
+    "name": "completeness_gated_one_sided_bm25_rescue",
+    "candidate_set_changed": false,
+    "new_model_api_embedding_route_or_document_calls_per_search": 0,
+    "formula": "U_i = R_i + C_t * max(0, B_i - R_i); A10_i = (1 - beta_t) * U_i + beta_t * S_i",
+    "gate": "C_t is the existing bounded intent-completeness value",
+    "tie_break": "exact Phase 9 Stage-A order",
+    "fallback": "exact Phase 9 Stage-A result",
+    "profile_interaction": "rescue and the Phase 9 profile residual are mutually exclusive by construction"
+  },
+  "phase9_comparator": {
+    "sample_count": 200,
+    "hit_rate_at_10": 0.99,
+    "mrr": 0.529558,
+    "mttc": 3.065,
+    "efficiency": 0.7935,
+    "recommended_technical_score": 0.812567,
+    "prompt_tokens": 0,
+    "completion_tokens": 0
+  },
+  "candidate_metrics": {
+    "sample_count": 200,
+    "hit_rate_at_10": 0.99,
+    "mrr": 0.563391,
+    "mttc": 2.98,
+    "efficiency": 0.802,
+    "recommended_technical_score": 0.824417,
+    "prompt_tokens": 0,
+    "completion_tokens": 0
+  },
+  "absolute_change": {
+    "hit_rate_at_10": 0.0,
+    "mrr": 0.033833,
+    "mttc": -0.085,
+    "efficiency": 0.0085,
+    "recommended_technical_score": 0.01185
+  },
+  "paired_quality": {
+    "phase9_hit_to_phase10_miss_count": 0
+  },
+  "call_accounting": {
+    "phase9": {
+      "expected_turns": 611,
+      "searches": 470,
+      "ranking_cache_hits": 141,
+      "bm25_route_calls": 470,
+      "dense_route_calls": 470,
+      "candidate_document_calls": 470,
+      "stage_a_attempts": 470,
+      "total_counted_calls": 1880
+    },
+    "phase10": {
+      "expected_turns": 594,
+      "searches": 472,
+      "ranking_cache_hits": 122,
+      "bm25_route_calls": 472,
+      "dense_route_calls": 472,
+      "candidate_document_calls": 472,
+      "stage_a_attempts": 472,
+      "total_counted_calls": 1888
+    },
+    "candidate_minus_comparator_total_counted_calls": 8
+  },
+  "aggregate_rescue_health": {
+    "attempts": 472,
+    "zero_completeness_neutral": 90,
+    "bm25_unavailable_or_empty_neutral": 0,
+    "no_positive_uplift_neutral": 1,
+    "constant_uplift_neutral": 0,
+    "unchanged_order_neutral": 0,
+    "successful_reorders": 376,
+    "validation_or_scoring_fallbacks": 5,
+    "outcomes_partition_attempts": true
+  },
+  "latency": {
+    "phase9_wall_seconds": 12.220158,
+    "phase10_wall_seconds": 12.399735,
+    "phase10_to_phase9_wall_time_ratio": 1.014695,
+    "phase9_warm_p95_ms": 44.252298,
+    "phase10_warm_p95_ms": 45.395941,
+    "phase10_to_phase9_warm_p95_ratio": 1.025844
+  },
+  "exactness": {
+    "candidate_replay_evaluator_payload_exact": true,
+    "candidate_replay_action_intent_slate_trace_exact": true,
+    "candidate_replay_private_cache_snapshot_exact": true,
+    "candidate_replay_aggregate_health_exact": true,
+    "independent_starter_evaluator_payload_exact": true,
+    "independent_starter_action_intent_slate_trace_exact": true,
+    "independent_starter_private_cache_snapshot_exact": true,
+    "independent_starter_aggregate_health_exact": true
+  },
+  "privacy": {
+    "contains_product_sample_session_or_turn_rows": false,
+    "contains_queries_messages_profiles_or_tags": false,
+    "contains_targets_scenarios_ranks_scores_or_action_traces": false,
+    "contains_private_cache_snapshots": false,
+    "rescue_telemetry_is_fixed_global_counters_only": true,
+    "manual_row_scenario_failure_or_small_cell_inspection": false
+  },
+  "decision_gate": {
+    "adopt": false,
+    "phase9_comparator_metrics_exact": true,
+    "candidate_quality_gates_passed": true,
+    "phase9_hit_to_phase10_miss_count_is_zero": true,
+    "candidate_replay_and_independent_exactness_passed": true,
+    "candidate_and_comparator_faults_are_zero": false,
+    "candidate_total_counted_calls_not_above_comparator": false,
+    "candidate_wall_time_ratio_at_most_1_05": true,
+    "candidate_warm_p95_ratio_at_most_1_05": true,
+    "aggregate_publication_privacy_valid": true,
+    "source_contract_and_lock_validated_before_and_after_sealed_run": true,
+    "post_run_tuning_repair_or_second_candidate_run_absent": true,
+    "all_other_atomic_gates_passed": true
+  },
+  "failed_promotion_gates": [
+    {
+      "gate": "candidate_and_comparator_faults_are_zero",
+      "observed": "Phase 10 recorded 5 aggregate validation_or_scoring_fallbacks; Phase 9 recorded zero rescue fallbacks."
+    },
+    {
+      "gate": "candidate_total_counted_calls_not_above_comparator",
+      "observed": "Phase 10 made 1888 counted route/document/Stage-A calls; Phase 9 made 1880."
+    }
+  ],
+  "interpretation": "The candidate produced a substantial aggregate quality gain and no incumbent hit-to-miss regression, while remaining deterministic and within both latency limits. Promotion was nevertheless conjunctive: five fail-closed rescue fallbacks and eight additional total counted calls violated two frozen operational gates. The candidate is therefore rejected without inspecting individual cases or changing its formula, thresholds, validation policy, or implementation from observed outcomes.",
+  "rollback": {
+    "active_submission": "phase9-bounded-profile-residual-v1",
+    "active_ranking_policy": "deterministic-stage-a-v1",
+    "starter_adapter_restored_to_locked_phase9_sha256": "e533227f7467cb10f583519fdf281e253c64d0cf351d7b5194fd1381b5485b82",
+    "phase10_policy_enabled_by_starter": false,
+    "inactive_experiment_code_and_tests_retained": true,
+    "official_benchmark": "benchmarks/phase9.json",
+    "phase10_official_benchmark_created": false,
+    "public_rerun_allowed_for_this_candidate": false
+  },
+  "verification": {
+    "complete_unit_tests_passed_before_lock": 339,
+    "focused_tests_passed_before_lock": 162,
+    "phase10_formula_oracle_cases": 10000,
+    "phase10_phase9_exact_oracle_cases": 1200,
+    "phase10_phase9_exact_oracle_sha256": "a45a56b15931ab5e203e2b06cfb8d7651bc85d274d886b8d9ac48218df9450f1",
+    "phase9_exact_oracle_cases": 1200,
+    "phase9_exact_oracle_sha256": "853f33454db9e3ce8c468a0b7ead525a174217c565e6a8a60ef65faf915476e1",
+    "phase7_exact_oracle_cases": 1000,
+    "phase7_exact_oracle_sha256": "ae216ca5267a3283fd95d7e1fac1aae060a89bef0ea43957d524f9011434a48a",
+    "post_rollback_focused_unit_tests_passed": 87,
+    "post_rollback_complete_unit_tests_passed": 339,
+    "post_rollback_phase9_oracle_cases": 1200,
+    "post_rollback_phase9_oracle_sha256": "853f33454db9e3ce8c468a0b7ead525a174217c565e6a8a60ef65faf915476e1"
+  },
+  "methodology_integrity": {
+    "row_or_scenario_output_emitted_or_inspected": false,
+    "post_run_failure_case_inspection": false,
+    "post_run_tuning_or_repair": false,
+    "second_candidate_run": false,
+    "rollback_performed_after_decision": true,
+    "implementation_lock_scope": "The Phase 10 lock identifies the candidate evaluated in the sealed run. The active starter was restored afterward as required, so the historical candidate lock is not a hash claim about the rolled-back working tree."
+  },
+  "limitations": [
+    "This is one aggregate run on the 200-session public development set; hidden-set generalization remains unknown.",
+    "No row, scenario, failure, product, message, target, rank, or outcome was inspected, so this record does not diagnose the five fallback events or the aggregate call-count difference.",
+    "The Phase 10 policy remains available only as inactive experimental code and is not the submitted Agent default."
+  ],
+  "reproducibility": {
+    "raw_aggregate_result": "results-phase10-bm25-rescue.json",
+    "raw_aggregate_result_sha256": "ef0f323cc49f76a66a552d1e764a43e690a796b0d503e7ca3b0d5c11cb90b488",
+    "experiment_contract": "docs/phase10_experiment_contract.json",
+    "experiment_contract_sha256": "e4bc6e6fa8ec2dab12c989a3e90f63e7fa29641c7285ebeaf331575889cb72c0",
+    "implementation_lock": "docs/phase10_implementation_lock.json",
+    "implementation_lock_sha256": "91fd50a58fff39c0a1c62decff32641aa078f10b0838d40d5883fdf13e1bda03",
+    "implementation_lock_id": "phase10-completeness-gated-bm25-rescue-implementation-v1",
+    "lock_validated_before_and_after_sealed_run": true,
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.12.14"
+  }
+}

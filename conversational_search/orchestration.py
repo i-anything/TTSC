@@ -15,16 +15,23 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from conversational_search.intent import IntentState
+from conversational_search.profiles import (
+    DISABLED_PROFILE_POLICY,
+    NEUTRAL_PROFILE_PRIOR,
+)
 from conversational_search.ranking import RankingPolicy
 from conversational_search.slates import MAX_SLATE_CANDIDATES
 from conversational_search.strategy import RouteWeights, intent_completeness
 
 
-RANKING_DEPENDENCY_VERSION = "exact-ranking-dependencies-v1"
+RANKING_DEPENDENCY_VERSION = "exact-ranking-dependencies-v2"
 DEFAULT_RANKING_CACHE_CAPACITY = 256
 MAX_CACHED_RANKED_IDS = MAX_SLATE_CANDIDATES
 MAX_CACHED_ID_CHARACTERS = 64
 EXACT_RANKING_BACKEND_CONTRACT = "immutable-complete-fused-ranking-v1"
+DEFAULT_PROFILE_DEPENDENCY_DIGEST = DISABLED_PROFILE_POLICY.ranking_digest(
+    NEUTRAL_PROFILE_PRIOR
+)
 
 
 class BackendSnapshotToken:
@@ -120,6 +127,9 @@ def ranking_dependency_digest(
     lexical_query: str,
     route_weights: RouteWeights,
     ranking_policy: RankingPolicy,
+    *,
+    profile_digest: bytes = DEFAULT_PROFILE_DEPENDENCY_DIGEST,
+    retrieval_policy: str | None = None,
 ) -> bytes:
     """Hash every input that can affect retrieval or Stage-A ordering.
 
@@ -137,6 +147,11 @@ def ranking_dependency_digest(
         raise TypeError("route_weights must be RouteWeights")
     if not isinstance(ranking_policy, RankingPolicy):
         raise TypeError("ranking_policy must be RankingPolicy")
+    _validate_profile_digest(profile_digest)
+    if retrieval_policy is not None and (
+        not isinstance(retrieval_policy, str) or not retrieval_policy
+    ):
+        raise ValueError("retrieval_policy must be a non-empty string or None")
 
     payload = {
         "version": RANKING_DEPENDENCY_VERSION,
@@ -151,7 +166,10 @@ def ranking_dependency_digest(
         "lexical_query": lexical_query,
         "route_weights": [route_weights.bm25.hex(), route_weights.dense.hex()],
         "ranking_policy": ranking_policy.value,
+        "profile_digest": profile_digest.hex(),
     }
+    if retrieval_policy is not None:
+        payload["retrieval_policy"] = retrieval_policy
     serialized = json.dumps(
         payload,
         ensure_ascii=False,
@@ -217,12 +235,20 @@ class OrchestrationPlanner:
         result_count: int,
         backend_snapshot_token: BackendSnapshotToken | None,
         cache_eligible: bool,
+        *,
+        profile_digest: bytes = DEFAULT_PROFILE_DEPENDENCY_DIGEST,
+        retrieval_policy: str | None = None,
     ) -> TurnDecision:
         _validate_session_id(session_id)
         if isinstance(result_count, bool) or not isinstance(result_count, int):
             raise TypeError("result_count must be an integer")
         if not isinstance(cache_eligible, bool):
             raise TypeError("cache_eligible must be a boolean")
+        _validate_profile_digest(profile_digest)
+        if retrieval_policy is not None and (
+            not isinstance(retrieval_policy, str) or not retrieval_policy
+        ):
+            raise ValueError("retrieval_policy must be a non-empty string or None")
         evidence = intent_completeness(state)
 
         if result_count <= 0 and self._policy is OrchestrationPolicy.EXACT_RANKING_REUSE:
@@ -268,6 +294,8 @@ class OrchestrationPlanner:
             lexical_query,
             route_weights,
             ranking_policy,
+            profile_digest=profile_digest,
+            retrieval_policy=retrieval_policy,
         )
         status, entry = self._lookup(
             session_id,
@@ -411,6 +439,13 @@ class OrchestrationPlanner:
 def _validate_session_id(session_id: str) -> None:
     if not isinstance(session_id, str) or not session_id:
         raise ValueError("session_id must be a non-empty string")
+
+
+def _validate_profile_digest(profile_digest: bytes) -> None:
+    if not isinstance(profile_digest, bytes):
+        raise TypeError("profile_digest must be bytes")
+    if len(profile_digest) != hashlib.sha256().digest_size:
+        raise ValueError("profile_digest must be a 32-byte SHA-256 digest")
 
 
 def _session_cache_key(session_id: str) -> bytes:

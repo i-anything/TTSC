@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "audit_id": "phase11-generator-separated-dataset-fingerprint-v1",
+  "date": "2026-08-30",
+  "purpose": "Fingerprint the two supplied 1,200-row datasets, remove the released public rows, deduplicate semantic cases, and prove that development and validation generators do not overlap without printing or retaining individual rows.",
+  "fingerprint_contract": {
+    "canonicalization": "RFC-8259 JSON with recursively sorted object keys, UTF-8, ensure_ascii=false, and separators comma/colon without whitespace",
+    "exact_row_fingerprint": "SHA-256 of the complete canonical row",
+    "logical_row_fingerprint": "SHA-256 after removing sample_id only",
+    "content_fingerprint": "SHA-256 of canonical {user_profile, ground_truth}",
+    "deduplication_key": "content_fingerprint",
+    "public_exclusion_key": "content_fingerprint",
+    "published_row_fingerprints": false,
+    "row_values_or_messages_inspected": false
+  },
+  "inputs": {
+    "plain": {
+      "path": "/Users/limzichao/Downloads/public_plus_synthetic_1200.jsonl",
+      "bytes": 493404,
+      "sha256": "f2cdf94b8dbdf22373f42dd661f22372e92715d7bcbc924590db26cf824894db",
+      "rows": 1200,
+      "schema_variants": 1,
+      "top_level_keys": [
+        "category_bucket",
+        "difficulty_bucket",
+        "ground_truth",
+        "sample_id",
+        "scenario_type",
+        "user_profile"
+      ],
+      "exact_unique_rows": 1200,
+      "without_sample_id_unique_rows": 1200,
+      "content_unique_rows": 1196,
+      "content_duplicate_rows": 4,
+      "content_duplicate_groups": 4,
+      "content_unique_set_sha256": "39557925090980b3c0fc5d49c143697f50f0ee2e77aaf3f2578156e9eaf87b38"
+    },
+    "scenario_aware": {
+      "path": "/Users/limzichao/Downloads/public_plus_synthetic_scenario_aware_1200.jsonl",
+      "bytes": 538924,
+      "sha256": "78da5e8402bd7d6c7d9eee86de24eec9a13d3e433ed6f3cfe720bf85cb3319c9",
+      "rows": 1200,
+      "schema_variants": 1,
+      "top_level_keys": [
+        "category_bucket",
+        "difficulty_bucket",
+        "ground_truth",
+        "sample_id",
+        "scenario_type",
+        "user_profile"
+      ],
+      "exact_unique_rows": 1200,
+      "without_sample_id_unique_rows": 1200,
+      "content_unique_rows": 1200,
+      "content_duplicate_rows": 0,
+      "content_duplicate_groups": 0,
+      "content_unique_set_sha256": "2a0db5168666b0ea84d7b8ca08772498804b16aa71b3c459583928261149de84"
+    },
+    "released_public": {
+      "path": "data/public_set.jsonl",
+      "bytes": 88240,
+      "sha256": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+      "rows": 200,
+      "exact_unique_rows": 200,
+      "without_sample_id_unique_rows": 200,
+      "content_unique_rows": 200,
+      "content_unique_set_sha256": "a10adf5ef5e6424c749b0d97e2c7186da62ec76572de4bfbd2a28e8d42b3cb34"
+    }
+  },
+  "overlap": {
+    "plain_and_scenario_aware_exact_rows": 200,
+    "plain_and_scenario_aware_content_cases": 200,
+    "plain_and_public_exact_rows": 200,
+    "plain_and_public_content_cases": 200,
+    "scenario_aware_and_public_exact_rows": 200,
+    "scenario_aware_and_public_content_cases": 200,
+    "interpretation": "The only cross-generator overlap is the same 200 released public rows embedded verbatim in both supplied files."
+  },
+  "locked_splits": {
+    "synthetic_development": {
+      "source": "plain",
+      "rule": "Remove every public content fingerprint, then keep one row per remaining content fingerprint using ascending original row ordinal as the deterministic representative.",
+      "cases": 996,
+      "content_fingerprint_set_sha256": "37bb8265543198c33305d40c6facf26f76e9109ac6f68afb529ef6a53b19eabd",
+      "overlap_with_public": 0
+    },
+    "synthetic_validation": {
+      "source": "scenario_aware",
+      "rule": "Remove every public content fingerprint, then keep one row per remaining content fingerprint using ascending original row ordinal as the deterministic representative.",
+      "cases": 1000,
+      "content_fingerprint_set_sha256": "a2677eb857c8df9ed963818c7c854c2d3ec936b7d597ed9810248fbc467f8ad1",
+      "overlap_with_public": 0,
+      "sealed_until": "Phase 11 candidate source, tests, and implementation lock are frozen"
+    },
+    "public_confirmation": {
+      "source": "released_public",
+      "cases": 200,
+      "use": "one final frozen confirmation only after both synthetic suites pass"
+    },
+    "cross_generator_nonpublic_content_overlap": 0
+  },
+  "privacy": {
+    "contains_rows_messages_profiles_targets_product_ids_or_trajectories": false,
+    "contains_per_case_fingerprints": false,
+    "contains_scenario_or_small_cell_metrics": false,
+    "aggregate_counts_and_set_hashes_only": true
+  }
+}

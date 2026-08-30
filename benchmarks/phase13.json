@@ -1,0 +1,14 @@
+{
+  "metrics": {
+    "efficiency": 0.809,
+    "hit_rate_at_10": 0.99,
+    "mrr": 0.556748,
+    "mttc": 2.91,
+    "recommended_technical_score": 0.823824
+  },
+  "record_id": "phase13",
+  "sample_count": 200,
+  "schema_version": 1,
+  "source_document": "docs/phase13_results.json",
+  "system": "phase13-intent-epoch-continuation-novelty-v1"
+}

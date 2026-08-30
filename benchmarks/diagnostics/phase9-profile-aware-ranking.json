@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "diagnostic_id": "phase9-bounded-profile-aware-stage-a-v1",
+  "experiment_contract": "docs/phase9_experiment_contract.json",
+  "implementation_lock": "docs/phase9_implementation_lock.json",
+  "aggregate_source": "results-phase9-profile-aware-ranking.json",
+  "methodology_disclosure": {
+    "pre_contract_aggregate_unlabeled_profile_exposure": true,
+    "scope": "Aggregate, unlabeled profile information was exposed during development before the Phase 9 experiment contract was frozen. No evaluator labels, targets, outcomes, or per-session rows were part of that exposure.",
+    "mitigation": "The generic theme taxonomy, exact aliases, document cues, residual formula, weight, tests, sources, and implementation lock were frozen before the sole sealed public run.",
+    "post_run_tuning_or_second_candidate_run": false
+  },
+  "execution": {
+    "public_samples": 200,
+    "candidate_turns": 611,
+    "baseline_turns": 612,
+    "parallelism": "strictly_sequential",
+    "onnx_threads": 1,
+    "candidate_ran_before_baseline": true,
+    "label_free_backend_warmup": true,
+    "shared_immutable_backend": true,
+    "fresh_agent_state_per_variant": true,
+    "external_api_calls": 0
+  },
+  "official_metrics": {
+    "baseline": {
+      "sample_count": 200,
+      "hit_rate_at_10": 0.99,
+      "mrr": 0.52223,
+      "mttc": 3.07,
+      "efficiency": 0.793,
+      "recommended_technical_score": 0.810269
+    },
+    "candidate": {
+      "sample_count": 200,
+      "hit_rate_at_10": 0.99,
+      "mrr": 0.529558,
+      "mttc": 3.065,
+      "efficiency": 0.7935,
+      "recommended_technical_score": 0.812567
+    },
+    "absolute_change": {
+      "hit_rate_at_10": 0.0,
+      "mrr": 0.007328,
+      "mttc": -0.005,
+      "efficiency": 0.0005,
+      "recommended_technical_score": 0.002298
+    }
+  },
+  "paired_quality": {
+    "phase7_hit_to_phase9_miss_count": 0
+  },
+  "equivalence": {
+    "candidate_replay_evaluator_payload_equal": true,
+    "candidate_replay_action_intent_slate_trace_equal": true,
+    "candidate_replay_aggregate_telemetry_equal": true,
+    "independent_evaluator_payload_equal": true,
+    "independent_action_intent_slate_trace_equal": true,
+    "independent_aggregate_telemetry_equal": true
+  },
+  "profile": {
+    "policy": "phase9-bounded-profile-residual-v1",
+    "profiles_reset": 200,
+    "session_entries": 200,
+    "logical_profile_bytes": 400,
+    "zero_mask_profiles": 46,
+    "nonzero_mask_profiles": 154,
+    "recognized_theme_count": 235,
+    "turns_disabled_by_active_requirements": 396,
+    "eligible_stage_a_attempts": 69,
+    "empty_represented_theme_fallbacks": 0,
+    "constant_score_neutral_fallbacks": 0,
+    "successful_residual_applications": 69,
+    "parsing_or_scoring_fallbacks": 0,
+    "retained_profile_state_valid": true,
+    "maximum_logical_bytes_per_session": 2
+  },
+  "orchestration": {
+    "baseline_searches": 471,
+    "candidate_searches": 470,
+    "baseline_reuses": 141,
+    "candidate_reuses": 141,
+    "candidate_cold_misses": 200,
+    "candidate_dependency_misses": 270,
+    "candidate_retrievals_avoided": 141,
+    "candidate_reranks_avoided": 141,
+    "candidate_cache_entries": 200,
+    "candidate_cached_id_references": 33910,
+    "candidate_cached_id_utf8_bytes": 339100,
+    "candidate_retained_cache_bytes": 2065786,
+    "cache_capacity": 256,
+    "maximum_ids_per_entry": 200,
+    "maximum_id_characters": 64
+  },
+  "calls": {
+    "baseline_route_calls": 471,
+    "candidate_route_calls": 470,
+    "baseline_candidate_document_calls": 471,
+    "candidate_candidate_document_calls": 470,
+    "baseline_stage_a_attempts": 471,
+    "candidate_stage_a_attempts": 470,
+    "additional_model_api_embedding_route_rerank_or_document_calls": 0
+  },
+  "latency": {
+    "baseline_wall_seconds": 11.765768,
+    "candidate_wall_seconds": 11.836679,
+    "candidate_wall_time_ratio": 1.006027,
+    "baseline_warm_p95_ms": 43.558959,
+    "candidate_warm_p95_ms": 43.019837,
+    "candidate_warm_p95_ratio": 0.987623
+  },
+  "health": {
+    "route_fallback_turns": 0,
+    "baseline_reranker_failures": 0,
+    "candidate_reranker_failures": 0,
+    "baseline_slate_failures": 0,
+    "candidate_slate_failures": 0,
+    "baseline_cache_fault_invalidations": 0,
+    "candidate_cache_fault_invalidations": 0,
+    "baseline_cache_store_rejections": 0,
+    "candidate_cache_store_rejections": 0,
+    "profile_parsing_or_scoring_fallbacks": 0
+  },
+  "verification": {
+    "focused_tests_passed_before_lock": 157,
+    "complete_unit_tests_passed_before_lock": 285,
+    "phase7_exact_differential_cases": 1000,
+    "source_and_contract_lock_validated_before_public_run": true,
+    "all_frozen_promotion_gates_passed": true
+  },
+  "privacy": {
+    "aggregate_only": true,
+    "contains_queries_or_messages": false,
+    "contains_profiles_or_tags": false,
+    "contains_product_or_sample_ids": false,
+    "contains_session_or_turn_rows": false,
+    "contains_raw_masks_candidate_scores_or_action_traces": false,
+    "contains_scenario_metrics_or_labels": false,
+    "profile_telemetry_is_fixed_global_counters_only": true
+  },
+  "adopted": true
+}

@@ -28,6 +28,7 @@ from conversational_search.service import (
     _validate_catalog_pair,
 )
 from conversational_search.slates import (
+    INTENT_EPOCH_NOVELTY_SLATE_POLICY,
     REPEAT_TOP_SLATE_POLICY,
     STAGNATION_AWARE_SLATE_POLICY,
 )
@@ -1255,8 +1256,11 @@ class ConversationalSearchAgentTest(unittest.TestCase):
         agent.reset("session", {})
 
         with mock.patch(
-            "conversational_search.service.rerank_stage_a",
+            "conversational_search.service.rerank_stage_a_with_profile",
             side_effect=RuntimeError("scorer failed"),
+        ), mock.patch(
+            "conversational_search.service.rerank_stage_a",
+            side_effect=RuntimeError("base scorer failed"),
         ):
             response = agent.respond("session", "waterproof shoes", 1, 10)
 
@@ -1364,6 +1368,7 @@ class ConversationalSearchAgentTest(unittest.TestCase):
         initialize.assert_called_once_with(
             DEFAULT_CATALOG_PATH,
             orchestration_policy=EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
+            slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
         )
 
 

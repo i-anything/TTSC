@@ -1,0 +1,421 @@
+{
+  "schema_version": 1,
+  "experiment_id": "phase11-lossless-conservative-multislot-intent-v1",
+  "candidate": "lossless-multislot-intent-v1",
+  "baseline": "phase9-bounded-profile-residual-v1",
+  "status": "frozen_before_candidate_implementation_or_synthetic_row_inspection",
+  "purpose": "Test one conservative lossless multi-slot intent reducer while preserving the complete Phase 9 question, retrieval, fusion, ranking, profile, slate, orchestration, model, index, and response contracts.",
+  "hypothesis": "On messages containing at least two independently attributable semantic clauses, atomizing positive constraints, explicit exclusions, attribute-specific no-preference statements, and explicit corrections will improve rank and turn utility across generator-separated data while every single-slot, ambiguous, malformed, or bounded-out message remains exact Phase 9.",
+  "protected_baseline": {
+    "lock": "docs/phase11_baseline_lock.json",
+    "agent": "phase9-bounded-profile-residual-v1",
+    "starter_sha256": "e533227f7467cb10f583519fdf281e253c64d0cf351d7b5194fd1381b5485b82",
+    "public_metrics": {
+      "hit_rate_at_10": 0.99,
+      "mrr": 0.529558,
+      "mttc": 3.065,
+      "efficiency": 0.7935,
+      "recommended_technical_score": 0.812567
+    },
+    "default_must_remain_active_until_promotion": true
+  },
+  "non_overfit_boundary": {
+    "allowed_before_source_lock": [
+      "current source code, tests, contracts, and aggregate-only historical health records",
+      "the aggregate dataset hashes, schemas, duplicate counts, and overlap counts in docs/phase11_dataset_audit.json",
+      "generic English coordination, negation, correction, and no-preference structure",
+      "the already frozen Phase 6 material, color, budget, size, style, use-case, and explicit-label cue sets",
+      "fully synthetic hand-written messages and generated atom partitions that contain no catalog products, public rows, or targets"
+    ],
+    "forbidden_for_formula_cues_thresholds_or_debugging": [
+      "released public or hidden messages, targets, product IDs, ranks, answers, profiles, trajectories, hits, misses, or scenario rows",
+      "rows or values from the sealed scenario-aware validation generator",
+      "catalog-derived cue frequencies, product frequencies, target membership, or outcome-linked attributes",
+      "per-row output from either supplied 1,200-row dataset",
+      "multiple parser formulas, cue sets, bounds, or conflict policies followed by evaluation-based selection",
+      "post-run inspection or repair based on failed development, validation, or public cases"
+    ],
+    "development_data_rule": "The plain generator may be used only after this contract is frozen and only through the deduplicated 996-case non-public split. Any implementation change after its aggregate outcome consumes the candidate and requires a new hypothesis/version; it cannot continue to validation.",
+    "validation_seal": "The deduplicated 1,000-case scenario-aware non-public split remains unread and unevaluated until candidate sources, tests, full suite, formula oracle, and implementation lock are frozen.",
+    "public_rule": "The 200 released rows are used once only after both synthetic suites pass every applicable gate.",
+    "row_or_failure_inspection": false,
+    "outcome_driven_tuning": false
+  },
+  "conceptual_alternatives": {
+    "selected": "bounded deterministic span ledger with exact baseline fallback",
+    "rejected": [
+      {
+        "approach": "whole-message regex phrase bank",
+        "reason": "Cannot compose novel clauses and encourages template overfitting."
+      },
+      {
+        "approach": "local LLM or sequence-labeling model",
+        "reason": "Adds model size, latency, calibration, portability, and failure modes before deterministic structure is exhausted."
+      },
+      {
+        "approach": "joint parser plus negative candidate penalty",
+        "reason": "Conflates state extraction with ranking and makes missing catalog metadata unsafe; deferred to a separate ablation."
+      }
+    ]
+  },
+  "frozen_components": {
+    "question_policy": "conservative-early-other-v1",
+    "query_renderers": "query-text-v1 dense and lexical renderers",
+    "intent_completeness": "clip((strong + 0.5 * weak) / 3, 0, 1)",
+    "fusion_policy": "completeness-adaptive-rrf-v1",
+    "retrieval": "BM25 Top-100 plus pinned 384-dimensional BGE-small dense Top-100",
+    "ranking": "deterministic-stage-a-v1 plus phase9-bounded-profile-residual-v1",
+    "slate": "stagnation-aware-slate-v1",
+    "orchestration": "exact-ranking-reuse-v1",
+    "model_index_and_catalog": "exact Phase 9 assets from docs/phase11_baseline_lock.json",
+    "evaluator": "evaluator/local_evaluator.py",
+    "response_schema": "docs/agent_api_contract.json"
+  },
+  "candidate_scope": {
+    "change": "Intent reduction only, plus fixed-cardinality aggregate parser telemetry and an experiment harness.",
+    "new_models_apis_embeddings_catalog_passes_or_indexes": 0,
+    "new_runtime_dependencies": 0,
+    "candidate_set_or_candidate_document_change": false,
+    "question_policy_change": false,
+    "ranking_formula_change": false,
+    "starter_default_before_promotion": "robust Phase 9 intent policy",
+    "starter_experiment_path": "A keyword-only explicit candidate policy may be accepted for independent verification while its default remains Phase 9."
+  },
+  "attribute_detection": {
+    "allowed_atomic_attributes": [
+      "material",
+      "color",
+      "size",
+      "style",
+      "brand",
+      "budget",
+      "feature",
+      "use_case",
+      "other"
+    ],
+    "explicit_labels": "An anchored allowed attribute label followed by colon or equals fixes the attribute and protects its value from an untyped conjunction split.",
+    "unlabeled_detector": "D(x) is the set of existing frozen high-confidence material, color, size, style, use-case, budget, and brand-label detectors that match span x.",
+    "typed_rule": "If an explicit label exists, use it. Otherwise type x only when |D(x)| equals one.",
+    "ambiguous_rule": "If |D(x)| exceeds one within one unsplit span, reject candidate decomposition and return exact Phase 9.",
+    "residual_rule": "If |D(x)| is zero and x contains bounded meaningful text, retain x exactly as an untyped residual Requirement; never invent feature, other, or a requested attribute.",
+    "category_rule": "Category is extracted only by the existing recognized initial-message envelope and is not inferred from an atomic constraint.",
+    "new_catalog_or_public_derived_cues": false
+  },
+  "segmentation_contract": {
+    "hard_boundaries": [
+      "newline",
+      "semicolon"
+    ],
+    "soft_boundaries": [
+      "comma",
+      "and",
+      "but",
+      "plus",
+      "also",
+      "while"
+    ],
+    "soft_boundary_activation": "Activate a soft boundary only when both neighboring spans independently form valid operations and an explicit-label value is not split into an untyped continuation. Same-attribute alternatives such as black and white and untyped compounds such as waterproof and breathable remain one exact-baseline value.",
+    "control_scaffolds": [
+      "existing recognized initial buying, browsing, tentative, answer, override, no-preference, and question-request envelopes",
+      "anchored make it or I want positive scaffolds",
+      "anchored not, no, without, avoid, exclude, do not want, or don't want exclusion scaffolds",
+      "anchored replace X with Y, X instead, no longer X, or now Y correction scaffolds",
+      "existing explicit attribute no-preference scaffolds"
+    ],
+    "negation_guard": "not only, not sure, no less than, and without a doubt are ambiguous and force exact Phase 9.",
+    "lossless_ledger": "Every alphanumeric payload character must be covered by a retained value span or a frozen control span. Separators may be consumed. Any uncovered meaningful text forces exact Phase 9.",
+    "source_order": "Apply operations in ascending original span order; later explicit operations win within the same message.",
+    "candidate_requires_at_least_two_atoms": true
+  },
+  "state_transition": {
+    "baseline": "B(s,m,t) is apply_user_message under the exact robust Phase 9 policy.",
+    "candidate": "T(s,m,t)=fold_left(apply_atom,s,g_1..g_n) only when the complete ledger is eligible; otherwise T(s,m,t)=B(s,m,t) exactly.",
+    "operations": {
+      "ADD": "Append a deduplicated positive Requirement with the envelope's frozen provenance; clear the same attribute from no_preference and remove an exact-value exclusion.",
+      "EXCLUDE": "Remove exact normalized positive values contradicted by the span, append the normalized value to excluded once, and never render it into a positive query.",
+      "CLEAR": "Remove active requirements for the explicit attribute, add that attribute to no_preference, and remove typed exclusions for that same attribute.",
+      "REPLACE": "Represented as a destructive typed ADD: remove active requirements for the same explicit or singleton-detected attribute before adding the replacement."
+    },
+    "full_override": "Retain the Phase 9 provenance rule that removes initial_explicit and initial_tentative requirements while preserving independently disclosed answer/free_text requirements; then apply eligible atoms.",
+    "intent_version": "Increment exactly once if the message performs any exclusion, clear, replacement, or full override; ordinary additions retain the existing version.",
+    "question_state": "asked_attributes and last_asked_attribute retain Phase 9 semantics. An untyped residual is not assigned to the last asked attribute unless the exact existing single-slot rule would type it.",
+    "immutability": true,
+    "persistent_parser_state": false
+  },
+  "bounds": {
+    "maximum_cleaned_message_characters_for_candidate_path": 2048,
+    "maximum_atoms_per_turn": 8,
+    "maximum_atom_value_characters": 256,
+    "maximum_active_requirements_after_candidate_update": 24,
+    "maximum_exclusions_after_candidate_update": 16,
+    "maximum_exclusion_characters": 256,
+    "bound_failure": "Return exact Phase 9 without partial candidate state or candidate cache commit.",
+    "time": "O(message characters times the fixed detector count), with no data-dependent catalog work.",
+    "additional_retained_state": "Only additional bounded Requirement/excluded entries already represented by IntentState; no second session map or message history.",
+    "maximum_additional_retained_agent_bytes": 2097152,
+    "maximum_additional_startup_rss_bytes": 1048576,
+    "maximum_startup_time_ratio": 1.05
+  },
+  "fallback_contract": {
+    "exact_result": "Return the exact immutable state produced by protected Phase 9 from the original state, original message, and turn.",
+    "conditions": [
+      "single semantic atom",
+      "unrecognized envelope where safe payload boundaries cannot be proven",
+      "ambiguous attribute detector set",
+      "unsafe negation scope or correction target",
+      "same-attribute alternative conjunction",
+      "uncovered meaningful payload text",
+      "duplicate, overlapping, empty, malformed, or out-of-order spans",
+      "any candidate bound exceeded",
+      "invalid operation, attribute, provenance, state invariant, or result",
+      "any candidate parsing or application exception"
+    ],
+    "partial_update_visible": false,
+    "candidate_fault_cacheable": false,
+    "baseline_recomputed_from_modified_state": false
+  },
+  "telemetry": {
+    "allowed_fixed_global_counters": [
+      "candidate reduction attempts",
+      "eligible multi-slot applications",
+      "single-slot exact-baseline returns",
+      "ambiguous or unsafe exact-baseline returns",
+      "bound exact-baseline returns",
+      "candidate validation or exception fallbacks",
+      "positive atoms applied",
+      "exclusion atoms applied",
+      "clear atoms applied",
+      "replacement atoms applied",
+      "residual atoms preserved"
+    ],
+    "forbidden_dimensions": "No session, turn, scenario, category, attribute, value, text, profile, product, route, target, rank, score, outcome, or free-form key.",
+    "retained_rows_or_spans": false
+  },
+  "synthetic_test_plan": {
+    "positive_cells": [
+      "two and eight distinct typed slots",
+      "typed plus lossless untyped residual",
+      "explicit labels with punctuation and conjunctions inside values",
+      "same-attribute alternatives that must remain exact baseline",
+      "mixed case, Unicode punctuation, whitespace, repeated values, and source order",
+      "initial explicit, initial tentative, clarification answer, ordinary follow-up, and full override provenance"
+    ],
+    "negative_and_control_cells": [
+      "single and multiple exclusions",
+      "positive then exclusion and exclusion then positive in one message",
+      "not-only, not-sure, no-less-than, double-negation, and without-a-doubt guards",
+      "attribute-specific no-preference mixed with an unrelated positive",
+      "same-slot replace, no-longer, now, and instead corrections",
+      "pronoun scaffolds with and without an antecedent",
+      "ambiguous correction target and unmatched residual preservation"
+    ],
+    "state_cells": [
+      "immutable branches",
+      "successive turns",
+      "explicit override and contradiction",
+      "interleaved sessions",
+      "reset of one session without affecting another",
+      "asked, interrupted, answered, and cleared attributes",
+      "exact intent_version increments",
+      "query rendering and active-attribute behavior"
+    ],
+    "bounds_and_malformed_cells": [
+      "empty input and whitespace only",
+      "2,048 and 2,049 characters",
+      "eight and nine atoms",
+      "256 and 257 character values",
+      "24 and 25 active requirements",
+      "16 and 17 exclusions",
+      "overlapping spans, empty clauses, control-only clauses, invalid attributes, and invalid turns"
+    ],
+    "integration_cells": [
+      "fresh SEARCH after a ranking-relevant multi-slot change",
+      "exact REUSE when complete dependencies are unchanged",
+      "no reuse across positive, exclusion, clear, or correction changes",
+      "candidate parser fault returns exact baseline and is not cached as candidate success",
+      "recommendation, question, usage, IntentState, SlateState, and call equivalence on every baseline fallback",
+      "zero additional model, API, embedding, BM25, dense, document, Stage-A, profile, question, or slate calls per fresh search"
+    ],
+    "baseline_equivalence": "Every existing canonical and Phase 6 robust single-slot family plus at least 10,000 fixed-seed single-slot/malformed variants must produce exact Phase 9 state, dense query, lexical query, response, cache decision, and fixed health counters.",
+    "independent_oracle": "A separately expressed reference transition must exhaust practical small operation partitions and at least 20,000 fixed-seed valid and malformed messages, with exact state, query, status, intent_version, and determinism checks."
+  },
+  "dataset_protocol": {
+    "audit": "docs/phase11_dataset_audit.json",
+    "content_fingerprint": "SHA-256 of canonical {user_profile, ground_truth}",
+    "public_exclusion_before_deduplication": true,
+    "representative": "lowest original row ordinal per content fingerprint",
+    "development": {
+      "source_sha256": "f2cdf94b8dbdf22373f42dd661f22372e92715d7bcbc924590db26cf824894db",
+      "cases": 996,
+      "fingerprint_set_sha256": "37bb8265543198c33305d40c6facf26f76e9109ac6f68afb529ef6a53b19eabd"
+    },
+    "validation": {
+      "source_sha256": "78da5e8402bd7d6c7d9eee86de24eec9a13d3e433ed6f3cfe720bf85cb3319c9",
+      "cases": 1000,
+      "fingerprint_set_sha256": "a2677eb857c8df9ed963818c7c854c2d3ec936b7d597ed9810248fbc467f8ad1",
+      "sealed_until_implementation_lock": true
+    },
+    "public": {
+      "source_sha256": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+      "cases": 200,
+      "final_confirmation_only": true
+    },
+    "development_validation_or_public_overlap_after_filter": 0,
+    "rows_scenarios_messages_products_targets_or_failures_published": false
+  },
+  "statistics": {
+    "per_session_utility": "u=0.50*hit + 0.30*reciprocal_rank + 0.20*clip((11-first_hit_turn)/10,0,1), with miss reciprocal_rank=0 and first_hit_turn=11",
+    "paired_delta": "candidate utility minus baseline utility for the same session",
+    "bootstrap": "Within each scenario stratum, sample the observed number of paired deltas with replacement; concatenate strata and average.",
+    "bootstrap_seed": 20260830,
+    "bootstrap_replicates": 10000,
+    "bootstrap_threads": 1,
+    "lower_bound": "Deterministic empirical 2.5th percentile using the sorted replicate at zero-based index floor(0.025*10000).",
+    "gate": "The overall scenario-stratified 95% lower confidence bound is at least zero on development, validation, and public confirmation.",
+    "hit_transition_check": "Report aggregate both-hit, candidate-only-hit, baseline-only-hit, and both-miss counts; baseline-only-hit must be zero. Compute a fixed exact two-sided McNemar/binomial p-value for disclosure, not as a substitute for the zero-regression gate.",
+    "runtime_policy_uses_statistics_or_scenario": false
+  },
+  "execution": {
+    "preconditions": [
+      "contract and baseline lock valid",
+      "candidate source scope valid",
+      "focused deterministic tests pass",
+      "complete unit suite passes",
+      "independent formula/state oracle passes",
+      "implementation lock written and validated",
+      "validation and public attempt sentinels absent"
+    ],
+    "environment": {
+      "TTSC_ONNX_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "active_processes": 1,
+    "threads": 1,
+    "multiprocessing_parallel_jobs_gpu_or_mps": false,
+    "suite_order": [
+      "deduplicated synthetic development",
+      "deduplicated sealed synthetic validation if development passes",
+      "released public confirmation if validation passes"
+    ],
+    "variant_order_per_suite": [
+      "fixed label-free backend warm-up",
+      "candidate",
+      "protected Phase 9 baseline",
+      "exact candidate replay",
+      "independent explicit-policy starter.Agent"
+    ],
+    "shared_immutable_backend": true,
+    "fresh_agent_state_per_variant": true,
+    "thermal_rule": "Do not begin the next heavy suite while macOS reports thermal pressure. A consumed one-shot suite is never restarted because observation or cooling is slow.",
+    "crash_safety": "Create an exclusive per-suite attempt sentinel before loading that suite; interruption consumes that suite attempt.",
+    "external_api_calls": 0,
+    "row_or_scenario_output": false
+  },
+  "promotion_gates": {
+    "all_conjunctive": true,
+    "tests_and_contract": [
+      "all focused tests pass",
+      "complete unit suite passes",
+      "baseline and candidate source locks validate",
+      "Agent output schema remains valid",
+      "independent oracle passes",
+      "dataset fingerprints, deduplication, public exclusion, and generator separation validate"
+    ],
+    "quality_each_suite": [
+      "candidate HR@10 is at least baseline HR@10",
+      "baseline-hit to candidate-miss count is zero",
+      "candidate MRR is at least baseline MRR",
+      "candidate MTTC is at most baseline MTTC",
+      "candidate TechnicalScore is strictly greater than baseline TechnicalScore",
+      "MRR or MTTC improves strictly",
+      "scenario-stratified paired bootstrap 95% lower bound for utility delta is at least zero"
+    ],
+    "public_baseline_exact": {
+      "hit_rate_at_10": 0.99,
+      "mrr": 0.529558,
+      "mttc": 3.065,
+      "efficiency": 0.7935,
+      "recommended_technical_score": 0.812567
+    },
+    "exactness_and_health": [
+      "candidate replay evaluator payload, action, IntentState, SlateState, cache state, and aggregate health are exact",
+      "independent explicit-policy starter.Agent matches the candidate exactly",
+      "retrieval, ranking, profile, slate, cache, parser, and question-selection faults are zero",
+      "candidate parser outcomes partition attempts and validation/exception fallbacks equal zero",
+      "no unexpected fallback counter increases",
+      "one BM25, dense, document, and Stage-A call at most per fresh search exactly as Phase 9",
+      "reported model and API tokens remain zero",
+      "no new model, API, embedding, catalog, or persistent product-state dependency exists"
+    ],
+    "performance": {
+      "maximum_warm_p95_response_latency_ratio": 1.05,
+      "maximum_evaluation_wall_time_ratio": 1.05,
+      "maximum_startup_time_ratio": 1.05,
+      "maximum_additional_startup_rss_bytes": 1048576,
+      "maximum_additional_retained_agent_bytes": 2097152
+    },
+    "privacy": "Published and retained experiment output contains aggregate metrics, fixed health counters, confidence interval, transition totals, hashes, and gates only; no rows, scenarios, messages, profiles, targets, products, queries, ranks, action traces, or per-session fingerprints.",
+    "generalization": "Every quality, exactness, health, performance, statistics, and privacy gate passes independently on development, sealed validation, and final public confirmation."
+  },
+  "source_scope": {
+    "pre_promotion_may_change": [
+      "conversational_search/intent.py",
+      "conversational_search/service.py",
+      "starter/agent.py only to add an explicit keyword-only experiment policy whose default remains exact Phase 9",
+      "scripts/run_multislot_intent_ablations.py",
+      "scripts/verify_phase11_intent_oracle.py",
+      "tests/test_multislot_intent.py",
+      "tests/test_service_multislot_intent.py",
+      "tests/test_multislot_intent_ablations.py",
+      "docs/phase11_implementation_lock.json"
+    ],
+    "post_decision_records_may_change": [
+      "docs/phase11_results.json",
+      "docs/retrieval_contract.md",
+      "README.md",
+      "benchmarks/phase11.json only if promoted",
+      "benchmarks/diagnostics/phase11-multislot-intent.json only if promoted"
+    ],
+    "starter_default_may_change_only_after_all_data_gates": true,
+    "forbidden": [
+      "evaluator/local_evaluator.py",
+      "conversational_search/questions.py",
+      "conversational_search/retrieval.py",
+      "conversational_search/strategy.py",
+      "conversational_search/ranking.py",
+      "conversational_search/profiles.py",
+      "conversational_search/slates.py",
+      "conversational_search/orchestration.py",
+      "preprocessing",
+      "requirements files",
+      "model, tokenizer, index, catalog, or dataset artifacts"
+    ]
+  },
+  "rollback": {
+    "trigger": "Any source-scope, test, oracle, dataset, quality, transition, confidence, exactness, health, performance, privacy, or reproducibility gate fails.",
+    "action": [
+      "Reject lossless-multislot-intent-v1.",
+      "Restore starter/agent.py byte-for-byte to protected SHA-256 e533227f7467cb10f583519fdf281e253c64d0cf351d7b5194fd1381b5485b82 using apply_patch, never git reset or checkout.",
+      "Keep the default intent policy robust and every Phase 9 runtime policy unchanged.",
+      "Do not inspect failed rows, scenarios, messages, products, targets, ranks, or trajectories.",
+      "Do not change formula, cue sets, bounds, conflict semantics, or fallback behavior from outcomes and do not rerun a consumed failed suite.",
+      "Publish aggregate rejection evidence only; do not create benchmarks/phase11.json."
+    ],
+    "official_benchmark_after_rejection": "benchmarks/phase9.json"
+  },
+  "publication": {
+    "baseline_lock": "docs/phase11_baseline_lock.json",
+    "dataset_audit": "docs/phase11_dataset_audit.json",
+    "research_plan": "docs/phase11_research_plan.md",
+    "implementation_lock": "docs/phase11_implementation_lock.json",
+    "result": "docs/phase11_results.json",
+    "official_benchmark_if_promoted": "benchmarks/phase11.json",
+    "diagnostic_if_promoted": "benchmarks/diagnostics/phase11-multislot-intent.json",
+    "raw_results": "gitignored aggregate-only results-phase11-*.json",
+    "append_only": true
+  }
+}

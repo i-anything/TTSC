@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "experiment_id": "phase11-lossless-conservative-multislot-intent-v1",
+  "candidate": "lossless_multislot",
+  "baseline": "phase9-bounded-profile-residual-v1",
+  "status": "rejected_on_frozen_development_gate",
+  "decision": {
+    "adopt": false,
+    "reason": "The candidate improved every headline aggregate metric and lost no baseline hit, but its frozen fixed-stratum paired-bootstrap 95% lower confidence bound was -0.000320927, below the required non-negative bound.",
+    "failed_gate_count": 1,
+    "failed_gate": "paired_bootstrap_lower_95_not_below_zero",
+    "post_outcome_formula_cue_threshold_or_policy_changes": false,
+    "development_rerun": false,
+    "validation_attempted": false,
+    "public_confirmation_attempted": false
+  },
+  "prelock_verification": {
+    "focused_tests_passed": 143,
+    "complete_unit_tests_passed": 391,
+    "phase7_oracle_cases": 1000,
+    "phase7_oracle_sha256": "ae216ca5267a3283fd95d7e1fac1aae060a89bef0ea43957d524f9011434a48a",
+    "phase9_oracle_cases": 1200,
+    "phase9_oracle_sha256": "853f33454db9e3ce8c468a0b7ead525a174217c565e6a8a60ef65faf915476e1",
+    "phase11_oracle_cases": 30000,
+    "phase11_valid_transition_cases": 20000,
+    "phase11_baseline_equivalence_cases": 10000,
+    "phase11_oracle_sha256": "dfa3286aaf4ddd5cb05b7db9d23bfd8b42961d34343754166a73278736f86901"
+  },
+  "development_dataset": {
+    "source_sha256": "f2cdf94b8dbdf22373f42dd661f22372e92715d7bcbc924590db26cf824894db",
+    "source_rows": 1200,
+    "public_rows_excluded": 202,
+    "duplicate_rows_excluded_after_public_exclusion": 2,
+    "evaluated_cases": 996,
+    "content_fingerprint_set_sha256": "37bb8265543198c33305d40c6facf26f76e9109ac6f68afb529ef6a53b19eabd"
+  },
+  "aggregate_metrics": {
+    "baseline": {
+      "sample_count": 996,
+      "hit_rate_at_10": 0.991968,
+      "mrr": 0.53488,
+      "mttc": 3.058233,
+      "efficiency": 0.794177,
+      "recommended_technical_score": 0.815283,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0
+    },
+    "candidate": {
+      "sample_count": 996,
+      "hit_rate_at_10": 0.992972,
+      "mrr": 0.539626,
+      "mttc": 3.033133,
+      "efficiency": 0.796687,
+      "recommended_technical_score": 0.817711,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0
+    },
+    "candidate_minus_baseline": {
+      "hit_rate_at_10": 0.001004,
+      "mrr": 0.004746,
+      "mttc": -0.0251,
+      "efficiency": 0.00251,
+      "recommended_technical_score": 0.002428
+    }
+  },
+  "paired_quality": {
+    "both_hit": 988,
+    "candidate_only_hit": 1,
+    "baseline_only_hit": 0,
+    "both_miss": 7,
+    "mean_utility_delta": 0.002428046,
+    "bootstrap_seed": 20260830,
+    "bootstrap_replicates": 10000,
+    "bootstrap_strata": 4,
+    "bootstrap_lower_95": -0.000320927,
+    "bootstrap_upper_95": 0.005519459,
+    "mcnemar_exact_two_sided_p": 1.0
+  },
+  "aggregate_parser_health": {
+    "attempts": 3014,
+    "applied": 253,
+    "single_slot": 2727,
+    "ambiguous": 25,
+    "bounds": 9,
+    "validation_fallbacks": 0,
+    "positive_atoms": 564,
+    "exclusion_atoms": 25,
+    "clear_atoms": 0,
+    "replacement_atoms": 0,
+    "residual_atoms": 245,
+    "outcomes_partition_attempts": true
+  },
+  "call_accounting": {
+    "baseline": {
+      "searches": 2343,
+      "bm25_route_calls": 2343,
+      "dense_route_calls": 2343,
+      "candidate_document_calls": 2343,
+      "stage_a_attempts": 2343
+    },
+    "candidate": {
+      "searches": 2350,
+      "bm25_route_calls": 2350,
+      "dense_route_calls": 2350,
+      "candidate_document_calls": 2350,
+      "stage_a_attempts": 2350
+    },
+    "one_call_per_fresh_search": true,
+    "external_api_calls": 0
+  },
+  "performance": {
+    "baseline_wall_seconds": 57.018369,
+    "candidate_wall_seconds": 56.333542,
+    "candidate_wall_time_ratio": 0.987989,
+    "baseline_warm_p95_ms": 43.245209,
+    "candidate_warm_p95_ms": 43.54175,
+    "candidate_warm_p95_ratio": 1.006857,
+    "candidate_startup_time_ratio": 0.989058,
+    "candidate_additional_startup_rss_bytes": 0,
+    "candidate_additional_retained_agent_bytes": 65398,
+    "all_frozen_performance_gates_passed": true
+  },
+  "exactness_and_health": {
+    "candidate_replay_evaluator_payload_equal": true,
+    "candidate_replay_action_state_slate_cache_equal": true,
+    "candidate_replay_aggregate_health_equal": true,
+    "independent_explicit_policy_evaluator_payload_equal": true,
+    "independent_explicit_policy_action_state_slate_cache_equal": true,
+    "independent_explicit_policy_aggregate_health_equal": true,
+    "retrieval_ranking_profile_slate_cache_parser_and_question_faults": 0,
+    "model_and_api_tokens": 0,
+    "implementation_lock_revalidated_after_all_variants": true
+  },
+  "decision_gate": {
+    "candidate_hit_rate_not_below_baseline": true,
+    "baseline_hit_to_candidate_miss_is_zero": true,
+    "candidate_mrr_not_below_baseline": true,
+    "candidate_mttc_not_above_baseline": true,
+    "candidate_technical_score_strictly_improves": true,
+    "candidate_mrr_or_mttc_strictly_improves": true,
+    "paired_bootstrap_lower_95_not_below_zero": false,
+    "candidate_replay_is_exact": true,
+    "independent_starter_is_exact": true,
+    "baseline_and_candidate_faults_are_zero": true,
+    "candidate_parser_outcomes_partition_attempts": true,
+    "candidate_parser_validation_fallbacks_are_zero": true,
+    "one_route_document_and_stage_a_call_per_search": true,
+    "all_variants_report_zero_model_and_api_tokens": true,
+    "candidate_warm_p95_ratio_at_most_1_05": true,
+    "candidate_wall_time_ratio_at_most_1_05": true,
+    "candidate_startup_time_ratio_at_most_1_05": true,
+    "candidate_additional_startup_rss_at_most_1mib": true,
+    "candidate_additional_retained_agent_bytes_at_most_2mib": true,
+    "dataset_fingerprint_public_exclusion_and_generator_separation_valid": true,
+    "prelock_tests_oracles_and_source_scope_valid": true,
+    "implementation_lock_revalidated_after_all_variants": true,
+    "aggregate_publication_privacy_valid": true,
+    "advance": false
+  },
+  "rollback": {
+    "starter_restored_to_protected_phase9_sha256": "e533227f7467cb10f583519fdf281e253c64d0cf351d7b5194fd1381b5485b82",
+    "starter_default_intent_policy": "robust",
+    "post_rollback_complete_unit_tests_passed": 391,
+    "post_rollback_phase9_oracle_cases": 1200,
+    "post_rollback_phase9_oracle_sha256": "853f33454db9e3ce8c468a0b7ead525a174217c565e6a8a60ef65faf915476e1",
+    "official_benchmark": "benchmarks/phase9.json",
+    "phase11_official_benchmark_created": false,
+    "phase11_diagnostic_benchmark_created": false,
+    "candidate_code_retained_as_inactive_research_implementation": true
+  },
+  "privacy": {
+    "contains_rows_messages_profiles_targets_products_queries_ranks_or_action_traces": false,
+    "contains_per_case_or_per_stratum_cells": false,
+    "contains_per_case_fingerprints": false,
+    "manual_row_failure_or_small_cell_inspection": false,
+    "published_evidence_is_aggregate_only": true
+  },
+  "reproducibility": {
+    "implementation_lock": "docs/phase11_implementation_lock.json",
+    "implementation_lock_sha256": "2424a91bcdceadcdb49f63b6cee8a6b12510da9d47774224c35a56776e773c74",
+    "raw_aggregate_result_sha256": "17d25eda592f76fb9ad83546d3f8e2aaa8220676d16fe75be8839c6d2e9fbe90",
+    "historical_lock_note": "The implementation lock identifies the exact explicit-policy candidate evaluated before rollback. Restoring starter/agent.py and its rollback-conformance test afterward intentionally makes those two historical hashes differ from the active tree while preserving the evaluated evidence."
+  },
+  "notes": [
+    "The aggregate point estimates are encouraging, but the precommitted uncertainty gate is conjunctive and therefore decisive.",
+    "No validation or public attempt sentinel was created after the development rejection.",
+    "No failed row, message, product, target, rank, trajectory, stratum cell, or small subgroup was inspected, so this record does not tune or diagnose individual outcomes."
+  ]
+}

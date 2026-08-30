@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "experiment_id": "phase12-route-redundancy-corrected-stage-a-v1",
+  "candidate": "phase12-route-redundancy-corrected-stage-a-v1",
+  "baseline": "phase9-bounded-profile-residual-v1",
+  "status": "rejected_on_frozen_development_gate",
+  "decision": {
+    "adopt": false,
+    "reason": "The candidate preserved HR@10 and improved MTTC, but reduced MRR and the recommended technical score; its frozen paired-bootstrap 95% lower confidence bound was also below zero.",
+    "failed_gate_count": 3,
+    "failed_gates": [
+      "candidate_mrr_not_below_baseline",
+      "candidate_technical_score_strictly_improves",
+      "paired_bootstrap_lower_95_not_below_zero"
+    ],
+    "post_outcome_formula_threshold_or_policy_changes": false,
+    "development_rerun": false,
+    "validation_attempted": false,
+    "public_confirmation_attempted": false
+  },
+  "prelock_verification": {
+    "focused_tests_passed": 108,
+    "complete_unit_tests_passed": 412,
+    "phase7_oracle_cases": 1000,
+    "phase7_oracle_sha256": "ae216ca5267a3283fd95d7e1fac1aae060a89bef0ea43957d524f9011434a48a",
+    "phase9_oracle_cases": 1200,
+    "phase9_oracle_sha256": "853f33454db9e3ce8c468a0b7ead525a174217c565e6a8a60ef65faf915476e1",
+    "phase12_oracle_cases": 42675,
+    "phase12_exhaustive_oracle_cases": 12675,
+    "phase12_random_oracle_cases": 30000,
+    "phase12_oracle_seed": 120260830,
+    "phase12_oracle_sha256": "5fa70591a4761a1e4bde33ad246c6288938284e1ed1cc7137805a03eefadf1c8"
+  },
+  "development_dataset": {
+    "source_sha256": "f2cdf94b8dbdf22373f42dd661f22372e92715d7bcbc924590db26cf824894db",
+    "source_rows": 1200,
+    "public_rows_excluded": 202,
+    "duplicate_rows_excluded_after_public_exclusion": 2,
+    "evaluated_cases": 996,
+    "content_fingerprint_set_sha256": "37bb8265543198c33305d40c6facf26f76e9109ac6f68afb529ef6a53b19eabd"
+  },
+  "aggregate_metrics": {
+    "baseline": {
+      "sample_count": 996,
+      "hit_rate_at_10": 0.991968,
+      "mrr": 0.53488,
+      "mttc": 3.058233,
+      "efficiency": 0.794177,
+      "recommended_technical_score": 0.815283,
+      "reported_token_usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      }
+    },
+    "candidate": {
+      "sample_count": 996,
+      "hit_rate_at_10": 0.991968,
+      "mrr": 0.526749,
+      "mttc": 2.992972,
+      "efficiency": 0.800703,
+      "recommended_technical_score": 0.814149,
+      "reported_token_usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      }
+    },
+    "candidate_minus_baseline": {
+      "hit_rate_at_10": 0.0,
+      "mrr": -0.008131,
+      "mttc": -0.065261,
+      "efficiency": 0.006526,
+      "recommended_technical_score": -0.001134
+    }
+  },
+  "paired_quality": {
+    "both_hit": 988,
+    "candidate_only_hit": 0,
+    "baseline_only_hit": 0,
+    "both_miss": 8,
+    "mean_utility_delta": -0.001133941,
+    "bootstrap_seed": 120260830,
+    "bootstrap_replicates": 10000,
+    "bootstrap_strata": 4,
+    "bootstrap_lower_95": -0.004931153,
+    "bootstrap_upper_95": 0.002478246,
+    "mcnemar_exact_two_sided_p": 1.0
+  },
+  "aggregate_route_redundancy_health": {
+    "attempts": 2321,
+    "correction_applied": 2320,
+    "disjoint_exact_baseline": 1,
+    "empty_exact_baseline": 0,
+    "single_route_exact_baseline": 0,
+    "identical_order_exact_baseline": 0,
+    "validation_or_scoring_fallbacks": 0,
+    "outcomes_partition_attempts": true
+  },
+  "call_accounting": {
+    "baseline": {
+      "searches": 2343,
+      "bm25_route_calls": 2343,
+      "dense_route_calls": 2343,
+      "candidate_document_calls": 2343,
+      "stage_a_attempts": 2343
+    },
+    "candidate": {
+      "searches": 2321,
+      "bm25_route_calls": 2321,
+      "dense_route_calls": 2321,
+      "candidate_document_calls": 2321,
+      "stage_a_attempts": 2321
+    },
+    "one_call_per_fresh_search": true,
+    "candidate_counted_calls_at_most_baseline": true,
+    "external_api_calls": 0
+  },
+  "performance": {
+    "baseline_wall_seconds": 57.952968,
+    "candidate_wall_seconds": 57.314915,
+    "candidate_wall_time_ratio": 0.98899,
+    "baseline_warm_p95_ms": 44.195266,
+    "candidate_warm_p95_ms": 43.905113,
+    "candidate_warm_p95_ratio": 0.993435,
+    "startup_iterations_per_arm": 10000,
+    "candidate_startup_time_ratio": 1.000553,
+    "candidate_additional_startup_rss_bytes": 0,
+    "candidate_additional_retained_agent_bytes": 0,
+    "all_frozen_performance_and_memory_gates_passed": true
+  },
+  "exactness_and_health": {
+    "candidate_replay_evaluator_payload_equal": true,
+    "candidate_replay_action_state_slate_cache_equal": true,
+    "candidate_replay_aggregate_health_equal": true,
+    "independent_explicit_policy_evaluator_payload_equal": true,
+    "independent_explicit_policy_action_state_slate_cache_equal": true,
+    "independent_explicit_policy_aggregate_health_equal": true,
+    "retrieval_ranking_profile_slate_cache_and_route_redundancy_faults": 0,
+    "model_and_api_tokens": 0,
+    "implementation_lock_revalidated_after_all_variants": true
+  },
+  "decision_gate": {
+    "candidate_hit_rate_not_below_baseline": true,
+    "baseline_hit_to_candidate_miss_is_zero": true,
+    "candidate_mrr_not_below_baseline": false,
+    "candidate_mttc_not_above_baseline": true,
+    "candidate_technical_score_strictly_improves": false,
+    "candidate_mrr_or_mttc_strictly_improves": true,
+    "paired_bootstrap_lower_95_not_below_zero": false,
+    "candidate_replay_is_exact": true,
+    "independent_explicit_policy_is_exact": true,
+    "baseline_and_candidate_faults_are_zero": true,
+    "candidate_route_redundancy_outcomes_partition_attempts": true,
+    "one_route_document_and_stage_a_call_per_search": true,
+    "candidate_total_counted_calls_at_most_baseline": true,
+    "all_variants_report_zero_model_and_api_tokens": true,
+    "candidate_warm_p95_ratio_at_most_1_05": true,
+    "candidate_wall_time_ratio_at_most_1_05": true,
+    "candidate_startup_time_ratio_at_most_1_05": true,
+    "candidate_additional_startup_rss_at_most_1mib": true,
+    "candidate_additional_retained_agent_bytes_at_most_64kib": true,
+    "development_baseline_matches_protected_phase9": true,
+    "implementation_lock_revalidated_after_all_variants": true,
+    "aggregate_publication_privacy_valid": true,
+    "advance": false
+  },
+  "rollback": {
+    "starter_remained_at_protected_phase9_sha256": "e533227f7467cb10f583519fdf281e253c64d0cf351d7b5194fd1381b5485b82",
+    "starter_default_ranking_policy": "stage_a",
+    "post_rejection_complete_unit_tests_passed": 412,
+    "post_rejection_phase9_oracle_cases": 1200,
+    "post_rejection_phase9_oracle_sha256": "853f33454db9e3ce8c468a0b7ead525a174217c565e6a8a60ef65faf915476e1",
+    "official_benchmark": "benchmarks/phase9.json",
+    "phase12_official_benchmark_created": false,
+    "phase12_diagnostic_benchmark_created": false,
+    "candidate_code_retained_as_inactive_research_implementation": true
+  },
+  "privacy": {
+    "contains_rows_messages_profiles_targets_products_queries_ranks_or_action_traces": false,
+    "contains_per_case_or_per_stratum_cells": false,
+    "contains_per_case_fingerprints": false,
+    "manual_row_failure_or_small_cell_inspection": false,
+    "published_evidence_is_aggregate_only": true
+  },
+  "reproducibility": {
+    "implementation_lock": "docs/phase12_implementation_lock.json",
+    "implementation_lock_sha256": "c3b4af1ab462cdbff1fc07709e8796da432d2673844301707c235face2f004d0",
+    "raw_aggregate_result_sha256": "8eba047afddaf90395ad6407bb0b79fac8833d2a86fd5bc3b7440b3265621780",
+    "single_process_single_thread_cpu": true,
+    "gpu_or_mps_used": false
+  },
+  "notes": [
+    "The candidate traded rank quality for earlier convergence: MTTC improved, but MRR and the composite score declined.",
+    "No validation or public attempt sentinel was created after the development rejection.",
+    "No failed row, message, product, target, rank, trajectory, stratum cell, or small subgroup was inspected, so this record did not tune or diagnose individual outcomes."
+  ]
+}

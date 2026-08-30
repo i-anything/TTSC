@@ -6,6 +6,7 @@ from conversational_search.orchestration import (
     EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
 )
 from conversational_search.service import ConversationalSearchAgent
+from conversational_search.slates import INTENT_EPOCH_NOVELTY_SLATE_POLICY
 
 
 DEFAULT_CATALOG_PATH = Path(__file__).resolve().parents[1] / "data" / "catalog.jsonl"
@@ -18,4 +19,5 @@ class Agent(ConversationalSearchAgent):
         super().__init__(
             catalog_path,
             orchestration_policy=EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
+            slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
         )

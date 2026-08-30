@@ -35,10 +35,23 @@ class IntentParsingPolicy(str, Enum):
 
     CANONICAL = "canonical"
     ROBUST = "robust"
+    LOSSLESS_MULTI_SLOT = "lossless_multislot"
 
 
 CANONICAL_INTENT_POLICY = IntentParsingPolicy.CANONICAL
 ROBUST_INTENT_POLICY = IntentParsingPolicy.ROBUST
+LOSSLESS_MULTI_SLOT_INTENT_POLICY = IntentParsingPolicy.LOSSLESS_MULTI_SLOT
+
+
+class IntentReductionStatus(str, Enum):
+    """Fixed-cardinality outcomes for the bounded multi-slot reducer."""
+
+    BASELINE_POLICY = "baseline_policy"
+    APPLIED = "applied"
+    SINGLE_SLOT = "single_slot"
+    AMBIGUOUS = "ambiguous"
+    BOUNDS = "bounds"
+    VALIDATION_FALLBACK = "validation_fallback"
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,6 +76,36 @@ class IntentState:
     last_asked_attribute: str | None = None
     intent_version: int = 0
     last_turn: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class IntentReduction:
+    """One intent update plus aggregate-safe multi-slot outcome counts."""
+
+    state: IntentState
+    status: IntentReductionStatus
+    positive_atoms: int = 0
+    exclusion_atoms: int = 0
+    clear_atoms: int = 0
+    replacement_atoms: int = 0
+    residual_atoms: int = 0
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.state, IntentState):
+            raise TypeError("state must be IntentState")
+        if not isinstance(self.status, IntentReductionStatus):
+            raise TypeError("status must be IntentReductionStatus")
+        counts = (
+            self.positive_atoms,
+            self.exclusion_atoms,
+            self.clear_atoms,
+            self.replacement_atoms,
+            self.residual_atoms,
+        )
+        if any(type(value) is not int or value < 0 for value in counts):
+            raise ValueError("intent reduction counts must be non-negative integers")
+        if self.status is not IntentReductionStatus.APPLIED and any(counts):
+            raise ValueError("only an applied reduction may report atom counts")
 
 
 _SPACE_RE = re.compile(r"\s+")
@@ -322,6 +365,78 @@ _BARE_ANSWER_COMMAND_RE = re.compile(
     re.IGNORECASE,
 )
 
+_MULTI_MAX_MESSAGE_CHARACTERS = 2048
+_MULTI_MAX_ATOMS_PER_TURN = 8
+_MULTI_MAX_ATOM_CHARACTERS = 256
+_MULTI_MAX_ACTIVE_REQUIREMENTS = 24
+_MULTI_MAX_EXCLUSIONS = 16
+_MULTI_MAX_SOFT_BOUNDARIES = 7
+
+_MULTI_HARD_SEPARATOR_RE = re.compile(r";|\n+")
+_MULTI_SOFT_SEPARATOR_RE = re.compile(
+    r"(?<!\d),(?!\d)|\b(?:and|but|plus|also|while)\b",
+    re.IGNORECASE,
+)
+_MULTI_EXPLICIT_LABEL_RE = re.compile(
+    r"^(?P<attribute>material|color|size|style|brand|budget|feature|"
+    r"use[ _]case|other)\s*[:=]\s*(?P<value>.+?)$",
+    re.IGNORECASE | re.DOTALL,
+)
+_MULTI_POSITIVE_SCAFFOLD_RE = re.compile(
+    r"^(?:(?:i\s+(?:also\s+)?(?:want|need|prefer|would\s+like)(?:\s+it)?)|"
+    r"(?:(?:please\s+)?(?:make|keep)\s+it)|"
+    r"(?:it\s+(?:should|must)\s+(?:be|have))|with)\s+",
+    re.IGNORECASE,
+)
+_MULTI_REPLACE_RE = re.compile(
+    r"^replace\s+(?P<old>.+?)\s+with\s+(?P<new>.+?)$",
+    re.IGNORECASE | re.DOTALL,
+)
+_MULTI_EXCLUSION_RE = re.compile(
+    r"^(?:(?:i\s+(?:do\s+not|don['\u2019]?t)\s+(?:want|prefer))|"
+    r"no\s+longer|not|no|without|avoid|exclude)\s+(?P<value>.+?)$",
+    re.IGNORECASE | re.DOTALL,
+)
+_MULTI_NEGATION_GUARD_RE = re.compile(
+    r"^(?:not\s+only|not\s+sure|no\s+less\s+than|without\s+a\s+doubt)\b",
+    re.IGNORECASE,
+)
+_MULTI_NOW_RE = re.compile(r"^now\s+(?P<value>.+?)$", re.IGNORECASE | re.DOTALL)
+_MULTI_INSTEAD_RE = re.compile(
+    r"^(?P<value>.+?)\s+instead$",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+class _AtomOperation(str, Enum):
+    ADD = "add"
+    EXCLUDE = "exclude"
+    CLEAR = "clear"
+
+
+@dataclass(frozen=True, slots=True)
+class _IntentAtom:
+    operation: _AtomOperation
+    attribute: str | None
+    value: str
+    replacement: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class _CandidateEnvelope:
+    payload: str
+    source: RequirementSource
+    category: str | None = None
+    mode: Literal["add", "full_override", "replace_last", "replace_slot"] = "add"
+
+
+class _CandidateBoundsError(ValueError):
+    pass
+
+
+class _CandidateAmbiguityError(ValueError):
+    pass
+
 
 def _clean(value: str) -> str:
     return _SPACE_RE.sub(" ", value).strip()
@@ -575,6 +690,521 @@ def _canonicalize_robust_message(
     return message
 
 
+def _candidate_attribute(value: str) -> tuple[str | None, bool]:
+    """Return a singleton high-confidence attribute and ambiguity flag."""
+
+    matches: set[str] = set()
+    if _BUDGET_RE.search(value):
+        matches.add("budget")
+    if _MATERIAL_RE.search(value) or _ROBUST_EXTRA_MATERIAL_RE.search(value):
+        matches.add("material")
+    if (
+        _COLOR_RE.search(value)
+        or _ROBUST_EXTRA_COLOR_RE.search(value)
+        or "color" in value.casefold()
+    ):
+        matches.add("color")
+    if _SIZE_RE.search(value):
+        matches.add("size")
+    if _STYLE_RE.search(value):
+        matches.add("style")
+    if _USE_CASE_RE.search(value):
+        matches.add("use_case")
+    if _BRAND_RE.search(value):
+        matches.add("brand")
+    if len(matches) > 1:
+        return None, True
+    return (next(iter(matches)) if matches else None), False
+
+
+def _candidate_value_and_attribute(
+    raw_value: str,
+) -> tuple[str, str | None]:
+    value = _generated_value(raw_value)
+    label = _MULTI_EXPLICIT_LABEL_RE.fullmatch(value)
+    if label is not None:
+        attribute = _normalize_attribute(label.group("attribute"))
+        if attribute is None or attribute == "category":
+            raise _CandidateAmbiguityError("invalid explicit attribute")
+        value = _generated_value(label.group("value"))
+        if not value:
+            raise _CandidateAmbiguityError("empty explicit value")
+        return value, attribute
+    attribute, ambiguous = _candidate_attribute(value)
+    if ambiguous:
+        raise _CandidateAmbiguityError("multiple attributes in one span")
+    return value, attribute
+
+
+def _candidate_no_preference_attribute(
+    state: IntentState,
+    value: str,
+) -> str | None:
+    match = _first_match(_ROBUST_NO_PREFERENCE_RES, value)
+    if match is not None:
+        groups = match.groupdict()
+        raw_attribute = (
+            groups.get("attribute")
+            or groups.get("any_attribute")
+            or groups.get("matter_attribute")
+            or ""
+        )
+        return _normalize_attribute(raw_attribute)
+    if (
+        state.last_asked_attribute is not None
+        and _ROBUST_NO_PREFERENCE_LAST_RE.fullmatch(value)
+    ):
+        return state.last_asked_attribute
+    return None
+
+
+def _bounded_candidate_value(raw_value: str) -> str:
+    value = _generated_value(raw_value)
+    if not value or re.search(r"\w", value) is None:
+        raise _CandidateAmbiguityError("candidate value has no meaningful text")
+    if len(value) > _MULTI_MAX_ATOM_CHARACTERS:
+        raise _CandidateBoundsError("candidate value is too long")
+    return value
+
+
+def _parse_candidate_segment(
+    state: IntentState,
+    raw_segment: str,
+) -> tuple[_IntentAtom, ...]:
+    segment = _bounded_candidate_value(raw_segment)
+    no_preference = _candidate_no_preference_attribute(state, segment)
+    if no_preference is not None:
+        return (
+            _IntentAtom(
+                operation=_AtomOperation.CLEAR,
+                attribute=no_preference,
+                value="",
+            ),
+        )
+
+    if _MULTI_NEGATION_GUARD_RE.match(segment):
+        raise _CandidateAmbiguityError("unsafe negation scope")
+
+    replacement = _MULTI_REPLACE_RE.fullmatch(segment)
+    if replacement is not None:
+        old_value, old_attribute = _candidate_value_and_attribute(
+            _bounded_candidate_value(replacement.group("old"))
+        )
+        new_value, new_attribute = _candidate_value_and_attribute(
+            _bounded_candidate_value(replacement.group("new"))
+        )
+        if (
+            old_attribute is None
+            or new_attribute is None
+            or old_attribute != new_attribute
+        ):
+            raise _CandidateAmbiguityError("replacement slot is ambiguous")
+        return (
+            _IntentAtom(
+                operation=_AtomOperation.EXCLUDE,
+                attribute=old_attribute,
+                value=old_value,
+            ),
+            _IntentAtom(
+                operation=_AtomOperation.ADD,
+                attribute=new_attribute,
+                value=new_value,
+                replacement=True,
+            ),
+        )
+
+    exclusion = _MULTI_EXCLUSION_RE.fullmatch(segment)
+    if exclusion is not None:
+        value, attribute = _candidate_value_and_attribute(
+            _bounded_candidate_value(exclusion.group("value"))
+        )
+        return (
+            _IntentAtom(
+                operation=_AtomOperation.EXCLUDE,
+                attribute=attribute,
+                value=value,
+            ),
+        )
+
+    replace_value = _MULTI_NOW_RE.fullmatch(segment)
+    if replace_value is None:
+        replace_value = _MULTI_INSTEAD_RE.fullmatch(segment)
+    is_replacement = replace_value is not None
+    if replace_value is not None:
+        segment = _bounded_candidate_value(replace_value.group("value"))
+
+    segment = _MULTI_POSITIVE_SCAFFOLD_RE.sub("", segment, count=1)
+    value, attribute = _candidate_value_and_attribute(
+        _bounded_candidate_value(segment)
+    )
+    if is_replacement and attribute is None:
+        raise _CandidateAmbiguityError("untyped replacement")
+    return (
+        _IntentAtom(
+            operation=_AtomOperation.ADD,
+            attribute=attribute,
+            value=value,
+            replacement=is_replacement,
+        ),
+    )
+
+
+def _candidate_segments(
+    payload: str,
+    soft_mask: int,
+    hard_matches: tuple[re.Match[str], ...],
+    soft_matches: tuple[re.Match[str], ...],
+) -> tuple[str, ...]:
+    selected = [*hard_matches]
+    selected.extend(
+        match
+        for index, match in enumerate(soft_matches)
+        if soft_mask & (1 << index)
+    )
+    selected.sort(key=lambda match: (match.start(), match.end()))
+    segments: list[str] = []
+    cursor = 0
+    for match in selected:
+        if match.start() < cursor:
+            raise _CandidateAmbiguityError("overlapping separators")
+        segment = _clean(payload[cursor : match.start()])
+        if not segment:
+            raise _CandidateAmbiguityError("empty candidate segment")
+        segments.append(segment)
+        cursor = match.end()
+    segment = _clean(payload[cursor:])
+    if not segment:
+        raise _CandidateAmbiguityError("empty candidate segment")
+    segments.append(segment)
+    return tuple(segments)
+
+
+def _candidate_atoms_are_multislot(atoms: tuple[_IntentAtom, ...]) -> bool:
+    if not 2 <= len(atoms) <= _MULTI_MAX_ATOMS_PER_TURN:
+        return False
+    if any(atom.operation is not _AtomOperation.ADD for atom in atoms):
+        return True
+    semantic_slots = {atom.attribute for atom in atoms}
+    return len(semantic_slots) >= 2
+
+
+def _parse_candidate_atoms(
+    state: IntentState,
+    payload: str,
+) -> tuple[tuple[_IntentAtom, ...] | None, IntentReductionStatus]:
+    hard_matches = tuple(_MULTI_HARD_SEPARATOR_RE.finditer(payload))
+    soft_matches = tuple(
+        match
+        for match in _MULTI_SOFT_SEPARATOR_RE.finditer(payload)
+        if all(
+            match.end() <= hard.start() or match.start() >= hard.end()
+            for hard in hard_matches
+        )
+    )
+    if len(soft_matches) > _MULTI_MAX_SOFT_BOUNDARIES:
+        return None, IntentReductionStatus.BOUNDS
+    if len(hard_matches) + 1 > _MULTI_MAX_ATOMS_PER_TURN:
+        return None, IntentReductionStatus.BOUNDS
+
+    masks = sorted(
+        range(1 << len(soft_matches)),
+        key=lambda value: (value.bit_count(), value),
+    )
+    saw_bounds = False
+    saw_parseable = False
+    for mask in masks:
+        try:
+            segments = _candidate_segments(
+                payload,
+                mask,
+                hard_matches,
+                soft_matches,
+            )
+            atoms = tuple(
+                atom
+                for segment in segments
+                for atom in _parse_candidate_segment(state, segment)
+            )
+        except _CandidateBoundsError:
+            saw_bounds = True
+            continue
+        except _CandidateAmbiguityError:
+            continue
+        saw_parseable = True
+        if len(atoms) > _MULTI_MAX_ATOMS_PER_TURN:
+            saw_bounds = True
+            continue
+        if _candidate_atoms_are_multislot(atoms):
+            return atoms, IntentReductionStatus.APPLIED
+    if saw_bounds:
+        return None, IntentReductionStatus.BOUNDS
+    if saw_parseable:
+        return None, IntentReductionStatus.SINGLE_SLOT
+    return None, IntentReductionStatus.AMBIGUOUS
+
+
+def _candidate_envelope(
+    state: IntentState,
+    message: str,
+    turn: int,
+) -> _CandidateEnvelope | None:
+    cleaned = _clean(message)
+    scratch = _ROBUST_SCRATCH_OVERRIDE_RE.fullmatch(cleaned)
+    if scratch is not None:
+        return _CandidateEnvelope(
+            payload=_generated_value(scratch.group("value")),
+            source="override",
+            mode="replace_last",
+        )
+    replacement = _ROBUST_REPLACE_OVERRIDE_RE.fullmatch(cleaned)
+    if replacement is not None:
+        return _CandidateEnvelope(
+            payload=_generated_value(replacement.group("value")),
+            source="override",
+            mode="replace_slot",
+        )
+
+    canonical = _canonicalize_robust_message(state, cleaned, turn)
+    if turn == 1:
+        category, requirement = _parse_initial_message(canonical, turn)
+        if category is not None:
+            if requirement is None:
+                return None
+            return _CandidateEnvelope(
+                payload=requirement.value,
+                source=requirement.source,
+                category=category,
+            )
+
+    override = _OVERRIDE_RE.fullmatch(canonical)
+    if override is not None:
+        return _CandidateEnvelope(
+            payload=_generated_value(override.group("value")),
+            source="override",
+            mode="full_override",
+        )
+    answer = _ANSWER_RE.fullmatch(canonical)
+    if answer is not None:
+        return _CandidateEnvelope(
+            payload=_generated_value(answer.group("value")),
+            source="answer",
+        )
+    if (
+        _NO_PREFERENCE_RE.fullmatch(canonical)
+        or _NOT_RIGHT_RE.fullmatch(canonical)
+        or not canonical
+    ):
+        return None
+    return _CandidateEnvelope(payload=canonical, source="free_text")
+
+
+def _same_value(left: str, right: str) -> bool:
+    def normalized(value: str) -> str:
+        cleaned = _generated_value(value)
+        label = _MULTI_EXPLICIT_LABEL_RE.fullmatch(cleaned)
+        if label is not None:
+            cleaned = _generated_value(label.group("value"))
+        return cleaned.casefold()
+
+    return normalized(left) == normalized(right)
+
+
+def _exclusion_matches_attribute(value: str, attribute: str) -> bool:
+    inferred, ambiguous = _candidate_attribute(value)
+    return not ambiguous and inferred == attribute
+
+
+def _apply_candidate_atoms(
+    state: IntentState,
+    envelope: _CandidateEnvelope,
+    atoms: tuple[_IntentAtom, ...],
+    turn: int,
+) -> IntentState:
+    if (
+        len(state.requirements) > _MULTI_MAX_ACTIVE_REQUIREMENTS
+        or len(state.excluded) > _MULTI_MAX_EXCLUSIONS
+    ):
+        raise _CandidateBoundsError("existing state exceeds candidate bounds")
+
+    requirements = list(state.requirements)
+    exclusions = list(state.excluded)
+    no_preference = set(state.no_preference)
+    destructive = envelope.mode != "add"
+    if envelope.mode == "full_override":
+        requirements = [
+            requirement
+            for requirement in requirements
+            if requirement.source not in {"initial_explicit", "initial_tentative"}
+        ]
+    elif envelope.mode == "replace_last":
+        if requirements:
+            requirements.pop()
+
+    for atom in atoms:
+        attribute = atom.attribute
+        if atom.operation is _AtomOperation.ADD:
+            replacement = atom.replacement or envelope.mode == "replace_slot"
+            if replacement:
+                if attribute is None:
+                    raise _CandidateAmbiguityError("replacement is untyped")
+                requirements = [
+                    requirement
+                    for requirement in requirements
+                    if requirement.attribute != attribute
+                ]
+                destructive = True
+            exclusions = [
+                value for value in exclusions if not _same_value(value, atom.value)
+            ]
+            if attribute is not None:
+                no_preference.discard(attribute)
+            requirements = [
+                requirement
+                for requirement in requirements
+                if not _same_value(requirement.value, atom.value)
+            ]
+            requirements.append(
+                Requirement(
+                    value=atom.value,
+                    source=envelope.source,
+                    turn=turn,
+                    attribute=attribute,
+                )
+            )
+        elif atom.operation is _AtomOperation.EXCLUDE:
+            requirements = [
+                requirement
+                for requirement in requirements
+                if not _same_value(requirement.value, atom.value)
+            ]
+            exclusions = [
+                value for value in exclusions if not _same_value(value, atom.value)
+            ]
+            exclusions.append(atom.value)
+            destructive = True
+        elif atom.operation is _AtomOperation.CLEAR:
+            if attribute is None:
+                raise _CandidateAmbiguityError("clear operation is untyped")
+            requirements = [
+                requirement
+                for requirement in requirements
+                if requirement.attribute != attribute
+            ]
+            exclusions = [
+                value
+                for value in exclusions
+                if not _exclusion_matches_attribute(value, attribute)
+            ]
+            no_preference.add(attribute)
+            destructive = True
+        else:
+            raise _CandidateAmbiguityError("unsupported candidate operation")
+
+    if (
+        len(requirements) > _MULTI_MAX_ACTIVE_REQUIREMENTS
+        or len(exclusions) > _MULTI_MAX_EXCLUSIONS
+    ):
+        raise _CandidateBoundsError("candidate result exceeds state bounds")
+    if any(
+        not requirement.value
+        or len(requirement.value) > _MULTI_MAX_ATOM_CHARACTERS
+        or (
+            requirement.attribute is not None
+            and requirement.attribute not in ALLOWED_ATTRIBUTES
+        )
+        for requirement in requirements
+    ):
+        raise _CandidateAmbiguityError("candidate requirement is invalid")
+    if any(
+        not isinstance(value, str)
+        or not value
+        or len(value) > _MULTI_MAX_ATOM_CHARACTERS
+        for value in exclusions
+    ):
+        raise _CandidateAmbiguityError("candidate exclusion is invalid")
+    if len({_clean(value).casefold() for value in exclusions}) != len(exclusions):
+        raise _CandidateAmbiguityError("candidate exclusions are duplicated")
+    if any(
+        _same_value(requirement.value, exclusion)
+        for requirement in requirements
+        for exclusion in exclusions
+    ):
+        raise _CandidateAmbiguityError("positive and excluded values conflict")
+
+    return replace(
+        state,
+        category=envelope.category or state.category,
+        requirements=tuple(requirements),
+        excluded=tuple(exclusions),
+        no_preference=frozenset(no_preference),
+        intent_version=state.intent_version + int(destructive),
+        last_turn=turn,
+    )
+
+
+def apply_user_message_with_trace(
+    state: IntentState,
+    message: str,
+    turn: int,
+    *,
+    policy: IntentParsingPolicy = ROBUST_INTENT_POLICY,
+) -> IntentReduction:
+    """Reduce one message and expose only fixed aggregate-safe parse facts."""
+
+    if policy is not LOSSLESS_MULTI_SLOT_INTENT_POLICY:
+        return IntentReduction(
+            state=apply_user_message(state, message, turn, policy=policy),
+            status=IntentReductionStatus.BASELINE_POLICY,
+        )
+
+    baseline = apply_user_message(
+        state,
+        message,
+        turn,
+        policy=ROBUST_INTENT_POLICY,
+    )
+    try:
+        cleaned = _clean(message)
+        if len(cleaned) > _MULTI_MAX_MESSAGE_CHARACTERS:
+            return IntentReduction(baseline, IntentReductionStatus.BOUNDS)
+        envelope = _candidate_envelope(state, cleaned, turn)
+        if envelope is None or not envelope.payload:
+            return IntentReduction(baseline, IntentReductionStatus.SINGLE_SLOT)
+        atoms, status = _parse_candidate_atoms(state, envelope.payload)
+        if atoms is None:
+            return IntentReduction(baseline, status)
+        candidate = _apply_candidate_atoms(state, envelope, atoms, turn)
+        if candidate == baseline:
+            return IntentReduction(baseline, IntentReductionStatus.SINGLE_SLOT)
+        return IntentReduction(
+            state=candidate,
+            status=IntentReductionStatus.APPLIED,
+            positive_atoms=sum(
+                atom.operation is _AtomOperation.ADD for atom in atoms
+            ),
+            exclusion_atoms=sum(
+                atom.operation is _AtomOperation.EXCLUDE for atom in atoms
+            ),
+            clear_atoms=sum(
+                atom.operation is _AtomOperation.CLEAR for atom in atoms
+            ),
+            replacement_atoms=sum(atom.replacement for atom in atoms),
+            residual_atoms=sum(
+                atom.operation is _AtomOperation.ADD and atom.attribute is None
+                for atom in atoms
+            ),
+        )
+    except (_CandidateBoundsError,):
+        return IntentReduction(baseline, IntentReductionStatus.BOUNDS)
+    except _CandidateAmbiguityError:
+        return IntentReduction(baseline, IntentReductionStatus.AMBIGUOUS)
+    except Exception:
+        return IntentReduction(
+            baseline,
+            IntentReductionStatus.VALIDATION_FALLBACK,
+        )
+
+
 def apply_user_message(
     state: IntentState,
     message: str,
@@ -590,6 +1220,13 @@ def apply_user_message(
         raise ValueError("turns must be strictly increasing within a session")
     if not isinstance(policy, IntentParsingPolicy):
         raise TypeError("policy must be an IntentParsingPolicy")
+    if policy is LOSSLESS_MULTI_SLOT_INTENT_POLICY:
+        return apply_user_message_with_trace(
+            state,
+            message,
+            turn,
+            policy=policy,
+        ).state
 
     cleaned_message = _clean(message)
     if policy is ROBUST_INTENT_POLICY:
@@ -819,3 +1456,40 @@ def render_lexical_query(state: IntentState) -> str:
 
     values = [state.category or "", *(item.value for item in state.requirements)]
     return " ".join(_deduplicate([value for value in values if value]))
+
+
+def render_requirement_probe_candidates(state: IntentState) -> tuple[str, ...]:
+    """Return bounded strong positive clauses without catalog-dependent ranking.
+
+    Catalog document frequency and the final two-probe selection belong to the
+    retriever.  This renderer only preserves active requirement boundaries and
+    provenance that would be lost in the blended lexical query.
+    """
+
+    if not isinstance(state, IntentState):
+        raise TypeError("state must be IntentState")
+    if len(state.requirements) > _MULTI_MAX_ACTIVE_REQUIREMENTS:
+        return ()
+
+    strong_sources = frozenset({"initial_explicit", "answer", "override"})
+    values: list[str] = []
+    seen: set[str] = set()
+    total_characters = 0
+    for requirement in state.requirements:
+        if requirement.source not in strong_sources or requirement.attribute == "budget":
+            continue
+        value = requirement.value
+        if requirement.attribute:
+            value = _without_label(value, requirement.attribute)
+        value = _clean(value)
+        if not value or len(value) > _MULTI_MAX_ATOM_CHARACTERS:
+            continue
+        total_characters += len(value)
+        if total_characters > 1024:
+            return ()
+        key = value.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        values.append(value)
+    return tuple(values)

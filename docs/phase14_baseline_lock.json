@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "lock_id": "phase14-protected-phase13-baseline-v1",
+  "status": "captured_before_phase14_candidate_implementation_or_evaluation",
+  "date": "2026-08-30",
+  "git": {
+    "head": "fa6fd79ed9af6e071001a3332493df59b447850c",
+    "branch": "main",
+    "worktree_clean": false,
+    "preservation": "All existing Phase 9-13 worktree changes are user-owned and preserved. No reset, checkout, destructive rollback, or unrelated cleanup is authorized."
+  },
+  "active_agent": {
+    "version": "phase13-intent-epoch-continuation-novelty-v1",
+    "starter_sha256": "990843888a835ae4101a9c5287d8fa04947029c1a3db51cb157a306e86ba95e2",
+    "intent_policy": "robust",
+    "question_policy": "conservative_early_other",
+    "fusion_policy": "completeness_adaptive",
+    "ranking_policy": "stage_a",
+    "profile_policy": "phase9-bounded-profile-residual-v1",
+    "slate_policy": "phase13-intent-epoch-continuation-novelty-v1",
+    "orchestration_policy": "exact_ranking_reuse"
+  },
+  "protected_metrics": {
+    "generator_regression_development": {
+      "sample_count": 996,
+      "hit_rate_at_10": 0.991968,
+      "mrr": 0.566126,
+      "mttc": 2.90261,
+      "efficiency": 0.809739,
+      "recommended_technical_score": 0.82777
+    },
+    "generator_regression_validation": {
+      "sample_count": 1000,
+      "hit_rate_at_10": 0.975,
+      "mrr": 0.639632,
+      "mttc": 2.831,
+      "efficiency": 0.8169,
+      "recommended_technical_score": 0.84277
+    },
+    "official_public": {
+      "sample_count": 200,
+      "hit_rate_at_10": 0.99,
+      "mrr": 0.556748,
+      "mttc": 2.91,
+      "efficiency": 0.809,
+      "recommended_technical_score": 0.823824
+    }
+  },
+  "evidence": {
+    "phase13_results": {
+      "path": "docs/phase13_results.json",
+      "sha256": "4918080c1c7c33f68d345c29e73386951b8731b46de3f80f3b04514e6dbc0956"
+    },
+    "phase13_benchmark": {
+      "path": "benchmarks/phase13.json",
+      "sha256": "7920dc45721c851f8de626f11ff7f3ec31bd7d3628f31e1898482c53f730a973"
+    },
+    "phase13_implementation_lock": {
+      "path": "docs/phase13_implementation_lock.json",
+      "sha256": "383d8f89a437931da5163982b18d806dd09fc788a712c715b2774f37127e8d31"
+    },
+    "dataset_audit": {
+      "path": "docs/phase11_dataset_audit.json",
+      "sha256": "c9647b63f482fdb94ae16fcd0da0c1dca97e4ecf79a425189368636a43795472"
+    }
+  },
+  "frozen_inputs": {
+    "catalog_sha256": "da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67",
+    "public_sha256": "857259f7a438e6188ac63e18995b6ff4489bfcfc4a716a798b9a2aa0ee8f7579",
+    "development_source_sha256": "f2cdf94b8dbdf22373f42dd661f22372e92715d7bcbc924590db26cf824894db",
+    "validation_source_sha256": "78da5e8402bd7d6c7d9eee86de24eec9a13d3e433ed6f3cfe720bf85cb3319c9",
+    "model_manifest_sha256": "f1130079f60555f7e35dc84344a33cd8e9afdcb4743c42afc94fb42b3991fd76"
+  },
+  "runtime_source_sha256": {
+    "starter/agent.py": "990843888a835ae4101a9c5287d8fa04947029c1a3db51cb157a306e86ba95e2",
+    "conversational_search/intent.py": "88ba389cc4b8027ef3ba572fb00c4114b406ac20db45cf1aa9539e3ac14f58c9",
+    "conversational_search/orchestration.py": "2284c53dd028c3a0f3b27bd633dc6f857f1f66d19ddfde263b8dc899ac925cd5",
+    "conversational_search/ranking.py": "9288051643ec2598f35350c15e76fedbbeba96cc35dd60cd153bf0ab8fdae7fd",
+    "conversational_search/retrieval.py": "8c654f89c423b81148ce2a4938a418715ddb37068990e6c1eda0adb1bd337aa9",
+    "conversational_search/service.py": "bca4e3971ed4ddfdeb42dcbffd7a4480b69191e00289c9ed9aa4c72e2e6fbe39",
+    "conversational_search/slates.py": "978c0875807f8da1d452194f53dc3988f72b55b6f8e26dfa2c046ed0628c1c0a"
+  },
+  "rollback": {
+    "protected_starter_sha256": "990843888a835ae4101a9c5287d8fa04947029c1a3db51cb157a306e86ba95e2",
+    "active_benchmark": "benchmarks/phase13.json",
+    "failed_candidate_remains_inactive": true
+  }
+}

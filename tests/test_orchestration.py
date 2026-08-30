@@ -10,6 +10,7 @@ from conversational_search.intent import IntentState, Requirement
 from conversational_search.orchestration import (
     ALWAYS_SEARCH_ORCHESTRATION_POLICY,
     BackendSnapshotToken,
+    DEFAULT_PROFILE_DEPENDENCY_DIGEST,
     DEFAULT_RANKING_CACHE_CAPACITY,
     EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
     MAX_CACHED_RANKED_IDS,
@@ -18,6 +19,13 @@ from conversational_search.orchestration import (
     OrchestrationPolicy,
     QueryAction,
     TurnDecision,
+    ranking_dependency_digest,
+)
+from conversational_search.profiles import (
+    BOUNDED_RESIDUAL_PROFILE_POLICY,
+    DISABLED_PROFILE_POLICY,
+    NEUTRAL_PROFILE_PRIOR,
+    parse_profile_prior,
 )
 from conversational_search.ranking import (
     FUSED_ONLY_RANKING_POLICY,
@@ -57,6 +65,7 @@ def _decide(
     result_count: int = 10,
     backend_snapshot_token: BackendSnapshotToken | None = _SNAPSHOT,
     cache_eligible: bool = True,
+    profile_digest: bytes = DEFAULT_PROFILE_DEPENDENCY_DIGEST,
 ) -> TurnDecision:
     return planner.decide(
         session_id,
@@ -68,6 +77,7 @@ def _decide(
         result_count,
         backend_snapshot_token,
         cache_eligible,
+        profile_digest=profile_digest,
     )
 
 
@@ -83,6 +93,7 @@ def _prime(
     result_count: int = 10,
     backend_snapshot_token: BackendSnapshotToken = _SNAPSHOT,
     ranked_ids: tuple[str, ...] = _RANKED_IDS,
+    profile_digest: bytes = DEFAULT_PROFILE_DEPENDENCY_DIGEST,
 ) -> TurnDecision:
     decision = _decide(
         planner,
@@ -94,6 +105,7 @@ def _prime(
         ranking_policy=ranking_policy,
         result_count=result_count,
         backend_snapshot_token=backend_snapshot_token,
+        profile_digest=profile_digest,
     )
     if decision.action is not QueryAction.SEARCH:
         raise AssertionError(f"expected cold SEARCH, got {decision.action!r}")
@@ -267,6 +279,63 @@ class OrchestrationDecisionTests(unittest.TestCase):
 
 
 class RankingDependencyTests(unittest.TestCase):
+    def test_default_profile_dependency_preserves_old_call_semantics(self) -> None:
+        expected = DISABLED_PROFILE_POLICY.ranking_digest(
+            NEUTRAL_PROFILE_PRIOR
+        )
+        self.assertEqual(DEFAULT_PROFILE_DEPENDENCY_DIGEST, expected)
+
+        omitted = ranking_dependency_digest(
+            _BASE_STATE,
+            _DENSE_QUERY,
+            _LEXICAL_QUERY,
+            _WEIGHTS,
+            STAGE_A_RANKING_POLICY,
+        )
+        explicit = ranking_dependency_digest(
+            _BASE_STATE,
+            _DENSE_QUERY,
+            _LEXICAL_QUERY,
+            _WEIGHTS,
+            STAGE_A_RANKING_POLICY,
+            profile_digest=DEFAULT_PROFILE_DEPENDENCY_DIGEST,
+        )
+
+        self.assertEqual(omitted, explicit)
+
+    def test_changed_profile_dependency_forces_search_then_exact_reuse(self) -> None:
+        planner = OrchestrationPlanner()
+        _prime(planner)
+        prior = parse_profile_prior({"preference_tags": ["comfort"]})
+        profile_digest = BOUNDED_RESIDUAL_PROFILE_POLICY.ranking_digest(prior)
+
+        changed = _decide(planner, profile_digest=profile_digest)
+
+        self.assertIs(changed.action, QueryAction.SEARCH)
+        self.assertEqual(changed.reason, "ranking_dependencies_changed")
+        self.assertTrue(
+            planner.commit("session", changed, _SNAPSHOT, _RANKED_IDS)
+        )
+        self.assertIs(
+            _decide(planner, profile_digest=profile_digest).action,
+            QueryAction.REUSE,
+        )
+        self.assertIs(_decide(planner).action, QueryAction.SEARCH)
+
+    def test_profile_dependency_must_be_exactly_thirty_two_bytes(self) -> None:
+        planner = OrchestrationPlanner()
+        for invalid in (b"", b"x" * 31, b"x" * 33):
+            with self.subTest(length=len(invalid)):
+                with self.assertRaises(ValueError):
+                    _decide(planner, profile_digest=invalid)
+        for invalid in ("x" * 32, bytearray(32), None):
+            with self.subTest(kind=type(invalid).__name__):
+                with self.assertRaises(TypeError):
+                    _decide(
+                        planner,
+                        profile_digest=invalid,  # type: ignore[arg-type]
+                    )
+
     def test_every_predeclared_ranking_dependency_forces_search(self) -> None:
         requirements = _BASE_STATE.requirements
         cases = {

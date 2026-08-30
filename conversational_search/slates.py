@@ -18,10 +18,12 @@ class SlatePolicy(Enum):
 
     REPEAT_TOP = "repeat_top"
     STAGNATION_AWARE = "stagnation_aware"
+    INTENT_EPOCH_NOVELTY = "phase13-intent-epoch-continuation-novelty-v1"
 
 
 REPEAT_TOP_SLATE_POLICY = SlatePolicy.REPEAT_TOP
 STAGNATION_AWARE_SLATE_POLICY = SlatePolicy.STAGNATION_AWARE
+INTENT_EPOCH_NOVELTY_SLATE_POLICY = SlatePolicy.INTENT_EPOCH_NOVELTY
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +49,26 @@ class SlateSelection:
     selected_ids: tuple[str, ...]
     state: SlateState
     trace: SlateTrace
+
+
+class IntentEpochSlateStatus(str, Enum):
+    """Mutually exclusive aggregate outcomes for the Phase 13 policy."""
+
+    EMPTY = "empty_exact_baseline"
+    FIRST = "first_slate_exact_baseline"
+    UNCHANGED = "unchanged_signature_exact_baseline"
+    EPOCH_RESET = "changed_epoch_exact_baseline"
+    CARRIED = "same_epoch_history_carried"
+    VALIDATION_FALLBACK = "validation_fallback"
+
+
+@dataclass(frozen=True, slots=True)
+class IntentEpochSlateSelection:
+    """One transient Phase 13 decision around an ordinary slate selection."""
+
+    selection: SlateSelection
+    status: IntentEpochSlateStatus
+    eligible_prior_shown: int
 
 
 def ranking_signature(
@@ -124,6 +146,13 @@ def select_slate(
             state=state,
             trace=SlateTrace(False, False, 0, 0),
         )
+    if policy is SlatePolicy.INTENT_EPOCH_NOVELTY:
+        return select_slate_with_intent_epoch_novelty(
+            state,
+            signature,
+            pool,
+            limit,
+        ).selection
 
     signature_changed = state.signature != signature
     pool_set = frozenset(pool)
@@ -157,6 +186,119 @@ def select_slate(
             repeat_backfills=repeat_backfills,
         ),
     )
+
+
+def select_slate_with_intent_epoch_novelty(
+    state: SlateState,
+    signature: tuple[object, ...],
+    ranked_ids: Sequence[str],
+    limit: int,
+) -> IntentEpochSlateSelection:
+    """Carry shown IDs across ranking changes inside one explicit intent epoch.
+
+    The protected stagnation-aware result is computed first and is returned
+    exactly for every neutral or candidate-validation case. Only a changed
+    signature with equal valid intent epochs takes the candidate path.
+    """
+
+    baseline = select_slate(
+        STAGNATION_AWARE_SLATE_POLICY,
+        state,
+        signature,
+        ranked_ids,
+        limit,
+    )
+    pool = _ranked_pool(ranked_ids)
+    if limit <= 0 or not pool:
+        return IntentEpochSlateSelection(
+            baseline,
+            IntentEpochSlateStatus.EMPTY,
+            0,
+        )
+    if state.signature is None:
+        return IntentEpochSlateSelection(
+            baseline,
+            IntentEpochSlateStatus.FIRST,
+            0,
+        )
+    if state.signature == signature:
+        pool_set = frozenset(pool)
+        eligible_prior = tuple(
+            dict.fromkeys(
+                parent_asin
+                for parent_asin in state.shown_ids
+                if parent_asin in pool_set
+            )
+        )
+        return IntentEpochSlateSelection(
+            baseline,
+            IntentEpochSlateStatus.UNCHANGED,
+            len(eligible_prior),
+        )
+    try:
+        prior_epoch = _intent_epoch(state.signature)
+        current_epoch = _intent_epoch(signature)
+    except (TypeError, ValueError):
+        return IntentEpochSlateSelection(
+            baseline,
+            IntentEpochSlateStatus.VALIDATION_FALLBACK,
+            0,
+        )
+    if prior_epoch != current_epoch:
+        return IntentEpochSlateSelection(
+            baseline,
+            IntentEpochSlateStatus.EPOCH_RESET,
+            0,
+        )
+
+    pool_set = frozenset(pool)
+    prior_shown = tuple(
+        dict.fromkeys(
+            parent_asin
+            for parent_asin in state.shown_ids
+            if parent_asin in pool_set
+        )
+    )
+    shown_set = frozenset(prior_shown)
+    unseen = tuple(
+        parent_asin for parent_asin in pool if parent_asin not in shown_set
+    )
+    selected = list(unseen[:limit])
+    unseen_selected = len(selected)
+    if len(selected) < limit:
+        selected_set = frozenset(selected)
+        selected.extend(
+            parent_asin
+            for parent_asin in pool
+            if parent_asin not in selected_set
+        )
+        del selected[limit:]
+    repeat_backfills = len(selected) - unseen_selected
+    next_shown = tuple(dict.fromkeys((*prior_shown, *selected)))
+    candidate = SlateSelection(
+        selected_ids=tuple(selected),
+        state=SlateState(signature=signature, shown_ids=next_shown),
+        trace=SlateTrace(
+            signature_changed=True,
+            stagnant_turn=False,
+            unseen_selected=unseen_selected,
+            repeat_backfills=repeat_backfills,
+        ),
+    )
+    return IntentEpochSlateSelection(
+        candidate,
+        IntentEpochSlateStatus.CARRIED,
+        len(prior_shown),
+    )
+
+
+def _intent_epoch(signature: tuple[object, ...]) -> int:
+    if not isinstance(signature, tuple) or not signature:
+        raise TypeError("ranking signature must contain an intent epoch")
+    epoch = signature[0]
+    if type(epoch) is not int or epoch < 0:
+        raise ValueError("intent epoch must be a non-negative integer")
+    return epoch
 
 
 def _ranked_pool(ranked_ids: Sequence[str]) -> tuple[str, ...]:

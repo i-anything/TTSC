@@ -1,0 +1,438 @@
+{
+  "schema_version": 1,
+  "experiment_id": "phase9-bounded-profile-aware-stage-a-v1",
+  "candidate": "phase9-bounded-profile-residual-v1",
+  "baseline": "phase7-exact-ranking-reuse-v1",
+  "status": "technical_policy_predeclared_before_implementation; methodology_disclosure_corrected_before_lock_and_public_candidate_outcome_evaluation",
+  "purpose": "Test one bounded, deterministic preference-tag residual inside Stage-A ranking while preserving the Phase 7 intent, query, retrieval, question, slate, caching, model, and failure policies.",
+  "hypothesis": "A small generic-theme prior can improve the order of otherwise plausible candidates when the conversation has disclosed no active requirement, without changing Phase 7 recall, latency, privacy, or explicit-intent behavior.",
+  "non_overfit_boundary": {
+    "allowed_development_inputs": [
+      "source code and documented contracts",
+      "the published user_profile schema and preference_tags field type",
+      "generic English semantics used to freeze the theme enum, aliases, and product cues below",
+      "fully synthetic profiles, messages, intent states, candidate documents, route lists, and faults",
+      "the aggregate frozen Phase 7 comparator metrics declared in this contract",
+      "pre-contract aggregate, label-free observations from the 200 public profiles, including purchase-frequency constancy and coarse preference-tag classes and frequencies; no row or session linkage, targets, labels, or outcomes"
+    ],
+    "forbidden_design_policy_or_debug_inputs": [
+      "row-level public or hidden profiles or preference tags and any sample or session linkage used as Phase 9 design or debug inputs",
+      "any public or hidden evaluator message, answer, intent card, or row-level session content used as Phase 9 design or debug inputs",
+      "sample IDs, product targets, scenario labels, split labels, simulator state, or ground truth",
+      "target ranks, hits, misses, conversions, trajectories, or other per-session outcomes",
+      "manual or automated inspection of individual public or hidden sessions before or after the run",
+      "any further public or hidden profile inspection after this methodology correction, including values, frequencies, co-occurrences, or coverage",
+      "any further taxonomy, alias, cue, weight, or threshold selection from profile aggregates",
+      "any preference-tag-to-target, label, outcome, rank, hit, miss, conversion, or trajectory correlation or per-session analysis",
+      "catalog-frequency-derived theme aliases, product cues, weights, or thresholds",
+      "turn-specific, scenario-specific, category-specific, product-specific, or evaluator-specific rules",
+      "multiple formulas, taxonomies, weights, thresholds, or candidates followed by public-set selection"
+    ],
+    "one_shot_rule": "The disclosed aggregate, label-free profile exposure predates the technical freeze. From this methodology correction onward, freeze this sole taxonomy, alias map, cue map, formula, lambda, bounds, tests, sources, and implementation lock before one public candidate/comparator run; perform no further profile inspection or candidate changes. If any promotion gate fails, retain Phase 7 exactly and do not tune Phase 9 from public outcomes.",
+    "post_run_threshold_alias_weight_or_formula_changes": false,
+    "manual_failure_or_per_session_inspection": false,
+    "precontract_aggregate_public_profile_exposure": true,
+    "profile_blind_design_claim": false,
+    "taxonomy_independence_from_prior_aggregate_exposure_claimed": false,
+    "row_level_profile_sample_linkage_labels_targets_or_outcomes_used_for_phase9_tuning": false,
+    "methodology_correction_history": "Corrected before the implementation lock and before any Phase 9 candidate outcome evaluation. This provenance correction changes no taxonomy, alias, cue, formula, lambda, threshold, promotion gate, runtime source, or test expectation."
+  },
+  "frozen_components": {
+    "intent_policy": "Phase 7 robust intent reducer v1",
+    "query_rendering": "Phase 7 dense and lexical query renderers",
+    "question_policy": "Phase 7 conservative-early-other-v1",
+    "fusion_policy": "Phase 7 completeness_adaptive",
+    "retrieval_routes": "Phase 7 BM25 Top-100 plus BGE-small dense Top-100",
+    "base_ranking_policy": "Phase 7 deterministic Stage-A v1",
+    "slate_policy": "Phase 7 stagnation-aware v1",
+    "orchestration_policy": "Phase 7 exact ranking reuse v1, extended only by the profile dependency digest declared below",
+    "model_and_index": "Phase 7 BGE-small-en-v1.5 runtime and 384-dimensional index",
+    "official_evaluator": "evaluator/local_evaluator.py"
+  },
+  "candidate_change": {
+    "scope": "Read only user_profile.preference_tags during reset, retain only a bounded canonical theme bitmask, and apply one fixed Stage-A score residual on eligible turns.",
+    "preference_profile_fields_used": [
+      "preference_tags"
+    ],
+    "profile_fields_never_read": [
+      "purchase_frequency",
+      "average_prior_rating",
+      "rating_style",
+      "summary"
+    ],
+    "eligibility": "The residual is eligible only when the policy is enabled, the canonical theme mask is nonzero, the current post-reducer IntentState has exactly zero active requirements, and the ordinary Phase 7 Stage-A input and base ranking are complete and successful.",
+    "active_requirement_definition": "Any entry in IntentState.requirements is active regardless of attribute, source, strength, or turn. One or more entries disables the profile residual exactly.",
+    "explicit_intent_precedence": "Conversation-derived category, requirements, exclusions, overrides, no-preference state, and intent version are never created, replaced, removed, weakened, or reinterpreted from profile data. Every active conversational requirement disables personalization for the turn.",
+    "category_behavior": "Category remains ordinary Phase 7 conversational evidence. A category alone does not become a profile requirement and does not alter the zero-active-requirements eligibility test.",
+    "ordinary_pipeline_invariant": "Profile data cannot change intent reduction, dense or lexical query text, route selection, route weights, candidate generation, fusion, candidate-document lookup, question selection, message generation, or the slate algorithm. An eligible residual may change only the complete pre-slate Stage-A ordering supplied to the frozen slate.",
+    "new_model_api_embedding_route_rerank_or_document_calls": 0,
+    "additional_catalog_passes_or_persistent_product_indexes": 0
+  },
+  "profile_normalization_contract": {
+    "maximum_input_tags_inspected": 16,
+    "maximum_input_tag_characters": 64,
+    "oversized_or_non_string_tag": "Ignore without normalization or logging.",
+    "normalization": "For each bounded string, apply Unicode NFKD, ASCII loss-tolerant transliteration, case folding, replace every non-alphanumeric run with one space, collapse whitespace, and strip. Match the entire resulting string against the fixed normalized aliases below.",
+    "substring_prefix_suffix_or_fuzzy_matching": false,
+    "deduplication": "Map exact aliases to enum values, deduplicate with a ten-bit mask, and retain enum order only.",
+    "missing_non_list_or_malformed_preference_tags": "Neutral empty mask; reset and later responses must remain valid.",
+    "unknown_tag_behavior": "Neutral and discarded.",
+    "attribute_dimension_tags_always_neutral": [
+      "material",
+      "fit",
+      "style",
+      "color",
+      "size",
+      "brand",
+      "category",
+      "budget",
+      "price",
+      "feature",
+      "use case"
+    ],
+    "attribute_prefix_behavior": "Do not strip or interpret attribute names, preference verbs, separators, or arbitrary prefixes. For example, material, material cotton, style casual, prefers comfort, and color black are neutral unless the entire normalized tag is independently listed as an alias, and none of those examples is listed.",
+    "explicitly_excluded_themes": [
+      "PREMIUM",
+      "VALUE",
+      "PORTABLE"
+    ],
+    "raw_profile_lifetime": "The input dictionary and every raw or normalized tag string are transient within reset and are not retained after reset returns."
+  },
+  "fixed_theme_contract": {
+    "enum_order_and_bits": {
+      "COMFORT": 0,
+      "DURABILITY": 1,
+      "PERFORMANCE": 2,
+      "WARMTH": 3,
+      "WEATHER_PROTECTION": 4,
+      "LIGHTWEIGHT": 5,
+      "BREATHABILITY": 6,
+      "EASY_CARE": 7,
+      "VERSATILITY": 8,
+      "SUSTAINABILITY": 9
+    },
+    "whole_tag_aliases_after_normalization": {
+      "COMFORT": [
+        "comfort",
+        "comfortable",
+        "comfort focused",
+        "comfort first"
+      ],
+      "DURABILITY": [
+        "durability",
+        "durable",
+        "long lasting",
+        "hard wearing",
+        "rugged"
+      ],
+      "PERFORMANCE": [
+        "performance",
+        "high performance",
+        "performance focused",
+        "technical performance"
+      ],
+      "WARMTH": [
+        "warmth",
+        "warm",
+        "insulated",
+        "thermal"
+      ],
+      "WEATHER_PROTECTION": [
+        "weather protection",
+        "weather resistant",
+        "weatherproof",
+        "water resistant",
+        "waterproof",
+        "wind resistant",
+        "windproof",
+        "rain protection"
+      ],
+      "LIGHTWEIGHT": [
+        "lightweight",
+        "light weight",
+        "ultralight",
+        "featherweight"
+      ],
+      "BREATHABILITY": [
+        "breathability",
+        "breathable",
+        "ventilated",
+        "airflow"
+      ],
+      "EASY_CARE": [
+        "easy care",
+        "low maintenance",
+        "machine washable",
+        "washable"
+      ],
+      "VERSATILITY": [
+        "versatility",
+        "versatile",
+        "multi purpose",
+        "multipurpose",
+        "all purpose"
+      ],
+      "SUSTAINABILITY": [
+        "sustainability",
+        "sustainable",
+        "eco friendly",
+        "environmentally friendly",
+        "recycled"
+      ]
+    },
+    "candidate_document_cues_after_normalization": {
+      "COMFORT": [
+        "comfort",
+        "comfortable",
+        "cushioned",
+        "cushioning",
+        "ergonomic",
+        "padded"
+      ],
+      "DURABILITY": [
+        "durability",
+        "durable",
+        "rugged",
+        "reinforced",
+        "hard wearing",
+        "long lasting"
+      ],
+      "PERFORMANCE": [
+        "performance",
+        "high performance",
+        "performance focused",
+        "technical performance"
+      ],
+      "WARMTH": [
+        "warmth",
+        "warm",
+        "insulated",
+        "insulation",
+        "thermal",
+        "fleece lined"
+      ],
+      "WEATHER_PROTECTION": [
+        "weather protection",
+        "weather resistant",
+        "weatherproof",
+        "water resistant",
+        "waterproof",
+        "wind resistant",
+        "windproof",
+        "rainproof"
+      ],
+      "LIGHTWEIGHT": [
+        "lightweight",
+        "light weight",
+        "ultralight",
+        "featherweight"
+      ],
+      "BREATHABILITY": [
+        "breathability",
+        "breathable",
+        "ventilated",
+        "ventilation",
+        "airflow",
+        "moisture wicking"
+      ],
+      "EASY_CARE": [
+        "easy care",
+        "low maintenance",
+        "machine washable",
+        "washable",
+        "wrinkle resistant",
+        "stain resistant"
+      ],
+      "VERSATILITY": [
+        "versatility",
+        "versatile",
+        "multi purpose",
+        "multipurpose",
+        "all purpose",
+        "convertible"
+      ],
+      "SUSTAINABILITY": [
+        "sustainability",
+        "sustainable",
+        "eco friendly",
+        "environmentally friendly",
+        "recycled",
+        "organic",
+        "responsibly sourced"
+      ]
+    },
+    "cue_matching": "Tokenize the already available bounded transient CandidateDocument text with the frozen Stage-A normalizer. A theme matches a product only when at least one listed cue occurs as an exact contiguous token sequence; arbitrary substrings and fuzzy matches are forbidden.",
+    "product_ids_prices_ratings_route_scores_or_metadata_frequency_used_as_theme_evidence": false
+  },
+  "residual_scoring_contract": {
+    "lambda": 0.05,
+    "base_score": "The exact Phase 7 Stage-A score b_i before sorting for candidate i; its formula and beta are unchanged.",
+    "requested_themes": "P is the canonical theme set represented by the retained profile mask.",
+    "represented_themes": "R is the subset of P for which at least one candidate in the complete fused Stage-A pool matches a fixed cue.",
+    "candidate_profile_score": "p_i equals the number of themes in R matched by candidate i divided by |R|.",
+    "final_score": "s_i = (1 - 0.05) * b_i + 0.05 * p_i.",
+    "ordering": "Sort by descending s_i, breaking exact ties by the Phase 7 Stage-A order.",
+    "represented_theme_neutral_fallback": "If R is empty, return the exact Phase 7 Stage-A result and trace without applying floating-point arithmetic.",
+    "constant_profile_score_neutral_fallback": "If every candidate has the same p_i, return the exact Phase 7 Stage-A result and trace without applying floating-point arithmetic.",
+    "disabled_or_ineligible_fallback": "When disabled or ineligible, return the exact Phase 7 Stage-A result and trace.",
+    "exception_or_malformed_input_fallback": "Any profile parsing, cue extraction, residual scoring, non-finite value, length mismatch, or invariant failure returns the exact already computed Phase 7 Stage-A result and trace.",
+    "hard_filters_negative_penalties_or_candidate_additions": false,
+    "adaptive_learned_category_specific_or_frequency_weighting": false
+  },
+  "ranking_cache_dependency_contract": {
+    "profile_policy_version": "phase9-bounded-profile-residual-v1",
+    "profile_digest": "SHA-256 over the UTF-8 profile policy version, one zero byte, and the canonical unsigned 16-bit big-endian theme mask.",
+    "dependency_inclusion": "Include the 32-byte profile digest in the deterministic Phase 7 ranking-dependency serialization for every Phase 9 search or reuse decision.",
+    "raw_tags_or_profile_fields_in_dependency": false,
+    "cache_layer_capacity_and_payload": "The Phase 7 complete successful pre-slate ranked-ID cache, capacity, validation, and failure rules remain unchanged. It stores only the existing overall ranking-dependency digest, not a second profile digest, theme mask, raw tag, or profile object.",
+    "reset_behavior": "Reset replaces the bounded theme mask and invalidates the session's Phase 7 orchestration and slate state exactly as before.",
+    "approximate_dependency_matching": false
+  },
+  "state_privacy_and_telemetry_contract": {
+    "retained_profile_representation": "One unsigned 16-bit theme mask per active session; only the lowest ten bits are valid.",
+    "maximum_logical_profile_payload_bytes_per_session": 2,
+    "additional_global_profile_cache_entries": 0,
+    "forbidden_retained_or_emitted_values": [
+      "raw user_profile dictionaries",
+      "raw or normalized preference tags",
+      "summary or rating fields",
+      "user messages or rendered queries",
+      "session IDs or their association with profile themes",
+      "product IDs, candidate text, per-candidate theme matches, or scores",
+      "per-session eligibility, profile masks, decisions, ranks, hits, misses, or outcomes"
+    ],
+    "allowed_aggregate_counters": [
+      "profiles reset",
+      "profiles with zero or nonzero recognized masks",
+      "recognized theme count summed across profiles",
+      "turns disabled by active requirements",
+      "eligible Stage-A attempts",
+      "empty represented-theme fallbacks",
+      "constant-score neutral fallbacks",
+      "successful residual applications",
+      "profile parsing or scoring fallbacks"
+    ],
+    "telemetry_cardinality": "Fixed global integer counters only; no theme-specific, category-specific, turn-specific, scenario-specific, session-specific, tag-specific, product-specific, or free-text dimensions.",
+    "publication": "Aggregate totals only. Do not publish or inspect per-session telemetry, small cells, examples sourced from evaluator runs, raw masks, or theme frequencies.",
+    "logs_traces_exceptions_and_customer_response_contain_profile_data": false
+  },
+  "runtime_and_call_contract": {
+    "profile_parsing_calls": "One bounded local pass over at most sixteen tags during reset.",
+    "profile_scoring_calls": "One bounded local cue pass over the existing complete transient Stage-A candidate documents only on eligible fresh searches. Exact ranking reuse performs no candidate-document or cue work.",
+    "new_model_calls": 0,
+    "new_api_calls": 0,
+    "new_embedding_calls": 0,
+    "new_bm25_or_dense_route_calls": 0,
+    "new_candidate_document_calls": 0,
+    "new_reranker_or_cross_encoder_calls": 0,
+    "query_route_question_and_slate_policy_changes": 0,
+    "strictly_sequential_model_execution": true,
+    "onnx_threads": 1
+  },
+  "synthetic_confirmation": {
+    "profile_parser_cells": [
+      "missing, non-list, empty, oversized, and malformed preference_tags",
+      "non-string, overlength, Unicode, punctuation, underscore, and hyphen inputs",
+      "each exact whole-tag alias",
+      "duplicate aliases and aliases for the same theme",
+      "unknown tags and substring-only near matches",
+      "bare and prefixed attribute dimensions",
+      "PREMIUM, VALUE, and PORTABLE exclusions",
+      "input mutation after reset cannot alter retained state",
+      "reset replacement and deterministic replay"
+    ],
+    "eligibility_cells": [
+      "recognized profile with zero active requirements",
+      "recognized profile with category only",
+      "one strong active requirement",
+      "one weak or free-text active requirement",
+      "clarification answer",
+      "explicit override",
+      "no-preference transition",
+      "unrecognized or empty profile",
+      "disabled profile policy"
+    ],
+    "scoring_cells": [
+      "empty candidate pool",
+      "no requested theme represented",
+      "one and multiple requested themes represented",
+      "all candidates have the same profile score",
+      "exact cue versus substring near miss",
+      "multiword cue contiguity",
+      "exact final-score tie",
+      "Phase 7 order retained as the tie break",
+      "non-finite and malformed invariant fallback"
+    ],
+    "integration_cells": [
+      "fresh search and exact ranking reuse",
+      "profile digest differs across masks and policy versions",
+      "identical masks from different aliases have identical digests",
+      "profile parsing does not alter rendered queries or route weights",
+      "question, message, and slate algorithms remain frozen",
+      "interleaved and reset sessions",
+      "top_k zero",
+      "unsupported and faulting ranking backends"
+    ],
+    "required_exact_phase7_equivalence_when_disabled_ineligible_neutral_or_faulting": [
+      "IntentState",
+      "rendered dense and lexical queries",
+      "retrieval route inputs, outputs, weights, statuses, and call counts",
+      "candidate-document inputs and call counts",
+      "Stage-A ordered IDs and trace",
+      "question and customer message",
+      "slate state and ordered recommendations",
+      "usage and fault accounting"
+    ],
+    "required_eligible_difference_scope": "Only the complete pre-slate Stage-A order, its profile-safe aggregate trace counters, and downstream ordering derived by the frozen slate may differ from Phase 7."
+  },
+  "execution": {
+    "order": "contract, implementation, synthetic tests, complete unit suite, implementation lock, one unlabeled backend initialization warm-up, one cold-cache Phase 9 candidate, one Phase 7 comparator, one exact Phase 9 replay, then independent starter.Agent verification",
+    "freeze_before_public_run": "Hash the complete candidate source and this contract in docs/phase9_implementation_lock.json before the sole public comparison.",
+    "fresh_agent_state_per_variant": true,
+    "shared_immutable_retrieval_backend": true,
+    "candidate_before_baseline_after_only_unlabeled_warmup": true,
+    "public_or_hidden_rows_used_for_warmup": false,
+    "parallelism": "strictly sequential for all model and evaluator work",
+    "onnx_threads": 1,
+    "external_api_calls": 0
+  },
+  "promotion_gate": {
+    "phase7_comparator_metrics_exact": {
+      "hit_rate_at_10": 0.99,
+      "mrr": 0.52223,
+      "mttc": 3.07,
+      "recommended_technical_score": 0.810269
+    },
+    "candidate_hit_rate_at_10_minimum": 0.99,
+    "candidate_mrr_minimum": 0.52223,
+    "candidate_mttc_maximum": 3.07,
+    "candidate_technical_score_strictly_greater_than": 0.810269,
+    "candidate_mrr_or_mttc_strictly_improves": true,
+    "automated_phase7_hit_to_phase9_miss_count": 0,
+    "candidate_replay_payload_trace_and_aggregate_telemetry_exact": true,
+    "independent_starter_agent_payload_trace_and_aggregate_telemetry_matches_candidate": true,
+    "synthetic_invariants_and_complete_unit_suite_all_pass": true,
+    "baseline_and_candidate_route_reranker_slate_and_fallback_faults": 0,
+    "additional_model_api_embedding_route_rerank_or_document_calls": 0,
+    "maximum_candidate_warm_p95_latency_ratio": 1.05,
+    "maximum_candidate_wall_time_ratio": 1.05,
+    "maximum_logical_retained_profile_payload_bytes_per_session": 2,
+    "retained_profile_state_is_only_valid_ten_bit_mask": true,
+    "raw_profile_tags_summary_ratings_messages_documents_or_per_session_telemetry_retained_logged_or_published": false,
+    "aggregate_publication_contains_sensitive_per_session_theme_category_tag_product_or_free_text_data": false,
+    "post_run_tuning_or_second_candidate_run_allowed": false,
+    "failure_action": "Reject Phase 9, retain the exact Phase 7 implementation and official benchmark, publish only aggregate rejection evidence, and perform no outcome-driven repair or rerun."
+  },
+  "publication": {
+    "baseline_implementation_lock": "docs/phase7_implementation_lock.json",
+    "baseline_result": "docs/phase7_results.json",
+    "baseline_benchmark": "benchmarks/phase7.json",
+    "candidate_implementation_lock": "docs/phase9_implementation_lock.json",
+    "raw_result": "gitignored results-phase9-profile-aware-ranking.json",
+    "result_document_if_promoted": "docs/phase9_results.json",
+    "official_record_if_promoted": "benchmarks/phase9.json",
+    "aggregate_diagnostic_if_promoted": "benchmarks/diagnostics/phase9-profile-aware-ranking.json",
+    "rejection_record_if_not_promoted": "docs/phase9_results.json",
+    "append_only": true
+  }
+}
