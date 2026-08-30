@@ -19,15 +19,6 @@ BGE_MAX_SEQUENCE_LENGTH = 512
 BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 BGE_SOURCE_ONNX_SHA256 = "828e1496d7fabb79cfa4dcd84fa38625c0d3d21da474a00f08db0f559940cf35"
 
-ARCTIC_MODEL_ID = "Snowflake/snowflake-arctic-embed-m-v1.5"
-ARCTIC_MODEL_REVISION = "97eab2e17fcb7ccb8bb94d6e547898fa1a6a0f47"
-ARCTIC_DIMENSION = 768
-ARCTIC_MAX_SEQUENCE_LENGTH = 512
-ARCTIC_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
-ARCTIC_SOURCE_ONNX_SHA256 = (
-    "a18f437b2466863901a0bdc14904cf93246f5ecce0b656fc773bc2b7b2f84f6e"
-)
-
 
 def sha256_file(path: str | Path) -> str:
     digest = hashlib.sha256()
@@ -113,18 +104,6 @@ _MODEL_CONTRACTS = {
         output_name="last_hidden_state",
         output_is_sentence_embedding=False,
         requires_external_data=False,
-    ),
-    (ARCTIC_MODEL_ID, ARCTIC_MODEL_REVISION): _ModelContract(
-        model_id=ARCTIC_MODEL_ID,
-        revision=ARCTIC_MODEL_REVISION,
-        source_model_sha256=ARCTIC_SOURCE_ONNX_SHA256,
-        dimension=ARCTIC_DIMENSION,
-        max_sequence_length=ARCTIC_MAX_SEQUENCE_LENGTH,
-        query_prefix=ARCTIC_QUERY_PREFIX,
-        license="Apache-2.0",
-        output_name="sentence_embedding",
-        output_is_sentence_embedding=True,
-        requires_external_data=True,
     ),
 }
 
