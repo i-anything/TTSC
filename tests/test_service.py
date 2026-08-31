@@ -26,6 +26,7 @@ from conversational_search.ranking import (
     STAGE_A_RANKING_POLICY,
     CandidateDocument,
 )
+from conversational_search.questions import WILDCARD_OTHER_POLICY
 from conversational_search.retrieval import RetrievalResult, RetrievalTrace
 from conversational_search.service import (
     DEFAULT_DENSE_INDEX,
@@ -1433,6 +1434,7 @@ class ConversationalSearchAgentTest(unittest.TestCase):
             DEFAULT_CATALOG_PATH,
             evidence_exposure_policy=BUYING_ONLY_TOP3_PREFIX_EXPOSURE_POLICY,
             orchestration_policy=EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
+            question_policy=WILDCARD_OTHER_POLICY,
             ranking_policy=LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
             slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
         )

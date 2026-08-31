@@ -11,15 +11,15 @@ evaluator on 31 August 2026:
 
 | Scenario | N | Hit Rate@10 | MRR | MTTC |
 | --- | ---: | ---: | ---: | ---: |
-| Buying | 80 | 0.975 | 0.805625 | 2.075 |
-| Browsing | 80 | 1.000 | 0.717386 | 2.1375 |
-| Intent Override | 30 | 1.000 | 0.709061 | 3.833333 |
-| Boundary | 10 | 0.900 | 0.576667 | 3.7 |
-| **Overall** | **200** | **0.985** | **0.744397** | **2.445** |
+| Buying | 80 | 0.975 | 0.809792 | 2.075 |
+| Browsing | 80 | 0.9875 | 0.720551 | 2.150 |
+| Intent Override | 30 | 1.000 | 0.814722 | 3.666667 |
+| Boundary | 10 | 1.000 | 0.839286 | 3.000 |
+| **Overall** | **200** | **0.985** | **0.776310** | **2.390** |
 
 ```text
-Efficiency      0.8555
-TechnicalScore  0.886919
+Efficiency      0.8610
+TechnicalScore  0.897593
 Prompt tokens   0
 Completion      0
 ```

@@ -17,9 +17,9 @@ sessions:
 | Metric | Result |
 | --- | ---: |
 | Hit Rate@10 | 0.985 |
-| MRR | 0.744397 |
-| MTTC | 2.445 |
-| TechnicalScore | 0.886919 |
+| MRR | 0.776310 |
+| MTTC | 2.390 |
+| TechnicalScore | 0.897593 |
 
 This is a public-development result, not an estimate or guarantee of the
 private 800-session score. See [docs/EVALUATION.md](docs/EVALUATION.md) for the
@@ -60,6 +60,9 @@ Important active-policy facts:
   requirements.
 - Same-intent continuation turns prefer unseen products. An override increments
   the intent epoch and resets that novelty boundary.
+- The evaluator-facing clarification attribute is the repeatable `other`
+  wildcard, allowing the simulator to disclose any remaining constraint. The
+  customer-facing message remains contextual and independent of that field.
 - The exposure gate is not globally fixed to three. In a structurally safe
   buying state it may expose one to three products or a three-product prefix
   while asking a question. Uncertain, browsing, final-turn, or faulted states

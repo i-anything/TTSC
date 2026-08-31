@@ -11,10 +11,19 @@ from conversational_search.questions import (
     CONSERVATIVE_EARLY_OTHER_POLICY,
     PHASE1_QUESTION_POLICY,
     QuestionPolicy,
+    WILDCARD_OTHER_POLICY,
 )
 
 
 class QuestionPolicyTest(unittest.TestCase):
+    def test_wildcard_other_repeats_to_drain_remaining_disclosures(self) -> None:
+        state = IntentState(
+            asked_attributes=("other",),
+            no_preference=frozenset({"other"}),
+        )
+
+        self.assertEqual(WILDCARD_OTHER_POLICY.choose(state), "other")
+
     def test_phase1_policy_retains_frozen_order(self) -> None:
         state = apply_user_message(
             IntentState(),

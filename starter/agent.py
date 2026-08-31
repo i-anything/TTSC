@@ -8,6 +8,7 @@ from conversational_search.exposure_policy import (
 from conversational_search.orchestration import (
     EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
 )
+from conversational_search.questions import WILDCARD_OTHER_POLICY
 from conversational_search.ranking import (
     LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
 )
@@ -26,6 +27,7 @@ class Agent(ConversationalSearchAgent):
             catalog_path,
             evidence_exposure_policy=BUYING_ONLY_TOP3_PREFIX_EXPOSURE_POLICY,
             orchestration_policy=EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
+            question_policy=WILDCARD_OTHER_POLICY,
             ranking_policy=LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
             slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
         )

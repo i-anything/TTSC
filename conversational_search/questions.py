@@ -24,6 +24,7 @@ class QuestionPolicy:
     name: str
     priority: tuple[str, ...]
     requeue_interrupted: bool = False
+    repeat_priority: bool = False
 
     def __post_init__(self) -> None:
         if not self.name:
@@ -35,6 +36,8 @@ class QuestionPolicy:
             raise ValueError(f"unsupported question attributes: {unsupported}")
 
     def choose(self, state: IntentState) -> str | None:
+        if self.repeat_priority:
+            return self.priority[0]
         resolved = active_attributes(state) | state.no_preference
         pending = state.last_asked_attribute
         if (
@@ -78,7 +81,14 @@ CONSERVATIVE_EARLY_OTHER_POLICY = QuestionPolicy(
     requeue_interrupted=True,
 )
 
+WILDCARD_OTHER_POLICY = QuestionPolicy(
+    name="wildcard_other",
+    priority=("other",),
+    repeat_priority=True,
+)
+
 QUESTION_POLICIES = {
     PHASE1_QUESTION_POLICY.name: PHASE1_QUESTION_POLICY,
     CONSERVATIVE_EARLY_OTHER_POLICY.name: CONSERVATIVE_EARLY_OTHER_POLICY,
+    WILDCARD_OTHER_POLICY.name: WILDCARD_OTHER_POLICY,
 }

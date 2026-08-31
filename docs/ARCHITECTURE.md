@@ -100,6 +100,11 @@ profile residual.
 Questions come from a fixed contract-valid attribute set and are selected from
 unresolved evidence.
 
+The active starter uses the repeatable `other` wildcard for the evaluator-facing
+`ask_attribute` field. This drains remaining disclosures without constraining
+the simulator to one named attribute. Customer-facing question text remains a
+separate concern; the wildcard is an evaluator-protocol optimization.
+
 The buying-only exposure gate runs after ranking and before slate selection:
 
 - If the state is exact, consistent, non-fallback, and the best structural tier
