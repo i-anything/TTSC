@@ -1,3 +1,11 @@
+"""Command-line entry point for catalog scan, dense-index build, and verify.
+
+``scan`` validates and hashes the catalog without ML dependencies;
+``build`` encodes the canonical catalog text into four row-aligned float32
+shards; ``verify`` replays an existing artifact bundle.  Every subcommand
+prints a JSON payload summarizing the operation.
+"""
+
 from __future__ import annotations
 
 import argparse
