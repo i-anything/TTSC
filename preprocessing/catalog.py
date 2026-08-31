@@ -1,3 +1,13 @@
+"""Deterministic normalization of the frozen product catalog.
+
+Raw JSONL rows are validated and reduced to ``NormalizedProduct`` records
+with cleaned text fields, canonical price parsing, flattened details, and a
+versioned canonical text template (``product-text-v2``) shared by the BM25
+store and the dense encoder.  ``scan_catalog`` hashes both the input file
+and the derived corpus so embedding builds can prove row-wise alignment
+between the catalog and the vector shards.
+"""
+
 from __future__ import annotations
 
 import hashlib

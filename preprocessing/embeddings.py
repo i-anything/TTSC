@@ -1,3 +1,14 @@
+"""Deterministic construction and verification of the sharded dense index.
+
+``build_embedding_artifacts`` encodes the canonical catalog text with the
+pinned ONNX encoder and writes row-aligned float32 shards plus a manifest
+recording every identity input (catalog and text digests, model manifest
+identity, environment versions).  The bundle is assembled in a staging
+directory and swapped into place atomically, with the ``READY`` marker
+emitted last.  ``verify_embedding_artifacts`` replays the same checks
+against an existing bundle.
+"""
+
 from __future__ import annotations
 
 import hashlib
