@@ -208,27 +208,41 @@ install:
 
 ### 2. Download the product catalog
 
-`data/catalog.jsonl` is not committed to the repository. Download
-`catalog.jsonl.gz` and `SHA256SUMS` from the organizer's
+`data/catalog.jsonl` is not committed to the repository and is not downloaded
+by `git clone`. From the repository root, download `catalog.jsonl.gz` and
+`SHA256SUMS` from the organizer's
 [participant-kit release](https://github.com/TechJam2026/techjam-conversational-search/releases/tag/participant-kit),
-then decompress and verify:
+then verify and decompress them:
 
 **Linux / macOS:**
 ```bash
-gzip -dk catalog.jsonl.gz
-mv catalog.jsonl data/catalog.jsonl
+mkdir -p data
+curl --fail --location \
+  https://github.com/TechJam2026/techjam-conversational-search/releases/download/participant-kit/catalog.jsonl.gz \
+  --output data/catalog.jsonl.gz
+curl --fail --location \
+  https://github.com/TechJam2026/techjam-conversational-search/releases/download/participant-kit/SHA256SUMS \
+  --output data/SHA256SUMS
+(cd data && shasum -a 256 --ignore-missing --check SHA256SUMS)
+.venv-runtime/bin/python -m gzip --decompress data/catalog.jsonl.gz
 shasum -a 256 data/catalog.jsonl
 ```
 
 **Windows (PowerShell):**
 ```powershell
-# Decompress using GzipStream, then verify:
+New-Item -ItemType Directory -Force data | Out-Null
+curl.exe --fail --location `
+  https://github.com/TechJam2026/techjam-conversational-search/releases/download/participant-kit/catalog.jsonl.gz `
+  --output data\catalog.jsonl.gz
+Get-FileHash data\catalog.jsonl.gz -Algorithm SHA256
+.venv-runtime\Scripts\python.exe -m gzip --decompress data\catalog.jsonl.gz
 Get-FileHash data\catalog.jsonl -Algorithm SHA256
 ```
 
-Expected SHA-256:
+Expected compressed and decompressed SHA-256 values, respectively:
 
 ```text
+07fd142631fd6b03e2b4d09988c3eb7d53720e9d57010c79db48eeaada50a8f8
 da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67
 ```
 
