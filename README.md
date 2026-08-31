@@ -54,6 +54,14 @@ experiments, and latency measurements are in
 > This is a public-development result. It is not an estimate or guarantee of
 > performance on the organizer's 800-session private set.
 
+## Architecture Overview
+
+The system is a five-stage pipeline: **understand the user's intent**,
+**retrieve candidate products**, **rerank by evidence**, **decide how many
+to show**, and **select which ones to show**. Every stage is fully
+deterministic and operates offline with zero network calls.
+
+```mermaid
 flowchart TD
     subgraph SessionInit["1. Session Initialisation"]
         A["User opens a new<br/>shopping session"]
@@ -109,7 +117,9 @@ flowchart TD
 
         L --> N["Return message, question<br/>and ranked products"]
     end
+```
 
+some of the word being cut
 ### Fail-Open Design
 
 Every component degrades gracefully when something goes wrong:
