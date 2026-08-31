@@ -1,3 +1,11 @@
+"""Validating loader for the sharded dense-vector artifact bundle.
+
+``ShardedDenseIndex`` verifies the manifest, ``READY`` marker, and per-file
+SHA-256 checksums, then memory-maps the contiguous float32 shards and
+scores exact cosine similarity for query vectors, breaking ties on the
+global row index.  Every contract violation raises ``DenseIndexError``.
+"""
+
 from __future__ import annotations
 
 import hashlib
