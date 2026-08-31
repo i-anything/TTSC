@@ -22,6 +22,102 @@ within at most 10 turns.
   published scoring formula.
 - Zero runtime cost: no API calls, no tokens, no credentials.
 
+## Setup and Installation
+
+### Prerequisites
+
+- **Python 3.10–3.13**. Python 3.14 is not supported because the pinned
+  `onnxruntime==1.23.2` release does not provide Python 3.14 wheels.
+- No GPU required; the entire pipeline runs on CPU.
+
+### 1. Create a virtual environment and install dependencies
+
+**Linux / macOS:**
+```bash
+python3.13 --version
+python3.13 -m venv --clear .venv-runtime
+.venv-runtime/bin/python --version
+.venv-runtime/bin/python -m pip install --upgrade pip
+.venv-runtime/bin/python -m pip install -r requirements-runtime.txt
+```
+
+**Windows (PowerShell):**
+```powershell
+py -3.13 -m venv --clear .venv-runtime
+.venv-runtime\Scripts\python.exe --version
+.venv-runtime\Scripts\python.exe -m pip install --upgrade pip
+.venv-runtime\Scripts\python.exe -m pip install -r requirements-runtime.txt
+```
+
+The environment's reported version must be Python 3.13.x before installing.
+The `--clear` flag is intentional: Python's `venv` command does not reliably
+replace the interpreter in an existing environment. Without it, a
+`.venv-runtime` previously created by Python 3.14 can remain on Python 3.14 even
+when the command is invoked through `python3.13`.
+
+Do not use an unqualified `python3 -m venv` until `python3 --version` has
+confirmed Python 3.10–3.13. On systems where `python3` resolves to Python 3.14,
+that command creates an incompatible environment even though Python 3.13 is
+installed separately.
+
+The runtime dependencies are minimal:
+
+| Package | Version | Purpose |
+| --- | --- | --- |
+| `numpy` | 2.2.6 | Numerical computing, memory-mapped shard I/O |
+| `onnxruntime` | 1.23.2 | CPU-only ONNX model inference |
+| `tokenizers` | 0.22.1 | HuggingFace tokenizer for BGE model |
+
+For preprocessing (building the dense index from scratch), additionally
+install:
+
+```bash
+.venv-runtime/bin/python -m pip install -r requirements-preprocessing.txt
+```
+
+### 2. Download the product catalog
+
+`data/catalog.jsonl` is not committed to the repository and is not downloaded
+by `git clone`. From the repository root, download `catalog.jsonl.gz` and
+`SHA256SUMS` from the organizer's
+[participant-kit release](https://github.com/TechJam2026/techjam-conversational-search/releases/tag/participant-kit),
+then verify and decompress them:
+
+**Linux / macOS:**
+```bash
+mkdir -p data
+curl --fail --location \
+  https://github.com/TechJam2026/techjam-conversational-search/releases/download/participant-kit/catalog.jsonl.gz \
+  --output data/catalog.jsonl.gz
+curl --fail --location \
+  https://github.com/TechJam2026/techjam-conversational-search/releases/download/participant-kit/SHA256SUMS \
+  --output data/SHA256SUMS
+(cd data && shasum -a 256 --ignore-missing --check SHA256SUMS)
+.venv-runtime/bin/python -m gzip --decompress data/catalog.jsonl.gz
+shasum -a 256 data/catalog.jsonl
+```
+
+**Windows (PowerShell):**
+```powershell
+New-Item -ItemType Directory -Force data | Out-Null
+curl.exe --fail --location `
+  https://github.com/TechJam2026/techjam-conversational-search/releases/download/participant-kit/catalog.jsonl.gz `
+  --output data\catalog.jsonl.gz
+Get-FileHash data\catalog.jsonl.gz -Algorithm SHA256
+.venv-runtime\Scripts\python.exe -m gzip --decompress data\catalog.jsonl.gz
+Get-FileHash data\catalog.jsonl -Algorithm SHA256
+```
+
+Expected compressed and decompressed SHA-256 values, respectively:
+
+```text
+07fd142631fd6b03e2b4d09988c3eb7d53720e9d57010c79db48eeaada50a8f8
+da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67
+```
+
+The active dense index is checksum-bound to this exact catalog. A mismatch
+disables dense initialization rather than silently mixing incompatible assets.
+
 ## Current Result
 
 The active agent was evaluated against the organizer's 200 public development
@@ -53,6 +149,62 @@ experiments, and latency measurements are in
 
 > This is a public-development result. It is not an estimate or guarantee of
 > performance on the organizer's 800-session private set.
+
+## Steps to Reproduce Results
+
+### Run the evaluation
+
+This is the same entry point used by the organizer's evaluator:
+
+**Linux / macOS:**
+```bash
+.venv-runtime/bin/python -m evaluator.local_evaluator
+```
+
+**Windows (PowerShell):**
+```powershell
+.venv-runtime\Scripts\python.exe -m evaluator.local_evaluator
+```
+
+The evaluator:
+1. Imports `starter.agent.Agent`.
+2. Loads `data/catalog.jsonl` and `data/public_set.jsonl`.
+3. Simulates each of the 200 sessions turn-by-turn.
+4. Writes `results.json` with per-session and aggregate metrics.
+5. Prints the official aggregate and scenario breakdown to stdout.
+
+> **Do not** modify the evaluator or `data/public_set.jsonl` when reporting a
+> result.
+
+### Run the test suite
+
+```bash
+# Linux / macOS
+.venv-runtime/bin/python -m unittest discover -s tests
+
+# Windows (PowerShell)
+.venv-runtime\Scripts\python.exe -m unittest discover -s tests
+```
+
+### (Optional) Rebuild the dense index
+
+If you need to regenerate the precomputed BGE embeddings:
+
+```bash
+.venv-runtime/bin/python -m scripts.preprocess_catalog build \
+  --catalog data/catalog.jsonl \
+  --model-assets assets/bge-small-en-v1.5-int8 \
+  --output assets/search-index-bge-small-en-v1.5-v2
+```
+
+### (Optional) Prepare the BGE model from scratch
+
+```bash
+.venv-runtime/bin/python -m scripts.prepare_bge_model
+```
+
+This downloads, quantizes to INT8, and verifies the offline BGE-small model
+assets with fidelity validation.
 
 ## Architecture Overview
 
@@ -152,158 +304,6 @@ tests/                      contract and runtime test suite
 scripts/                    model download, catalog preprocessing, ablations
 docs/                       architecture, evaluation evidence, competition spec
 ```
-
-## Setup and Installation
-
-### Prerequisites
-
-- **Python 3.10–3.13**. Python 3.14 is not supported because the pinned
-  `onnxruntime==1.23.2` release does not provide Python 3.14 wheels.
-- No GPU required; the entire pipeline runs on CPU.
-
-### 1. Create a virtual environment and install dependencies
-
-**Linux / macOS:**
-```bash
-python3.13 --version
-python3.13 -m venv --clear .venv-runtime
-.venv-runtime/bin/python --version
-.venv-runtime/bin/python -m pip install --upgrade pip
-.venv-runtime/bin/python -m pip install -r requirements-runtime.txt
-```
-
-**Windows (PowerShell):**
-```powershell
-py -3.13 -m venv --clear .venv-runtime
-.venv-runtime\Scripts\python.exe --version
-.venv-runtime\Scripts\python.exe -m pip install --upgrade pip
-.venv-runtime\Scripts\python.exe -m pip install -r requirements-runtime.txt
-```
-
-The environment's reported version must be Python 3.13.x before installing.
-The `--clear` flag is intentional: Python's `venv` command does not reliably
-replace the interpreter in an existing environment. Without it, a
-`.venv-runtime` previously created by Python 3.14 can remain on Python 3.14 even
-when the command is invoked through `python3.13`.
-
-Do not use an unqualified `python3 -m venv` until `python3 --version` has
-confirmed Python 3.10–3.13. On systems where `python3` resolves to Python 3.14,
-that command creates an incompatible environment even though Python 3.13 is
-installed separately.
-
-The runtime dependencies are minimal:
-
-| Package | Version | Purpose |
-| --- | --- | --- |
-| `numpy` | 2.2.6 | Numerical computing, memory-mapped shard I/O |
-| `onnxruntime` | 1.23.2 | CPU-only ONNX model inference |
-| `tokenizers` | 0.22.1 | HuggingFace tokenizer for BGE model |
-
-For preprocessing (building the dense index from scratch), additionally
-install:
-
-```bash
-.venv-runtime/bin/python -m pip install -r requirements-preprocessing.txt
-```
-
-### 2. Download the product catalog
-
-`data/catalog.jsonl` is not committed to the repository and is not downloaded
-by `git clone`. From the repository root, download `catalog.jsonl.gz` and
-`SHA256SUMS` from the organizer's
-[participant-kit release](https://github.com/TechJam2026/techjam-conversational-search/releases/tag/participant-kit),
-then verify and decompress them:
-
-**Linux / macOS:**
-```bash
-mkdir -p data
-curl --fail --location \
-  https://github.com/TechJam2026/techjam-conversational-search/releases/download/participant-kit/catalog.jsonl.gz \
-  --output data/catalog.jsonl.gz
-curl --fail --location \
-  https://github.com/TechJam2026/techjam-conversational-search/releases/download/participant-kit/SHA256SUMS \
-  --output data/SHA256SUMS
-(cd data && shasum -a 256 --ignore-missing --check SHA256SUMS)
-.venv-runtime/bin/python -m gzip --decompress data/catalog.jsonl.gz
-shasum -a 256 data/catalog.jsonl
-```
-
-**Windows (PowerShell):**
-```powershell
-New-Item -ItemType Directory -Force data | Out-Null
-curl.exe --fail --location `
-  https://github.com/TechJam2026/techjam-conversational-search/releases/download/participant-kit/catalog.jsonl.gz `
-  --output data\catalog.jsonl.gz
-Get-FileHash data\catalog.jsonl.gz -Algorithm SHA256
-.venv-runtime\Scripts\python.exe -m gzip --decompress data\catalog.jsonl.gz
-Get-FileHash data\catalog.jsonl -Algorithm SHA256
-```
-
-Expected compressed and decompressed SHA-256 values, respectively:
-
-```text
-07fd142631fd6b03e2b4d09988c3eb7d53720e9d57010c79db48eeaada50a8f8
-da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67
-```
-
-The active dense index is checksum-bound to this exact catalog. A mismatch
-disables dense initialization rather than silently mixing incompatible assets.
-
-## Steps to Reproduce Results
-
-### Run the evaluation
-
-This is the same entry point used by the organizer's evaluator:
-
-**Linux / macOS:**
-```bash
-.venv-runtime/bin/python -m evaluator.local_evaluator
-```
-
-**Windows (PowerShell):**
-```powershell
-.venv-runtime\Scripts\python.exe -m evaluator.local_evaluator
-```
-
-The evaluator:
-1. Imports `starter.agent.Agent`.
-2. Loads `data/catalog.jsonl` and `data/public_set.jsonl`.
-3. Simulates each of the 200 sessions turn-by-turn.
-4. Writes `results.json` with per-session and aggregate metrics.
-5. Prints the official aggregate and scenario breakdown to stdout.
-
-> **Do not** modify the evaluator or `data/public_set.jsonl` when reporting a
-> result.
-
-### Run the test suite
-
-```bash
-# Linux / macOS
-.venv-runtime/bin/python -m unittest discover -s tests
-
-# Windows (PowerShell)
-.venv-runtime\Scripts\python.exe -m unittest discover -s tests
-```
-
-### (Optional) Rebuild the dense index
-
-If you need to regenerate the precomputed BGE embeddings:
-
-```bash
-.venv-runtime/bin/python -m scripts.preprocess_catalog build \
-  --catalog data/catalog.jsonl \
-  --model-assets assets/bge-small-en-v1.5-int8 \
-  --output assets/search-index-bge-small-en-v1.5-v2
-```
-
-### (Optional) Prepare the BGE model from scratch
-
-```bash
-.venv-runtime/bin/python -m scripts.prepare_bge_model
-```
-
-This downloads, quantizes to INT8, and verifies the offline BGE-small model
-assets with fidelity validation.
 
 ## Example Multi-Turn Session
 
