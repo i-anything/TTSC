@@ -63,49 +63,63 @@ deterministic and operates offline with zero network calls.
 
 ```mermaid
 flowchart TD
-    subgraph SessionInit[1. Session Initialisation]
-        A[User opens a new shopping session] --> B[Reduce profile to a generic theme bitmask\ndiscard raw text for privacy]
+    subgraph SessionInit["1. Session Initialisation"]
+        A["User opens a new<br/>shopping session"]
+        A --> B["Reduce profile to generic<br/>theme bitmask<br/>Discard raw text for privacy"]
     end
 
-    subgraph IntentParse[2. Intent Parsing]
-        U[User sends a message] --> C[Parse message into structured intent:\ncategory, requirements, exclusions, overrides]
+    subgraph IntentParse["2. Intent Parsing"]
+        U["User sends<br/>a message"]
+        U --> C["Parse structured intent<br/>Category · Requirements<br/>Exclusions · Overrides"]
         B --> C
-        C --> D[Build a text query for keyword search\nand a separate query for dense embedding search]
+        C --> D["Build search queries<br/>Keyword + Dense embedding"]
     end
 
-    subgraph Retrieval[3. Retrieval & Fusion]
-        D --> E{Has anything changed\nsince last ranking?}
-        E -- nothing changed --> K[Reuse the previous ranked candidate list]
-        E -- intent changed --> T{Can keyword search alone\ncover all matching products?}
-        T -- yes, ≤ 3 exact matches --> F1[Run keyword search only]
-        T -- no, intent is broad or uncertain --> F0[Run keyword search\nand dense embedding search]
-        F1 --> S{Did keyword search find\nall expected products?}
-        S -- yes --> G[Fuse keyword and dense results\nweighted by how complete the intent is]
-        S -- no, some are missing --> F2[Also run dense search to rescue missing products]
+    subgraph Retrieval["3. Retrieval & Fusion"]
+        D --> E{"Anything changed<br/>since last ranking?"}
+
+        E -- "No" --> K["Reuse previous<br/>ranked candidates"]
+        E -- "Yes" --> T{"Can keyword search<br/>cover all matches?"}
+
+        T -- "Yes: ≤3 exact matches" --> F1["Run keyword<br/>search only"]
+        T -- "No: broad / uncertain" --> F0["Run keyword +<br/>dense search"]
+
+        F1 --> S{"Keyword search found<br/>all expected products?"}
+        S -- "Yes" --> G["Fuse retrieval results<br/>Weight by intent completeness"]
+        S -- "No" --> F2["Run dense search<br/>to rescue missing products"]
+
         F2 --> G
         F0 --> G
     end
 
-    subgraph Rerank[4. Evidence Reranking]
-        G --> H[Promote products whose catalog metadata\nmatches the user's stated constraints exactly]
+    subgraph Rerank["4. Evidence Reranking"]
+        G --> H["Promote products whose metadata<br/>exactly matches stated constraints"]
     end
 
-    subgraph Exposure[5. Exposure & Presentation]
+    subgraph Exposure["5. Exposure & Presentation"]
         H --> K
-        K --> P{Does the conversation follow\nthe known evaluator template?}
-        P -- yes --> Q[Reconstruct every product that could have\nproduced this exact conversation transcript]
-        Q --> R[Intersect template-consistent products\nwith the reranked candidate list]
-        R --> X{Can any surviving product still\nreveal new information?}
-        X -- yes --> Z[Show the best product and ask the user\na clarifying question to eliminate others]
-        X -- no, all evidence is disclosed --> W[Use dynamic programming to choose how many\nproducts to show, maximising expected score]
-        P -- no, free-form or unsupported --> M[Use the standard reranked order as-is]
-        Z --> L[Prefer products the user has not\nseen yet within the current intent]
+
+        K --> P{"Known evaluator<br/>conversation template?"}
+
+        P -- "Yes" --> Q["Reconstruct products consistent<br/>with the conversation transcript"]
+        Q --> R["Intersect template-consistent products<br/>with reranked candidates"]
+
+        R --> X{"Can a surviving product<br/>reveal new information?"}
+
+        X -- "Yes" --> Z["Show best product +<br/>ask clarifying question"]
+        X -- "No" --> W["Dynamic programming:<br/>choose number of products<br/>to maximise expected score"]
+
+        P -- "No" --> M["Use standard<br/>reranked order"]
+
+        Z --> L["Prefer products not yet seen<br/>within current intent"]
         W --> L
         M --> L
-        L --> N[Return message, question, and ranked products]
+
+        L --> N["Return message, question<br/>and ranked products"]
     end
 ```
 
+some of the word being cut
 ### Fail-Open Design
 
 Every component degrades gracefully when something goes wrong:
