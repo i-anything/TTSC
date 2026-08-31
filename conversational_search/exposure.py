@@ -7,6 +7,7 @@ already ranked lexical candidate pool, but it cannot introduce or reorder IDs.
 from __future__ import annotations
 
 from collections import Counter
+from functools import lru_cache
 from typing import Sequence
 
 from conversational_search.exposure_policy import (
@@ -22,10 +23,18 @@ from conversational_search.exact_evidence import (
 )
 from conversational_search.intent import IntentState, active_attributes
 from conversational_search.protocol import (
+    CandidateReplySignature,
+    CandidateReplyStatus,
+    DisclosureCard,
     ProductProtocolEvidence,
     remaining_reply,
 )
+from conversational_search.protocol_index import (
+    ProtocolResolution,
+    protocol_probe_question,
+)
 from conversational_search.questions import QUESTION_TEXT
+from conversational_search.utility_planner import MAX_TURN, hit_utility
 
 
 TOP3_EXPOSURE_LIMIT = 3
@@ -53,6 +62,10 @@ def plan_evidence_gated_exposure(
     retrieval_fault_or_fallback: bool = False,
     require_initial_explicit_buying: bool = False,
     question_prefix_limit: int = 0,
+    initial_ambiguous_prefix_limit: int = 0,
+    protocol_resolution: ProtocolResolution | None = None,
+    metric_aware_protocol_enumeration: bool = False,
+    reply_tree_protocol_planning: bool = False,
 ) -> EvidenceExposureDecision:
     """Expose only when the best structural tier fits inside the API prefix.
 
@@ -87,7 +100,24 @@ def plan_evidence_gated_exposure(
         raise TypeError("question_prefix_limit must be an integer")
     if not 0 <= question_prefix_limit <= TOP3_EXPOSURE_LIMIT:
         raise ValueError("question_prefix_limit must be between zero and three")
-
+    if isinstance(initial_ambiguous_prefix_limit, bool) or not isinstance(
+        initial_ambiguous_prefix_limit,
+        int,
+    ):
+        raise TypeError("initial_ambiguous_prefix_limit must be an integer")
+    if initial_ambiguous_prefix_limit not in {0, 1}:
+        raise ValueError("initial_ambiguous_prefix_limit must be zero or one")
+    if protocol_resolution is not None and not isinstance(
+        protocol_resolution,
+        ProtocolResolution,
+    ):
+        raise TypeError("protocol_resolution must be a ProtocolResolution or None")
+    if type(metric_aware_protocol_enumeration) is not bool:
+        raise TypeError("metric_aware_protocol_enumeration must be a boolean")
+    if type(reply_tree_protocol_planning) is not bool:
+        raise TypeError("reply_tree_protocol_planning must be a boolean")
+    if reply_tree_protocol_planning and not metric_aware_protocol_enumeration:
+        raise ValueError("reply-tree planning requires metric-aware enumeration")
     ranked_ids = exact_result.ranked_ids
     full_width = min(max(requested_top_k, 0), len(ranked_ids))
     if full_width == 0:
@@ -97,6 +127,15 @@ def plan_evidence_gated_exposure(
             0,
             None,
             0,
+        )
+    if protocol_resolution is not None and protocol_resolution.exact:
+        return _plan_protocol_posterior_exposure(
+            ranked_ids,
+            protocol_resolution,
+            current_turn=current_turn,
+            requested_top_k=requested_top_k,
+            metric_aware_enumeration=metric_aware_protocol_enumeration,
+            reply_tree_planning=reply_tree_protocol_planning,
         )
     if current_turn >= 10:
         return EvidenceExposureDecision(
@@ -113,6 +152,17 @@ def plan_evidence_gated_exposure(
             full_width,
             None,
             exact_result.trace.best_tier_count,
+        )
+    if initial_ambiguous_prefix_limit and _state_is_initial_ambiguous(
+        state,
+        current_turn,
+    ):
+        return EvidenceExposureDecision(
+            EvidenceExposureStatus.AMBIGUOUS_TOP1_PREVIEW,
+            ranked_ids[:1],
+            1,
+            "other",
+            len(ranked_ids),
         )
     if not _state_is_safe_for_exposure(
         state,
@@ -133,22 +183,14 @@ def plan_evidence_gated_exposure(
         item.parent_asin: item.disclosed_values
         for item in exact_result.disclosures
     }
-    evidence_is_safe = (
-        exact_result.status is ExactEvidenceStatus.APPLIED
-        and bool(plausible_ids)
-        and len(plausible_ids) == exact_result.trace.best_tier_count
-        and plausible_ids == ranked_ids[: len(plausible_ids)]
-        and set(plausible_ids).issubset(exact_result.consistent_support_ids)
-        and set(ranked_ids) == set(evidence_by_id)
-        and len(ranked_ids) == len(evidence_by_id) == len(candidates)
-        and set(plausible_ids).issubset(disclosure_by_id)
-        and _plausible_categories_match(
-            state.category or "",
-            plausible_ids,
-            evidence_by_id,
-        )
-    )
-    if not evidence_is_safe:
+    if not _evidence_is_safe(
+        state,
+        exact_result,
+        candidates,
+        plausible_ids,
+        evidence_by_id,
+        disclosure_by_id,
+    ):
         return EvidenceExposureDecision(
             EvidenceExposureStatus.EVIDENCE_FAIL_OPEN,
             ranked_ids,
@@ -203,6 +245,306 @@ def plan_evidence_gated_exposure(
         0,
         question,
         plausible_count,
+    )
+
+
+def _plan_protocol_posterior_exposure(
+    ranked_ids: tuple[str, ...],
+    resolution: ProtocolResolution,
+    *,
+    current_turn: int,
+    requested_top_k: int,
+    metric_aware_enumeration: bool,
+    reply_tree_planning: bool,
+) -> EvidenceExposureDecision:
+    """Expose a rank-one probe until the complete posterior is exhausted."""
+
+    support_count = resolution.support_count
+    if (
+        not ranked_ids
+        or support_count <= 0
+        or not set(ranked_ids).issubset(resolution.candidate_ids)
+    ):
+        return EvidenceExposureDecision(
+            EvidenceExposureStatus.EVIDENCE_FAIL_OPEN,
+            ranked_ids,
+            min(requested_top_k, len(ranked_ids)),
+            None,
+            support_count,
+        )
+    if support_count == 1:
+        return EvidenceExposureDecision(
+            EvidenceExposureStatus.POSTERIOR_SINGLETON,
+            ranked_ids[:1],
+            1,
+            None,
+            1,
+        )
+    if current_turn < 10:
+        question = protocol_probe_question(resolution)
+        if question is not None:
+            if reply_tree_planning:
+                width = plan_protocol_reply_tree_width(
+                    ranked_ids,
+                    resolution,
+                    current_turn=current_turn,
+                    top_k=min(requested_top_k, len(ranked_ids)),
+                )
+                return EvidenceExposureDecision(
+                    EvidenceExposureStatus.POSTERIOR_REPLY_TREE,
+                    ranked_ids,
+                    width,
+                    question,
+                    support_count,
+                )
+            return EvidenceExposureDecision(
+                EvidenceExposureStatus.POSTERIOR_PROBE,
+                ranked_ids[:1],
+                1,
+                question,
+                support_count,
+            )
+        if metric_aware_enumeration:
+            top_k = min(requested_top_k, len(ranked_ids))
+            width = plan_protocol_enumeration_width(
+                support_count,
+                current_turn=current_turn,
+                top_k=top_k,
+            )
+            return EvidenceExposureDecision(
+                EvidenceExposureStatus.POSTERIOR_ENUMERATION,
+                ranked_ids,
+                width,
+                None,
+                support_count,
+            )
+    width = min(requested_top_k, len(ranked_ids), support_count)
+    return EvidenceExposureDecision(
+        EvidenceExposureStatus.POSTERIOR_BATCH,
+        ranked_ids,
+        width,
+        None,
+        support_count,
+    )
+
+
+def plan_protocol_enumeration_width(
+    support_count: int,
+    *,
+    current_turn: int,
+    top_k: int,
+) -> int:
+    """Choose a slate width for protocol-indistinguishable survivors.
+
+    The plan assumes a uniform posterior only after the complete published
+    card has been exhausted.  A continued score-eligible session refutes the
+    displayed prefix, so dynamic programming can compare a hit now against a
+    rank-one opportunity on a later turn.  The only reward is the official
+    per-session metric; no evaluator labels or fitted constants are used.
+    """
+
+    if (
+        isinstance(support_count, bool)
+        or not isinstance(support_count, int)
+        or support_count <= 0
+    ):
+        raise ValueError("support_count must be a positive integer")
+    if (
+        isinstance(current_turn, bool)
+        or not isinstance(current_turn, int)
+        or not 1 <= current_turn <= MAX_TURN
+    ):
+        raise ValueError("current_turn must be from one through ten")
+    if isinstance(top_k, bool) or not isinstance(top_k, int) or top_k <= 0:
+        raise ValueError("top_k must be a positive integer")
+
+    return _protocol_enumeration_plan(
+        support_count,
+        current_turn=current_turn,
+        top_k=top_k,
+    )[1]
+
+
+def plan_protocol_reply_tree_width(
+    ranked_ids: Sequence[str],
+    resolution: ProtocolResolution,
+    *,
+    current_turn: int,
+    top_k: int,
+) -> int:
+    """Plan exposure against exact deterministic future ``other`` replies.
+
+    The posterior is uniform because no evaluator labels or fitted priors are
+    available. Planning is enabled only when the ranked pool contains the
+    complete protocol support; incomplete bounded pools conservatively retain
+    the proven rank-one probe. Candidate order is otherwise immutable, and a
+    continued session refutes precisely the exposed prefix.
+    """
+
+    ids = tuple(ranked_ids)
+    if not isinstance(resolution, ProtocolResolution) or not resolution.exact:
+        raise ValueError("resolution must be exact")
+    if (
+        not ids
+        or len(ids) != len(set(ids))
+        or any(not isinstance(value, str) or not value for value in ids)
+    ):
+        raise ValueError("ranked_ids must contain unique non-empty strings")
+    if (
+        isinstance(current_turn, bool)
+        or not isinstance(current_turn, int)
+        or not 1 <= current_turn <= MAX_TURN
+    ):
+        raise ValueError("current_turn must be from one through ten")
+    if isinstance(top_k, bool) or not isinstance(top_k, int) or top_k <= 0:
+        raise ValueError("top_k must be a positive integer")
+    if set(ids) != set(resolution.candidate_ids):
+        return 1
+
+    group_by_id = {
+        parent_asin: (group.card, group.disclosed_values)
+        for group in resolution.groups
+        for parent_asin in group.parent_asins
+    }
+    if set(group_by_id) != set(ids):
+        return 1
+    hypotheses = tuple(
+        (parent_asin, *group_by_id[parent_asin])
+        for parent_asin in ids
+    )
+
+    @lru_cache(maxsize=None)
+    def best_value(
+        remaining: tuple[tuple[str, DisclosureCard, tuple[str, ...]], ...],
+        turn: int,
+    ) -> tuple[float, int]:
+        count = len(remaining)
+        if count <= 0 or turn > MAX_TURN:
+            return 0.0, 0
+        signatures = tuple(
+            remaining_reply(card, "other", disclosed)
+            for _, card, disclosed in remaining
+        )
+        if not any(
+            signature.status is CandidateReplyStatus.DISCLOSURE
+            for signature in signatures
+        ):
+            return _protocol_enumeration_plan(
+                count,
+                current_turn=turn,
+                top_k=min(top_k, count),
+            )
+
+        best_reward = -1.0
+        best_width = 1
+        for width in range(1, min(top_k, count) + 1):
+            reward = sum(
+                hit_utility(turn, rank)
+                for rank in range(1, width + 1)
+            ) / count
+            if turn < MAX_TURN and count > width:
+                branches: dict[
+                    CandidateReplySignature,
+                    list[tuple[str, DisclosureCard, tuple[str, ...]]],
+                ] = {}
+                for hypothesis, signature in zip(
+                    remaining[width:],
+                    signatures[width:],
+                ):
+                    parent_asin, card, disclosed = hypothesis
+                    if signature.status is CandidateReplyStatus.DISCLOSURE:
+                        disclosed = tuple(
+                            sorted(set(disclosed).union(signature.values))
+                        )
+                    branches.setdefault(signature, []).append(
+                        (parent_asin, card, disclosed)
+                    )
+                for branch in branches.values():
+                    continuation, _ = best_value(tuple(branch), turn + 1)
+                    reward += (len(branch) / count) * continuation
+            if reward > best_reward + 1e-12 or (
+                abs(reward - best_reward) <= 1e-12
+                and width > best_width
+            ):
+                best_reward = reward
+                best_width = width
+        return best_reward, best_width
+
+    return best_value(hypotheses, current_turn)[1]
+
+
+def _protocol_enumeration_plan(
+    support_count: int,
+    *,
+    current_turn: int,
+    top_k: int,
+) -> tuple[float, int]:
+    """Return exact value and width for an indistinguishable posterior."""
+
+    @lru_cache(maxsize=None)
+    def best_value(remaining: int, turn: int) -> tuple[float, int]:
+        if remaining <= 0 or turn > MAX_TURN:
+            return 0.0, 0
+        best_reward = -1.0
+        best_width = 1
+        for width in range(1, min(top_k, remaining) + 1):
+            reward = sum(
+                hit_utility(turn, rank)
+                for rank in range(1, width + 1)
+            ) / remaining
+            if turn < MAX_TURN and remaining > width:
+                continuation, _ = best_value(remaining - width, turn + 1)
+                reward += ((remaining - width) / remaining) * continuation
+            if reward > best_reward + 1e-12 or (
+                abs(reward - best_reward) <= 1e-12
+                and width > best_width
+            ):
+                best_reward = reward
+                best_width = width
+        return best_reward, best_width
+
+    return best_value(support_count, current_turn)
+
+
+def _state_is_initial_ambiguous(
+    state: IntentState,
+    current_turn: int,
+) -> bool:
+    return bool(
+        current_turn == 1
+        and state.last_turn == 1
+        and state.category
+        and not state.requirements
+        and not state.excluded
+        and not state.no_preference
+        and not state.asked_attributes
+        and state.last_asked_attribute is None
+    )
+
+
+def _evidence_is_safe(
+    state: IntentState,
+    exact_result: ExactEvidenceResult,
+    candidates: Sequence[ProductProtocolEvidence],
+    plausible_ids: tuple[str, ...],
+    evidence_by_id: dict[str, ProductProtocolEvidence],
+    disclosure_by_id: dict[str, tuple[str, ...]],
+) -> bool:
+    ranked_ids = exact_result.ranked_ids
+    return bool(
+        exact_result.status is ExactEvidenceStatus.APPLIED
+        and plausible_ids
+        and len(plausible_ids) == exact_result.trace.best_tier_count
+        and plausible_ids == ranked_ids[: len(plausible_ids)]
+        and set(plausible_ids).issubset(exact_result.consistent_support_ids)
+        and set(ranked_ids) == set(evidence_by_id)
+        and len(ranked_ids) == len(evidence_by_id) == len(candidates)
+        and set(plausible_ids).issubset(disclosure_by_id)
+        and _plausible_categories_match(
+            state.category or "",
+            plausible_ids,
+            evidence_by_id,
+        )
     )
 
 

@@ -100,6 +100,13 @@ class _ProtocolEvidenceCapability:
 PROTOCOL_EVIDENCE_CAPABILITY = _ProtocolEvidenceCapability()
 
 
+class _FieldSemanticCapability:
+    __slots__ = ()
+
+
+FIELD_SEMANTIC_CAPABILITY = _FieldSemanticCapability()
+
+
 @dataclass(frozen=True, slots=True)
 class RetrievalTrace:
     """Bounded route output from one hybrid search, without query or label data."""
@@ -110,6 +117,7 @@ class RetrievalTrace:
     bm25_status: RouteStatus
     dense_status: RouteStatus
     used_fallback: bool
+    dense_scores: tuple[float, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -296,6 +304,19 @@ class HybridRetriever:
         return (
             PROTOCOL_EVIDENCE_CAPABILITY
             if self.protocol_evidence_available
+            else None
+        )
+
+    @property
+    def field_semantic_capability(self) -> object | None:
+        """Expose field-semantic scoring only with both cards and an encoder."""
+
+        return (
+            FIELD_SEMANTIC_CAPABILITY
+            if self.protocol_evidence_available
+            and self.dense_available
+            and callable(getattr(self.encoder, "encode", None))
+            and callable(getattr(self.encoder, "encode_queries", None))
             else None
         )
 
@@ -645,6 +666,262 @@ class HybridRetriever:
             raise RuntimeError("protocol evidence rows are missing")
         return tuple(evidence_by_id[parent_asin] for parent_asin in ordered_ids)
 
+    def protocol_category_evidence(
+        self,
+        category: str,
+    ) -> tuple[ProductProtocolEvidence, ...]:
+        """Return the complete exact category in a deterministic catalog prior.
+
+        Unlike the ordinary candidate interface, this method is intentionally
+        not limited to the BM25/BGE union.  It is narrowly bounded by one exact
+        evaluator-visible category and exists only for strict transcript replay.
+        """
+
+        from conversational_search.protocol import (
+            DisclosureCard,
+            ProductProtocolEvidence,
+        )
+        from conversational_search.protocol_index import (
+            MAX_PROTOCOL_CATEGORY_PRODUCTS,
+        )
+
+        if not isinstance(category, str):
+            raise TypeError("category must be a string")
+        if not category or category != " ".join(category.split()):
+            raise ValueError("category must be normalized non-empty text")
+        if not self.protocol_evidence_available:
+            return ()
+
+        rows = self._connection.execute(
+            "SELECT rowid, parent_asin, coarse_category, target_category, "
+            "hard_0, hard_1, soft_0, soft_1, price, popularity "
+            "FROM protocol_products WHERE coarse_category = ? "
+            "ORDER BY COALESCE(popularity, 0) DESC, rowid",
+            (category,),
+        ).fetchall()
+        if len(rows) > MAX_PROTOCOL_CATEGORY_PRODUCTS:
+            raise RuntimeError("protocol category exceeds the replay bound")
+
+        evidence: list[ProductProtocolEvidence] = []
+        for row in rows:
+            hard = tuple(value for value in row[4:6] if isinstance(value, str))
+            soft = tuple(value for value in row[6:8] if isinstance(value, str))
+            target_category = str(row[3])
+            evidence.append(
+                ProductProtocolEvidence(
+                    parent_asin=str(row[1]),
+                    coarse_category=str(row[2]),
+                    card=DisclosureCard(target_category, hard, soft),
+                    text=" ".join((target_category, *hard, *soft)),
+                    price=row[8] if isinstance(row[8], str) else None,
+                    popularity=(
+                        row[9]
+                        if isinstance(row[9], int)
+                        and not isinstance(row[9], bool)
+                        else None
+                    ),
+                )
+            )
+        return tuple(evidence)
+
+    def candidate_field_semantic_assessments(
+        self,
+        parent_asins: Sequence[str],
+        requirements: Sequence[tuple[str, str]],
+        exclusions: Sequence[str],
+        category: str | None,
+    ) -> tuple[object, ...]:
+        """Embed typed requirements against individual frozen card fields."""
+
+        from conversational_search.field_semantic import (
+            MAX_FIELD_SEMANTIC_CANDIDATES,
+            MAX_FIELD_SEMANTIC_REQUIREMENTS,
+            FieldSemanticAssessment,
+        )
+        from conversational_search.protocol import classify_constraint
+
+        if self.field_semantic_capability is not FIELD_SEMANTIC_CAPABILITY:
+            raise RuntimeError("field-semantic scoring is unavailable")
+        if isinstance(parent_asins, (str, bytes)):
+            raise TypeError("parent_asins must be a sequence")
+        if isinstance(requirements, (str, bytes)):
+            raise TypeError("requirements must be a sequence")
+        if isinstance(exclusions, (str, bytes)):
+            raise TypeError("exclusions must be a sequence")
+        requested = tuple(parent_asins)
+        typed_requirements = tuple(requirements)
+        excluded_values = tuple(exclusions)
+        if not requested or len(requested) > MAX_FIELD_SEMANTIC_CANDIDATES:
+            raise ValueError("field-semantic candidate count is out of bounds")
+        if (
+            len(typed_requirements) > MAX_FIELD_SEMANTIC_REQUIREMENTS
+            or len(excluded_values) > MAX_FIELD_SEMANTIC_REQUIREMENTS
+        ):
+            raise ValueError("too many field-semantic requirements")
+        if any(
+            not isinstance(item, tuple)
+            or len(item) != 2
+            or not isinstance(item[0], str)
+            or not item[0]
+            or not isinstance(item[1], str)
+            or not item[1]
+            for item in typed_requirements
+        ):
+            raise ValueError("typed requirements must be attribute/value pairs")
+        if any(not isinstance(value, str) or not value for value in excluded_values):
+            raise ValueError("exclusions must be non-empty strings")
+        if category is not None and (not isinstance(category, str) or not category):
+            raise ValueError("category must be non-empty text or None")
+
+        evidence = self.candidate_protocol_evidence(requested)
+        if len(evidence) != len(requested):
+            raise RuntimeError("field-semantic evidence is incomplete")
+
+        atom_records: list[tuple[int, str, str | None, str]] = []
+        for candidate_index, item in enumerate(evidence):
+            category_values = tuple(
+                dict.fromkeys(
+                    value
+                    for value in (
+                        item.coarse_category,
+                        item.card.target_category,
+                    )
+                    if value
+                )
+            )
+            constraints = tuple(
+                dict.fromkeys(
+                    (*item.card.hard_constraints, *item.card.soft_preferences)
+                )
+            )
+            if not category_values or not constraints:
+                raise RuntimeError("candidate card has incomplete semantic fields")
+            atom_records.extend(
+                (candidate_index, "category", None, value)
+                for value in category_values
+            )
+            atom_records.extend(
+                (
+                    candidate_index,
+                    "constraint",
+                    classify_constraint(value),
+                    value,
+                )
+                for value in constraints
+            )
+
+        query_values = [value for _attribute, value in typed_requirements]
+        query_values.extend(excluded_values)
+        if category is not None:
+            query_values.append(category)
+        if not query_values:
+            return tuple(
+                FieldSemanticAssessment(item, None, None, None, None)
+                for item in requested
+            )
+
+        import numpy as np
+
+        query_vectors = np.asarray(
+            self.encoder.encode_queries(query_values, batch_size=16),
+            dtype=np.float32,
+        )
+        atom_vectors = np.asarray(
+            self.encoder.encode(
+                [record[3] for record in atom_records],
+                batch_size=32,
+            ),
+            dtype=np.float32,
+        )
+        if (
+            query_vectors.ndim != 2
+            or atom_vectors.ndim != 2
+            or query_vectors.shape[0] != len(query_values)
+            or atom_vectors.shape[0] != len(atom_records)
+            or query_vectors.shape[1] != atom_vectors.shape[1]
+            or not np.isfinite(query_vectors).all()
+            or not np.isfinite(atom_vectors).all()
+        ):
+            raise RuntimeError("field-semantic encoder output is invalid")
+        similarities = np.einsum(
+            "ij,kj->ik",
+            query_vectors,
+            atom_vectors,
+            dtype=np.float32,
+            optimize=False,
+        )
+        if not np.isfinite(similarities).all():
+            raise RuntimeError("field-semantic similarity matrix is invalid")
+
+        def affinity(
+            query_index: int,
+            candidate_index: int,
+            kind: str,
+            attribute: str | None = None,
+        ) -> float:
+            indexes = [
+                index
+                for index, record in enumerate(atom_records)
+                if record[0] == candidate_index
+                and record[1] == kind
+                and (attribute is None or record[2] == attribute)
+            ]
+            if not indexes and kind == "constraint" and attribute is not None:
+                indexes = [
+                    index
+                    for index, record in enumerate(atom_records)
+                    if record[0] == candidate_index
+                    and record[1] == "constraint"
+                ]
+            if not indexes:
+                raise RuntimeError("candidate semantic atoms are missing")
+            value = float(max(similarities[query_index, indexes]))
+            return min(1.0, max(-1.0, value))
+
+        assessments: list[FieldSemanticAssessment] = []
+        exclusion_offset = len(typed_requirements)
+        category_offset = exclusion_offset + len(excluded_values)
+        for candidate_index, parent_asin in enumerate(requested):
+            requirement_scores = tuple(
+                affinity(index, candidate_index, "constraint", attribute)
+                for index, (attribute, _value) in enumerate(typed_requirements)
+            )
+            exclusion_scores = tuple(
+                affinity(
+                    exclusion_offset + index,
+                    candidate_index,
+                    "constraint",
+                    classify_constraint(value),
+                )
+                for index, value in enumerate(excluded_values)
+            )
+            assessments.append(
+                FieldSemanticAssessment(
+                    parent_asin=parent_asin,
+                    exclusion_affinity=(
+                        max(exclusion_scores) if exclusion_scores else None
+                    ),
+                    minimum_requirement_affinity=(
+                        min(requirement_scores) if requirement_scores else None
+                    ),
+                    mean_requirement_affinity=(
+                        sum(requirement_scores) / len(requirement_scores)
+                        if requirement_scores
+                        else None
+                    ),
+                    category_affinity=(
+                        affinity(
+                            category_offset,
+                            candidate_index,
+                            "category",
+                        )
+                        if category is not None
+                        else None
+                    ),
+                )
+            )
+        return tuple(assessments)
+
     def protocol_exact_candidates(
         self,
         category: str,
@@ -788,11 +1065,36 @@ class HybridRetriever:
         return [str(row[0]) for row in rows]
 
     def _dense(self, dense_query_text: str) -> list[str]:
+        parent_asins, _ = self._dense_with_scores(dense_query_text)
+        return list(parent_asins)
+
+    def _dense_with_scores(
+        self,
+        dense_query_text: str,
+    ) -> tuple[tuple[str, ...], tuple[float, ...]]:
         if not self.dense_available:
-            return []
+            return (), ()
         encoded = self.encoder.encode_queries([dense_query_text], batch_size=1)
         hits = self.dense_index.search(encoded[0], top_k=ROUTE_LIMIT)
-        return self._sanitize_route(hits)
+        parent_asins = tuple(self._sanitize_route(hits))
+        scores_by_id: dict[str, float] = {}
+        for hit in hits:
+            parent_asin = _parent_asin(hit)
+            score = getattr(hit, "score", None)
+            if (
+                parent_asin is None
+                or isinstance(score, bool)
+                or not isinstance(score, (int, float))
+                or not math.isfinite(float(score))
+                or not -1.0 <= float(score) <= 1.0
+            ):
+                continue
+            scores_by_id.setdefault(parent_asin, float(score))
+        if any(parent_asin not in scores_by_id for parent_asin in parent_asins):
+            return parent_asins, ()
+        return parent_asins, tuple(
+            scores_by_id[parent_asin] for parent_asin in parent_asins
+        )
 
     def _bm25_has_credible_structural_support(
         self,
@@ -1212,6 +1514,7 @@ class HybridRetriever:
         use_dense: bool = True,
         dense_rescue_on_bm25_failure: bool = True,
         bm25_only_support_ids: Sequence[str] | None = None,
+        bm25_only_requires_all_support: bool = False,
         route_weights: RouteWeights | None = None,
         requirement_probe_policy: RequirementProbePolicy = (
             DISABLED_REQUIREMENT_PROBE_POLICY
@@ -1229,6 +1532,7 @@ class HybridRetriever:
             use_dense=use_dense,
             dense_rescue_on_bm25_failure=dense_rescue_on_bm25_failure,
             bm25_only_support_ids=bm25_only_support_ids,
+            bm25_only_requires_all_support=bm25_only_requires_all_support,
             route_weights=route_weights,
             requirement_probe_policy=requirement_probe_policy,
             requirement_probe_candidates=requirement_probe_candidates,
@@ -1246,6 +1550,7 @@ class HybridRetriever:
         use_dense: bool = True,
         dense_rescue_on_bm25_failure: bool = True,
         bm25_only_support_ids: Sequence[str] | None = None,
+        bm25_only_requires_all_support: bool = False,
         route_weights: RouteWeights | None = None,
         requirement_probe_policy: RequirementProbePolicy = (
             DISABLED_REQUIREMENT_PROBE_POLICY
@@ -1262,6 +1567,8 @@ class HybridRetriever:
             raise TypeError("use_dense must be a boolean")
         if not isinstance(dense_rescue_on_bm25_failure, bool):
             raise TypeError("dense_rescue_on_bm25_failure must be a boolean")
+        if not isinstance(bm25_only_requires_all_support, bool):
+            raise TypeError("bm25_only_requires_all_support must be a boolean")
         if bm25_only_support_ids is None:
             structural_support: frozenset[str] | None = None
         else:
@@ -1382,9 +1689,13 @@ class HybridRetriever:
                 base_bm25_status=bm25_status,
             )
 
-        bm25_has_structural_support = (
+        bm25_has_structural_support = bool(
             structural_support is None
-            or bool(structural_support.intersection(bm25_ids))
+            or (
+                structural_support.issubset(bm25_ids)
+                if bm25_only_requires_all_support
+                else structural_support.intersection(bm25_ids)
+            )
         )
         dense_requested = (
             use_dense
@@ -1397,17 +1708,22 @@ class HybridRetriever:
         )
         if self.dense_available and dense_requested:
             try:
-                dense_ids = tuple(self._dense(dense_query_text))
+                dense_ids, dense_scores = self._dense_with_scores(
+                    dense_query_text
+                )
             except Exception:
                 dense_ids = ()
+                dense_scores = ()
                 dense_status: RouteStatus = "error"
             else:
                 dense_status = "ok" if dense_ids else "empty"
         elif self.dense_available:
             dense_ids = ()
+            dense_scores = ()
             dense_status = "skipped"
         else:
             dense_ids = ()
+            dense_scores = ()
             dense_status = "unavailable"
 
         base_bm25_ids = (
@@ -1490,6 +1806,7 @@ class HybridRetriever:
                 bm25_status=bm25_status,
                 dense_status=dense_status,
                 used_fallback=False,
+                dense_scores=dense_scores,
             ),
         )
         if requirement_probe_policy is DISABLED_REQUIREMENT_PROBE_POLICY:

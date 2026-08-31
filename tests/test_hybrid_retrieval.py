@@ -9,12 +9,14 @@ from pathlib import Path
 from unittest import mock
 
 from conversational_search.retrieval import (
+    FIELD_SEMANTIC_CAPABILITY,
     HybridRetriever,
     MAX_CANDIDATE_DOCUMENTS,
     PROTOCOL_EVIDENCE_CAPABILITY,
     RetrievalResult,
     RetrievalTrace,
 )
+from conversational_search.field_semantic import rank_field_semantic
 from conversational_search.protocol import (
     MAX_EVIDENCE_TEXT_CHARACTERS,
     DisclosureCard,
@@ -27,6 +29,7 @@ from conversational_search.strategy import RouteWeights
 @dataclass(frozen=True)
 class FakeHit:
     parent_asin: str
+    score: float = 0.0
 
 
 class FakeEncoder:
@@ -39,6 +42,31 @@ class FakeEncoder:
         if self.fail:
             raise RuntimeError("encoder unavailable")
         return [[0.25, 0.75]]
+
+
+class SemanticEncoder(FakeEncoder):
+    @staticmethod
+    def _vector(text: str) -> list[float]:
+        lowered = text.casefold()
+        if "waterproof" in lowered or "water resistant" in lowered:
+            return [1.0, 0.0, 0.0]
+        if "boots" in lowered:
+            return [0.0, 0.0, 1.0]
+        return [0.0, 1.0, 0.0]
+
+    def encode_queries(
+        self,
+        texts: list[str],
+        batch_size: int = 1,
+    ) -> list[list[float]]:
+        return [self._vector(text) for text in texts]
+
+    def encode(
+        self,
+        texts: list[str],
+        batch_size: int = 1,
+    ) -> list[list[float]]:
+        return [self._vector(text) for text in texts]
 
 
 class FakeDenseIndex:
@@ -127,13 +155,44 @@ class HybridRetrieverTest(unittest.TestCase):
         self.assertEqual(len(result), len(set(result)))
         self.assertFalse(hasattr(retriever, "last_trace"))
 
+    def test_field_semantic_scores_typed_requirements_against_card_atoms(
+        self,
+    ) -> None:
+        retriever = HybridRetriever(
+            self.catalog_path,
+            SemanticEncoder(),
+            FakeDenseIndex([]),
+            protocol_evidence=True,
+        )
+
+        assessments = retriever.candidate_field_semantic_assessments(
+            ("B000000001", "B000000003"),
+            (("feature", "water resistant"),),
+            (),
+            "Boots",
+        )
+        ranking = rank_field_semantic(
+            ("B000000001", "B000000003"),
+            assessments,
+        )
+
+        self.assertIs(
+            retriever.field_semantic_capability,
+            FIELD_SEMANTIC_CAPABILITY,
+        )
+        self.assertEqual(ranking.ranked_ids[0], "B000000003")
+        self.assertGreater(
+            assessments[1].minimum_requirement_affinity,
+            assessments[0].minimum_requirement_affinity,
+        )
+
     def test_detailed_result_is_immutable_and_keeps_the_full_fused_union(self) -> None:
         encoder = FakeEncoder()
         dense = FakeDenseIndex(
             [
-                FakeHit("B000000002"),
-                FakeHit("B000000004"),
-                FakeHit("B000000001"),
+                FakeHit("B000000002", 0.9),
+                FakeHit("B000000004", 0.8),
+                FakeHit("B000000001", 0.7),
             ]
         )
         retriever = HybridRetriever(self.catalog_path, encoder, dense)
@@ -155,6 +214,7 @@ class HybridRetrieverTest(unittest.TestCase):
             result.trace.dense_ids,
             ("B000000002", "B000000004", "B000000001"),
         )
+        self.assertEqual(result.trace.dense_scores, (0.9, 0.8, 0.7))
         self.assertEqual(
             result.trace.fused_ids,
             ("B000000002", "B000000001", "B000000004", "B000000003"),
@@ -171,6 +231,7 @@ class HybridRetrieverTest(unittest.TestCase):
                 "bm25_status",
                 "dense_status",
                 "used_fallback",
+                "dense_scores",
             },
         )
         with self.assertRaises(FrozenInstanceError):
@@ -273,6 +334,24 @@ class HybridRetrieverTest(unittest.TestCase):
         self.assertEqual(unsupported.trace.dense_status, "ok")
         self.assertEqual(encoder.calls, [(["dense alpha query"], 1)])
         self.assertIn("B000000003", unsupported.trace.dense_ids)
+
+    def test_structural_gate_can_require_complete_bm25_support(self) -> None:
+        encoder = FakeEncoder()
+        dense = FakeDenseIndex([FakeHit("B000000003")])
+        retriever = HybridRetriever(self.catalog_path, encoder, dense)
+
+        result = retriever.search_with_trace(
+            "dense alpha query",
+            "alpha",
+            top_k=3,
+            use_dense=False,
+            bm25_only_support_ids=("B000000001", "B000000003"),
+            bm25_only_requires_all_support=True,
+        )
+
+        self.assertEqual(result.trace.bm25_status, "ok")
+        self.assertEqual(result.trace.dense_status, "ok")
+        self.assertEqual(encoder.calls, [(["dense alpha query"], 1)])
 
     def test_structural_gate_rescues_once_after_bm25_error(self) -> None:
         encoder = FakeEncoder()
@@ -627,6 +706,36 @@ class HybridRetrieverTest(unittest.TestCase):
         self.assertTrue(retriever.protocol_category_exists("Shoes"))
         self.assertFalse(retriever.protocol_category_exists("Shoe"))
         self.assertFalse(retriever.protocol_category_exists(""))
+
+    def test_protocol_category_evidence_is_complete_exact_and_popularity_ordered(
+        self,
+    ) -> None:
+        retriever = HybridRetriever(
+            self.catalog_path,
+            None,
+            None,
+            protocol_evidence=True,
+        )
+
+        shoes = retriever.protocol_category_evidence("Shoes")
+        self.assertEqual(
+            tuple(item.parent_asin for item in shoes),
+            ("B000000001", "B000000002"),
+        )
+        boots = retriever.protocol_category_evidence("Boots")
+        self.assertEqual(
+            tuple(item.parent_asin for item in boots),
+            ("B000000003",),
+        )
+        self.assertEqual(retriever.protocol_category_evidence("boots"), ())
+        self.assertEqual(
+            HybridRetriever(
+                self.catalog_path,
+                None,
+                None,
+            ).protocol_category_evidence("Boots"),
+            (),
+        )
 
     def test_protocol_evidence_does_not_materialize_an_overlong_fts_document(
         self,

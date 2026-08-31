@@ -5,8 +5,13 @@ import unittest
 from itertools import permutations
 
 from conversational_search.exact_evidence import (
+    DENSE_CONFIDENT_BEST_TIER_POLICY,
+    DENSE_COMPLETE_BEST_TIER_POLICY,
+    DISABLED_SEMANTIC_TIEBREAK_POLICY,
     MAX_EXACT_EVIDENCE_CANDIDATES,
     ExactEvidenceStatus,
+    SemanticTieBreakStatus,
+    apply_dense_best_tier_tiebreak,
     rank_exact_evidence,
 )
 from conversational_search.intent import IntentState, Requirement
@@ -1028,6 +1033,174 @@ class ExactEvidenceRankingTests(unittest.TestCase):
             frozenset(budget_result.consistent_support_ids),
             frozenset({"MISSING_PRICE", "KNOWN_COMPATIBLE_PRICE"}),
         )
+
+
+class DenseBestTierTieBreakTests(unittest.TestCase):
+    @staticmethod
+    def _ranking():
+        candidates = (
+            _evidence("EXACT_A", hard=("cotton",)),
+            _evidence("EXACT_B", hard=("cotton",)),
+            _evidence("LOWER_TIER", hard=("silk",)),
+        )
+        state = IntentState(
+            category="Women Running Shoes",
+            requirements=(
+                Requirement("cotton", "initial_explicit", 1, "material"),
+            ),
+        )
+        return rank_exact_evidence(
+            tuple(item.parent_asin for item in candidates),
+            candidates,
+            state,
+        )
+
+    def test_dense_rank_reorders_only_the_fully_covered_best_tier(self) -> None:
+        baseline = self._ranking()
+
+        result = apply_dense_best_tier_tiebreak(
+            baseline,
+            ("EXACT_B", "LOWER_TIER", "EXACT_A"),
+            policy=DENSE_COMPLETE_BEST_TIER_POLICY,
+        )
+
+        self.assertIs(result.status, SemanticTieBreakStatus.REORDERED)
+        self.assertEqual(
+            result.ranking.ranked_ids,
+            ("EXACT_B", "EXACT_A", "LOWER_TIER"),
+        )
+        self.assertEqual(
+            tuple(item.parent_asin for item in result.ranking.beliefs),
+            ("EXACT_B", "EXACT_A"),
+        )
+        self.assertEqual(
+            tuple(item.parent_asin for item in result.ranking.disclosures),
+            result.ranking.ranked_ids,
+        )
+        self.assertEqual(result.ranking.trace, baseline.trace)
+        self.assertEqual(
+            frozenset(result.ranking.consistent_support_ids),
+            frozenset(baseline.consistent_support_ids),
+        )
+
+    def test_incomplete_dense_coverage_is_neutral(self) -> None:
+        baseline = self._ranking()
+
+        result = apply_dense_best_tier_tiebreak(
+            baseline,
+            ("EXACT_B", "LOWER_TIER"),
+            policy=DENSE_COMPLETE_BEST_TIER_POLICY,
+        )
+
+        self.assertIs(
+            result.status,
+            SemanticTieBreakStatus.INCOMPLETE_DENSE_COVERAGE,
+        )
+        self.assertIs(result.ranking, baseline)
+
+    def test_confident_policy_requires_and_gates_raw_cosine_scores(self) -> None:
+        baseline = self._ranking()
+        dense_ids = ("EXACT_B", "EXACT_A", "LOWER_TIER")
+
+        missing = apply_dense_best_tier_tiebreak(
+            baseline,
+            dense_ids,
+            policy=DENSE_CONFIDENT_BEST_TIER_POLICY,
+        )
+        self.assertIs(
+            missing.status,
+            SemanticTieBreakStatus.SCORES_UNAVAILABLE,
+        )
+        self.assertIs(missing.ranking, baseline)
+
+        low_margin = apply_dense_best_tier_tiebreak(
+            baseline,
+            dense_ids,
+            dense_scores=(0.61, 0.60, 0.40),
+            policy=DENSE_CONFIDENT_BEST_TIER_POLICY,
+        )
+        self.assertIs(
+            low_margin.status,
+            SemanticTieBreakStatus.LOW_CONFIDENCE,
+        )
+        self.assertIs(low_margin.ranking, baseline)
+
+        confident = apply_dense_best_tier_tiebreak(
+            baseline,
+            dense_ids,
+            dense_scores=(0.75, 0.60, 0.40),
+            policy=DENSE_CONFIDENT_BEST_TIER_POLICY,
+        )
+        self.assertIs(confident.status, SemanticTieBreakStatus.REORDERED)
+        self.assertEqual(
+            confident.ranking.ranked_ids,
+            ("EXACT_B", "EXACT_A", "LOWER_TIER"),
+        )
+
+    def test_disabled_singleton_and_zero_support_are_neutral(self) -> None:
+        baseline = self._ranking()
+        disabled = apply_dense_best_tier_tiebreak(
+            baseline,
+            ("EXACT_B", "EXACT_A", "LOWER_TIER"),
+            policy=DISABLED_SEMANTIC_TIEBREAK_POLICY,
+        )
+        self.assertIs(disabled.status, SemanticTieBreakStatus.DISABLED)
+        self.assertIs(disabled.ranking, baseline)
+
+        singleton_candidates = (
+            _evidence("ONLY_EXACT", hard=("cotton",)),
+            _evidence("LOWER", hard=("silk",)),
+        )
+        state = IntentState(
+            category="Women Running Shoes",
+            requirements=(
+                Requirement("cotton", "initial_explicit", 1, "material"),
+            ),
+        )
+        singleton_ranking = rank_exact_evidence(
+            tuple(item.parent_asin for item in singleton_candidates),
+            singleton_candidates,
+            state,
+        )
+        singleton = apply_dense_best_tier_tiebreak(
+            singleton_ranking,
+            ("LOWER", "ONLY_EXACT"),
+            policy=DENSE_COMPLETE_BEST_TIER_POLICY,
+        )
+        self.assertIs(singleton.status, SemanticTieBreakStatus.SINGLETON)
+        self.assertIs(singleton.ranking, singleton_ranking)
+
+        zero_support_candidates = (
+            _evidence("NO_A", hard=("silk",)),
+            _evidence("NO_B", hard=("leather",)),
+        )
+        zero_support_ranking = rank_exact_evidence(
+            tuple(item.parent_asin for item in zero_support_candidates),
+            zero_support_candidates,
+            state,
+        )
+        zero_support = apply_dense_best_tier_tiebreak(
+            zero_support_ranking,
+            ("NO_B", "NO_A"),
+            policy=DENSE_COMPLETE_BEST_TIER_POLICY,
+        )
+        self.assertIs(zero_support.status, SemanticTieBreakStatus.NO_SUPPORT)
+        self.assertIs(zero_support.ranking, zero_support_ranking)
+
+    def test_malformed_dense_route_is_rejected(self) -> None:
+        baseline = self._ranking()
+        with self.assertRaisesRegex(ValueError, "unique"):
+            apply_dense_best_tier_tiebreak(
+                baseline,
+                ("EXACT_A", "EXACT_A"),
+                policy=DENSE_COMPLETE_BEST_TIER_POLICY,
+            )
+        with self.assertRaisesRegex(ValueError, "candidate pool"):
+            apply_dense_best_tier_tiebreak(
+                baseline,
+                ("OUTSIDE",),
+                policy=DENSE_COMPLETE_BEST_TIER_POLICY,
+            )
 
 
 class ExactEvidenceContractTests(unittest.TestCase):

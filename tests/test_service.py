@@ -8,11 +8,19 @@ from types import SimpleNamespace
 from unittest import mock
 
 from conversational_search.exposure_policy import (
-    BUYING_ONLY_TOP3_PREFIX_EXPOSURE_POLICY,
+    PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY,
+)
+from conversational_search.field_semantic import (
+    LOCAL_INTENT_CARD_ATOMS_POLICY,
+    FieldSemanticAssessment,
 )
 from conversational_search.intent import (
     CANONICAL_INTENT_POLICY,
     ROBUST_INTENT_POLICY,
+)
+from conversational_search.local_intent import (
+    StructuredIntentParseResult,
+    parse_structured_intent_delta,
 )
 from conversational_search.orchestration import (
     ALWAYS_SEARCH_ORCHESTRATION_POLICY,
@@ -27,7 +35,18 @@ from conversational_search.ranking import (
     CandidateDocument,
 )
 from conversational_search.questions import WILDCARD_OTHER_POLICY
-from conversational_search.retrieval import RetrievalResult, RetrievalTrace
+from conversational_search.protocol_index import (
+    ELIGIBLE_CONTINUATION_REFUTATION_POLICY,
+    FULL_TRANSCRIPT_PROTOCOL_CATALOG_POLICY,
+)
+from conversational_search.retrieval import (
+    FIELD_SEMANTIC_CAPABILITY,
+    RetrievalResult,
+    RetrievalTrace,
+)
+from conversational_search.retrieval_routing import (
+    SMART_HYBRID_RETRIEVAL_ROUTING_POLICY,
+)
 from conversational_search.service import (
     DEFAULT_DENSE_INDEX,
     DEFAULT_MODEL_ASSETS,
@@ -168,7 +187,262 @@ class CacheableRecordingRetriever(RecordingRetriever):
         )
 
 
+class RecordingLocalIntentParser:
+    def __init__(
+        self,
+        result: StructuredIntentParseResult | None = None,
+        *,
+        fail: bool = False,
+    ) -> None:
+        self.result = result
+        self.fail = fail
+        self.calls: list[tuple[object, str, int]] = []
+
+    def parse(self, state: object, message: str, turn: int) -> object:
+        self.calls.append((state, message, turn))
+        if self.fail:
+            raise RuntimeError("local parser failed")
+        if self.result is None:
+            raise RuntimeError("test parser has no result")
+        return self.result
+
+
+class FieldSemanticRecordingRetriever(RecordingRetriever):
+    field_semantic_capability = FIELD_SEMANTIC_CAPABILITY
+
+    def candidate_field_semantic_assessments(
+        self,
+        parent_asins: tuple[str, ...],
+        requirements: tuple[tuple[str, str], ...],
+        exclusions: tuple[str, ...],
+        category: str | None,
+    ) -> tuple[FieldSemanticAssessment, ...]:
+        self.field_semantic_call = (
+            parent_asins,
+            requirements,
+            exclusions,
+            category,
+        )
+        return tuple(
+            FieldSemanticAssessment(
+                parent_asin,
+                None,
+                0.9 if index == 1 else 0.2,
+                0.9 if index == 1 else 0.2,
+                0.5,
+            )
+            for index, parent_asin in enumerate(parent_asins)
+        )
+
+
 class ConversationalSearchAgentTest(unittest.TestCase):
+    def test_local_parser_is_not_called_for_official_templates(self) -> None:
+        parser = RecordingLocalIntentParser(fail=True)
+        agent = ConversationalSearchAgent(
+            "unused.jsonl",
+            retriever=RecordingRetriever(),
+            local_intent_parser=parser,
+        )
+        agent.reset("session", {})
+
+        response = agent.respond(
+            "session",
+            "I'm looking for Shoes. A key requirement is: leather.",
+            1,
+            10,
+        )
+
+        self.assertEqual(parser.calls, [])
+        self.assertEqual(
+            response["usage"],
+            {"prompt_tokens": 0, "completion_tokens": 0},
+        )
+        self.assertEqual(agent.local_intent_health["attempts"], 0)
+
+    def test_local_parser_structures_only_free_text_fallback(self) -> None:
+        message = "Find breathable trail shoes under $120."
+        delta = parse_structured_intent_delta(
+            {
+                "category": {
+                    "value": "trail shoes",
+                    "source_text": "trail shoes",
+                },
+                "requirements": [
+                    {
+                        "attribute": "feature",
+                        "value": "breathable",
+                        "source_text": "breathable",
+                    },
+                    {
+                        "attribute": "budget",
+                        "value": "under $120",
+                        "source_text": "under $120",
+                    },
+                ],
+                "exclusions": [],
+                "clears": [],
+                "full_override_source": None,
+            },
+            message,
+        )
+        parser = RecordingLocalIntentParser(
+            StructuredIntentParseResult(
+                delta,
+                prompt_tokens=41,
+                completion_tokens=23,
+            )
+        )
+        retriever = RecordingRetriever()
+        agent = ConversationalSearchAgent(
+            "unused.jsonl",
+            retriever=retriever,
+            local_intent_parser=parser,
+        )
+        agent.reset("session", {})
+
+        response = agent.respond("session", message, 1, 10)
+
+        state = agent.session_state("session")
+        self.assertEqual(state.category, "trail shoes")
+        self.assertEqual(
+            tuple((item.attribute, item.value) for item in state.requirements),
+            (
+                (None, message),
+                ("feature", "breathable"),
+                ("budget", "under $120"),
+            ),
+        )
+        self.assertIn("breathable", retriever.calls[-1][0])
+        self.assertIn("under $120", retriever.calls[-1][1])
+        self.assertEqual(
+            response["usage"],
+            {"prompt_tokens": 41, "completion_tokens": 23},
+        )
+        self.assertEqual(agent.local_intent_health["applied"], 1)
+
+    def test_local_parser_failure_preserves_deterministic_free_text(self) -> None:
+        message = "I need something packable for monsoon commutes."
+        parser = RecordingLocalIntentParser(fail=True)
+        agent = ConversationalSearchAgent(
+            "unused.jsonl",
+            retriever=RecordingRetriever(),
+            local_intent_parser=parser,
+        )
+        agent.reset("session", {})
+
+        response = agent.respond("session", message, 1, 10)
+
+        state = agent.session_state("session")
+        self.assertEqual(state.requirements[-1].value, message)
+        self.assertEqual(state.requirements[-1].source, "free_text")
+        self.assertEqual(
+            response["usage"],
+            {"prompt_tokens": 0, "completion_tokens": 0},
+        )
+        self.assertEqual(agent.local_intent_health["failures"], 1)
+
+    def test_local_parser_corrects_grounded_complex_partial_parse(self) -> None:
+        initial = "I'm looking for Shoes. A key requirement is: leather."
+        message = (
+            "Change of plan: replace my earlier preference with cotton and "
+            "avoid acrylic."
+        )
+        delta = parse_structured_intent_delta(
+            {
+                "category": None,
+                "requirements": [
+                    {
+                        "attribute": "material",
+                        "value": "cotton",
+                        "source_text": "cotton",
+                    }
+                ],
+                "exclusions": [
+                    {
+                        "attribute": "material",
+                        "value": "acrylic",
+                        "source_text": "avoid acrylic",
+                    }
+                ],
+                "clears": [],
+                "full_override_source": (
+                    "Change of plan: replace my earlier preference"
+                ),
+            },
+            message,
+        )
+        parser = RecordingLocalIntentParser(StructuredIntentParseResult(delta))
+        agent = ConversationalSearchAgent(
+            "unused.jsonl",
+            retriever=RecordingRetriever(),
+            local_intent_parser=parser,
+        )
+        agent.reset("session", {})
+        agent.respond("session", initial, 1, 10)
+
+        agent.respond("session", message, 2, 10)
+
+        state = agent.session_state("session")
+        self.assertEqual(state.excluded, ("acrylic",))
+        self.assertEqual(
+            tuple((item.attribute, item.value) for item in state.requirements),
+            (("material", "cotton"),),
+        )
+        self.assertEqual(len(parser.calls), 1)
+        self.assertEqual(
+            agent.local_intent_health["complex_language_attempts"],
+            1,
+        )
+
+    def test_validated_local_intent_unlocks_field_semantic_ranking(self) -> None:
+        message = "Find breathable trail shoes."
+        delta = parse_structured_intent_delta(
+            {
+                "category": {
+                    "value": "trail shoes",
+                    "source_text": "trail shoes",
+                },
+                "requirements": [
+                    {
+                        "attribute": "feature",
+                        "value": "breathable",
+                        "source_text": "breathable",
+                    }
+                ],
+                "exclusions": [],
+                "clears": [],
+                "full_override_source": None,
+            },
+            message,
+        )
+        parser = RecordingLocalIntentParser(StructuredIntentParseResult(delta))
+        retriever = FieldSemanticRecordingRetriever(
+            results=("B000000001", "B000000002"),
+        )
+        agent = ConversationalSearchAgent(
+            "unused.jsonl",
+            retriever=retriever,
+            local_intent_parser=parser,
+            ranking_policy=LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
+            field_semantic_policy=LOCAL_INTENT_CARD_ATOMS_POLICY,
+        )
+        agent.reset("session", {})
+
+        response = agent.respond("session", message, 1, 10)
+
+        self.assertEqual(
+            tuple(
+                recommendation["parent_asin"]
+                for recommendation in response["recommendations"]
+            ),
+            ("B000000002", "B000000001"),
+        )
+        self.assertEqual(agent.field_semantic_health["reordered"], 1)
+        self.assertEqual(
+            retriever.field_semantic_call[1],
+            (("feature", "breathable"),),
+        )
+
     def test_intent_policy_is_wired_into_service_state_and_queries(self) -> None:
         message = "Show me some Shoes; I'm open to options."
         canonical_retriever = RecordingRetriever()
@@ -1432,10 +1706,17 @@ class ConversationalSearchAgentTest(unittest.TestCase):
             Agent()
         initialize.assert_called_once_with(
             DEFAULT_CATALOG_PATH,
-            evidence_exposure_policy=BUYING_ONLY_TOP3_PREFIX_EXPOSURE_POLICY,
+            evidence_exposure_policy=PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY,
             orchestration_policy=EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
+            protocol_catalog_policy=FULL_TRANSCRIPT_PROTOCOL_CATALOG_POLICY,
+            protocol_refutation_policy=(
+                ELIGIBLE_CONTINUATION_REFUTATION_POLICY
+            ),
             question_policy=WILDCARD_OTHER_POLICY,
             ranking_policy=LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
+            retrieval_routing_policy=(
+                SMART_HYBRID_RETRIEVAL_ROUTING_POLICY
+            ),
             slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
         )
 

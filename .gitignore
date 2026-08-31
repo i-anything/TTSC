@@ -8,6 +8,8 @@ data/catalog.jsonl
 data/processed/
 data/releases/
 assets/.*.partial-*/
+assets/qwen3-*-intent/*.gguf
+assets/qwen3-*-intent/*.partial
 /benchmarks/
 /artifacts/
 # Organizer-only code, private evaluation data, manifests, and build reports.

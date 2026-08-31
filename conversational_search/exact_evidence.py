@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
@@ -21,6 +22,7 @@ from conversational_search.protocol import (
 
 
 MAX_EXACT_EVIDENCE_CANDIDATES = 200
+MIN_DENSE_TIEBREAK_MARGIN = 0.02
 
 _STRONG_SOURCES = frozenset({"initial_explicit", "answer", "override"})
 _CLUE_SOURCES = frozenset({"initial_tentative"})
@@ -39,6 +41,36 @@ class ExactEvidenceStatus(str, Enum):
 
     APPLIED = "applied"
     FAIL_OPEN_ZERO_SUPPORT = "fail_open_zero_support"
+
+
+class SemanticTieBreakPolicy(str, Enum):
+    """Optional dense ordering applied only inside the exact best tier."""
+
+    DISABLED = "disabled"
+    DENSE_COMPLETE_BEST_TIER = "dense-complete-best-tier-v1"
+    DENSE_CONFIDENT_BEST_TIER = "dense-confident-best-tier-v2"
+
+
+DISABLED_SEMANTIC_TIEBREAK_POLICY = SemanticTieBreakPolicy.DISABLED
+DENSE_COMPLETE_BEST_TIER_POLICY = (
+    SemanticTieBreakPolicy.DENSE_COMPLETE_BEST_TIER
+)
+DENSE_CONFIDENT_BEST_TIER_POLICY = (
+    SemanticTieBreakPolicy.DENSE_CONFIDENT_BEST_TIER
+)
+
+
+class SemanticTieBreakStatus(str, Enum):
+    """Mutually exclusive outcomes of the bounded semantic tie-break."""
+
+    DISABLED = "disabled"
+    NO_SUPPORT = "no_support"
+    SINGLETON = "singleton"
+    INCOMPLETE_DENSE_COVERAGE = "incomplete_dense_coverage"
+    SCORES_UNAVAILABLE = "scores_unavailable"
+    LOW_CONFIDENCE = "low_confidence"
+    UNCHANGED = "unchanged"
+    REORDERED = "reordered"
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +116,15 @@ class ExactEvidenceResult:
     beliefs: tuple[CandidateBelief, ...]
     disclosures: tuple[CandidateDisclosure, ...]
     trace: ExactEvidenceTrace
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticTieBreakResult:
+    """Exact ranking plus the outcome of one semantic best-tier pass."""
+
+    ranking: ExactEvidenceResult
+    status: SemanticTieBreakStatus
+    eligible_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -306,13 +347,8 @@ def rank_exact_evidence(
             if item.protocol_consistent and item.evidence_tier == best_key
         )
 
-    raw_weights = tuple(
-        1.0 / rank for rank in range(1, len(best_tier) + 1)
-    )
-    total_weight = sum(raw_weights)
-    beliefs = tuple(
-        CandidateBelief(item.evidence.parent_asin, weight / total_weight)
-        for item, weight in zip(best_tier, raw_weights)
+    beliefs = _harmonic_beliefs(
+        tuple(item.evidence.parent_asin for item in best_tier)
     )
     consistent_ids = tuple(
         item.evidence.parent_asin
@@ -355,6 +391,180 @@ def rank_exact_evidence(
         beliefs=beliefs,
         disclosures=disclosures,
         trace=trace,
+    )
+
+
+def apply_dense_best_tier_tiebreak(
+    ranking: ExactEvidenceResult,
+    dense_ids: Sequence[str],
+    *,
+    dense_scores: Sequence[float] = (),
+    policy: SemanticTieBreakPolicy = DISABLED_SEMANTIC_TIEBREAK_POLICY,
+) -> SemanticTieBreakResult:
+    """Use dense rank only to order a fully observed exact-evidence tie.
+
+    The candidate set and every exact-evidence tier remain immutable. Dense
+    evidence is allowed to influence the result only when it covers every
+    member of the exact best tier, preventing missing dense hits from becoming
+    implicit negative evidence.
+    """
+
+    if not isinstance(ranking, ExactEvidenceResult):
+        raise TypeError("ranking must be ExactEvidenceResult")
+    if not isinstance(policy, SemanticTieBreakPolicy):
+        raise TypeError("policy must be SemanticTieBreakPolicy")
+    if isinstance(dense_ids, (str, bytes)):
+        raise TypeError("dense_ids must be a sequence of product IDs")
+    dense = tuple(dense_ids)
+    if len(dense) > MAX_EXACT_EVIDENCE_CANDIDATES:
+        raise ValueError("too many dense IDs for semantic tie-breaking")
+    if any(
+        not isinstance(parent_asin, str)
+        or not parent_asin
+        or parent_asin != parent_asin.strip()
+        for parent_asin in dense
+    ):
+        raise ValueError("dense IDs must be non-empty normalized strings")
+    if len(set(dense)) != len(dense):
+        raise ValueError("dense IDs must be unique")
+    if not set(dense).issubset(ranking.ranked_ids):
+        raise ValueError("dense IDs must be inside the exact candidate pool")
+    if isinstance(dense_scores, (str, bytes)):
+        raise TypeError("dense_scores must be a sequence of cosine scores")
+    scores = tuple(dense_scores)
+    if scores and len(scores) != len(dense):
+        raise ValueError("dense scores must align with dense IDs")
+    if any(
+        isinstance(score, bool)
+        or not isinstance(score, (int, float))
+        or not math.isfinite(float(score))
+        or not -1.0 <= float(score) <= 1.0
+        for score in scores
+    ):
+        raise ValueError("dense scores must be finite cosine values")
+
+    if policy is DISABLED_SEMANTIC_TIEBREAK_POLICY:
+        return SemanticTieBreakResult(
+            ranking,
+            SemanticTieBreakStatus.DISABLED,
+            0,
+        )
+
+    best_ids = tuple(belief.parent_asin for belief in ranking.beliefs)
+    if (
+        ranking.status is ExactEvidenceStatus.FAIL_OPEN_ZERO_SUPPORT
+        or not best_ids
+    ):
+        return SemanticTieBreakResult(
+            ranking,
+            SemanticTieBreakStatus.NO_SUPPORT,
+            0,
+        )
+    if len(best_ids) != len(set(best_ids)) or not set(best_ids).issubset(
+        ranking.ranked_ids
+    ):
+        raise ValueError("exact best-tier beliefs are malformed")
+    if len(best_ids) == 1:
+        return SemanticTieBreakResult(
+            ranking,
+            SemanticTieBreakStatus.SINGLETON,
+            1,
+        )
+
+    dense_rank = {
+        parent_asin: rank for rank, parent_asin in enumerate(dense)
+    }
+    if any(parent_asin not in dense_rank for parent_asin in best_ids):
+        return SemanticTieBreakResult(
+            ranking,
+            SemanticTieBreakStatus.INCOMPLETE_DENSE_COVERAGE,
+            len(best_ids),
+        )
+    if policy is DENSE_CONFIDENT_BEST_TIER_POLICY:
+        if not scores:
+            return SemanticTieBreakResult(
+                ranking,
+                SemanticTieBreakStatus.SCORES_UNAVAILABLE,
+                len(best_ids),
+            )
+        score_by_id = {
+            parent_asin: float(score)
+            for parent_asin, score in zip(dense, scores)
+        }
+        semantic_top = max(
+            best_ids,
+            key=lambda parent_asin: (
+                score_by_id[parent_asin],
+                -dense_rank[parent_asin],
+            ),
+        )
+        if semantic_top == best_ids[0]:
+            return SemanticTieBreakResult(
+                ranking,
+                SemanticTieBreakStatus.UNCHANGED,
+                len(best_ids),
+            )
+        margin = score_by_id[semantic_top] - score_by_id[best_ids[0]]
+        if margin < MIN_DENSE_TIEBREAK_MARGIN:
+            return SemanticTieBreakResult(
+                ranking,
+                SemanticTieBreakStatus.LOW_CONFIDENCE,
+                len(best_ids),
+            )
+        reordered_best = (
+            semantic_top,
+            *(item for item in best_ids if item != semantic_top),
+        )
+    else:
+        reordered_best = tuple(
+            sorted(best_ids, key=dense_rank.__getitem__)
+        )
+    if reordered_best == best_ids:
+        return SemanticTieBreakResult(
+            ranking,
+            SemanticTieBreakStatus.UNCHANGED,
+            len(best_ids),
+        )
+
+    best_set = frozenset(best_ids)
+    reordered_iterator = iter(reordered_best)
+    ranked_ids = tuple(
+        next(reordered_iterator) if item in best_set else item
+        for item in ranking.ranked_ids
+    )
+    consistent_set = frozenset(ranking.consistent_support_ids)
+    consistent_support_ids = tuple(
+        item for item in ranked_ids if item in consistent_set
+    )
+    disclosures_by_id = {
+        disclosure.parent_asin: disclosure
+        for disclosure in ranking.disclosures
+    }
+    if set(disclosures_by_id) != set(ranking.ranked_ids):
+        raise ValueError("exact candidate disclosures are malformed")
+    updated = ExactEvidenceResult(
+        status=ranking.status,
+        ranked_ids=tuple(ranked_ids),
+        consistent_support_ids=consistent_support_ids,
+        beliefs=_harmonic_beliefs(reordered_best),
+        disclosures=tuple(disclosures_by_id[item] for item in ranked_ids),
+        trace=ranking.trace,
+    )
+    return SemanticTieBreakResult(
+        updated,
+        SemanticTieBreakStatus.REORDERED,
+        len(best_ids),
+    )
+
+
+def _harmonic_beliefs(parent_asins: Sequence[str]) -> tuple[CandidateBelief, ...]:
+    raw_weights = tuple(
+        1.0 / rank for rank in range(1, len(parent_asins) + 1)
+    )
+    total_weight = sum(raw_weights)
+    return tuple(
+        CandidateBelief(parent_asin, weight / total_weight)
+        for parent_asin, weight in zip(parent_asins, raw_weights)
     )
 
 

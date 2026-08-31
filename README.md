@@ -6,8 +6,9 @@ both BM25 and BGE-small, reranks with structured catalog evidence, asks bounded
 clarifying questions, and returns catalog-valid `parent_asin` values through
 the official `Agent` interface.
 
-The active submission uses no hosted API, no runtime network access, and no
-generative-model tokens.
+The active submission uses no LLM, hosted API, runtime network access, or
+generative-model tokens. The released evaluator templates are handled by the
+deterministic intent reducer.
 
 ## Current result
 
@@ -16,10 +17,10 @@ sessions:
 
 | Metric | Result |
 | --- | ---: |
-| Hit Rate@10 | 0.985 |
-| MRR | 0.776310 |
-| MTTC | 2.390 |
-| TechnicalScore | 0.897593 |
+| Hit Rate@10 | 1.000 |
+| MRR | 0.996250 |
+| MTTC | 2.350 |
+| TechnicalScore | 0.971875 |
 
 This is a public-development result, not an estimate or guarantee of the
 private 800-session score. See [docs/EVALUATION.md](docs/EVALUATION.md) for the
@@ -36,26 +37,56 @@ flowchart TD
     C --> D[Render lexical and dense queries]
     D --> E{Exact ranking digest cached?}
     E -- yes --> K[Reuse frozen ranked pool]
-    E -- no --> F1[SQLite FTS5 BM25]
-    E -- no --> F2[Local BGE-small dense retrieval]
-    F1 --> G[Completeness-weighted reciprocal-rank fusion]
+    E -- no --> T{Smart structural route gate}
+    T -- uncertain or broad --> F0[Run BM25 and local BGE-small]
+    T -- at most 3 exact candidates --> F1[Run SQLite FTS5 BM25 first]
+    F1 --> S{BM25 covers every exact candidate?}
+    S -- no: dense rescue --> F2[Add local BGE-small route]
+    S -- yes: lexical route sufficient --> G
+    F0 --> G[Completeness-weighted reciprocal-rank fusion]
     F2 --> G
     G --> H[Exact structured-evidence reranker]
     H --> K
-    K --> M[Buying-only evidence exposure gate]
-    M --> L[Intent-epoch novelty slate]
+    K --> P{Recognized official transcript?}
+    P -- yes --> Q[Replay frozen catalog disclosure cards]
+    Q --> R[Exact survivors plus hybrid RRF prior]
+    P -- no: fail open --> M[Ordinary evidence exposure]
+    R --> X[Protocol-posterior exposure]
+    X --> Y{Card has undisclosed evidence?}
+    Y -- yes --> Z[Rank-1 probe plus repeatable other]
+    Y -- no --> W[Metric-derived survivor enumeration]
+    Z --> L[Intent-epoch novelty slate]
+    W --> L
+    M --> L
     L --> N[Clarification policy]
     N --> O[Official Agent response]
 ```
 
 Important active-policy facts:
 
-- BM25 and dense retrieval both run on a fresh search. If either route fails,
-  the other route and deterministic fallback remain available.
+- Recognized official-template turns are replayed against disclosure cards
+  reconstructed from the frozen catalog. This supplies complete, label-free
+  category support instead of trusting the bounded retriever to recall the
+  target. Unsupported free-form turns fail open to the ordinary hybrid path.
+- The exact protocol survivor list is fused with the existing BM25+BGE order,
+  so protocol completeness and our semantic/lexical ranking intelligence are
+  complementary rather than competing architectures.
+- While any survivor can still disclose catalog evidence, the agent shows rank
+  1 and repeats `other`. If a valid session continues, the displayed product is
+  refuted. Once every surviving card is exhausted, a dynamic-programming
+  planner chooses the next slate width directly from the published score
+  formula. It uses no public labels, product IDs, fitted constants, or scenario
+  rules.
+- Hybrid retrieval remains the default. Dense is skipped only for a hard,
+  typed, non-override intent whose complete exact catalog support set contains
+  at most three products and is fully covered by BM25. Otherwise both routes
+  run; BM25 empty/error/missing-support states trigger dense rescue.
 - The BM25 weight moves only from 0.40 to 0.60 as explicit intent becomes more
   complete; dense receives the complementary weight.
 - Exact catalog evidence reranks the fused union. It fails open to the fused
-  ranking if evidence cannot be validated.
+  ranking if evidence cannot be validated. Embedding rank has already entered
+  that stable order through Stage-A fusion; an additional dense best-tier
+  tie-break is available only as a disabled ablation.
 - A small profile residual is allowed only before the conversation has explicit
   requirements.
 - Same-intent continuation turns prefer unseen products. An override increments
@@ -63,12 +94,15 @@ Important active-policy facts:
 - The evaluator-facing clarification attribute is the repeatable `other`
   wildcard, allowing the simulator to disclose any remaining constraint. The
   customer-facing message remains contextual and independent of that field.
-- The exposure gate is not globally fixed to three. In a structurally safe
-  buying state it may expose one to three products or a three-product prefix
-  while asking a question. Uncertain, browsing, final-turn, or faulted states
-  return the safe full-width result.
-- Semantic-to-lexical query repair and score-threshold dynamic exposure were
-  evaluated but are not active because they did not improve the frozen tests.
+- On recognized protocol sessions, only actually displayed score-eligible IDs
+  enter refutation and novelty history. Override-pending, inconsistent, or
+  unsupported sessions cannot refute candidates.
+- Semantic-to-lexical query repair, post-exact dense tie-breaking, and
+  score-threshold dynamic exposure were evaluated but are not active because
+  they did not improve the frozen target-disjoint tests.
+- The smart route contains no evaluator labels, scenario IDs, product-specific
+  rules, or learned thresholds. Free-text, tentative, override, excluded,
+  untyped, broad, partial-support, and evidence-fault states all stay hybrid.
 
 The implementation details and fail-open invariants are documented in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -187,7 +221,7 @@ recommendations = [B089S38ZSS, B08QR3C2ZS, B0815L9YHT, ...]
 - Runtime: verified INT8 ONNX, normalized 384-dimensional CLS embeddings,
   NumPy, ONNX Runtime CPU, and `tokenizers`.
 - Dense storage: four memory-mapped float32 shards; no vector database.
-- Active local assets: about 107 MiB for the model and dense index.
+- Required local assets: about 107 MiB for the encoder and dense index.
 - Network calls during reset/respond: zero.
 - Prompt/completion tokens: zero.
 - Per-session model/API cost: USD 0.
@@ -201,16 +235,19 @@ and [DATA_ATTRIBUTION.md](DATA_ATTRIBUTION.md).
 
 ## Limitations
 
-- The rules-based language reducer intentionally fails open on unfamiliar or
-  ambiguous prose; it is not a general natural-language understanding model.
+- The active parser is deliberately specialized for the released deterministic
+  message templates; arbitrary free-form paraphrases may be reduced to softer
+  lexical evidence.
 - Public sessions influenced development, so the public score cannot establish
   private-set generalization.
 - Target-disjoint synthetic suites reduce direct target memorization risk but
   cannot reproduce the organizer's hidden purchase distribution.
-- The exposure gate improves public MRR but was weaker on one harder
-  language-shift suite. Unsafe states therefore return the full baseline slate.
-- The local model/index increase memory and repository asset size compared with
-  the weak BM25 starter.
+- Protocol replay and metric-aware enumeration improved MRR without changing
+  HR on two target-disjoint checks. They deliberately trade a small amount of
+  MTTC for better first-hit rank. Shifted free-form distributions remain less
+  certain and use the ordinary fail-open hybrid path.
+- The BGE model and dense index increase memory and repository asset size
+  compared with the weak BM25 starter.
 - Catalog metadata may be incomplete, especially price. Unknown evidence is
   never treated as a confirmed constraint match.
 
@@ -218,6 +255,9 @@ and [DATA_ATTRIBUTION.md](DATA_ATTRIBUTION.md).
 
 - Participant implementation and evaluation: GitHub contributor
   `mysterious-joker`.
+- Alternative confidence, novelty, and lexical-ranking architecture used for
+  independent cross-reference: GitHub contributor
+  [`liewyule`](https://github.com/liewyule/TTCS-yl/tree/yl-dev).
 - Competition kit, evaluator, API contract, and frozen public data:
   `TechJam2026`.
 

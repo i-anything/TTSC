@@ -4,6 +4,12 @@ import unittest
 from unittest import mock
 
 from conversational_search.decision_policy import PROTOCOL_UTILITY_DECISION_POLICY
+from conversational_search.exposure_policy import (
+    BUYING_TOP3_AMBIGUOUS_TOP1_EXPOSURE_POLICY,
+)
+from conversational_search.exact_evidence import (
+    DENSE_CONFIDENT_BEST_TIER_POLICY,
+)
 from conversational_search.protocol import (
     DisclosureCard,
     ProductProtocolEvidence,
@@ -23,7 +29,7 @@ from conversational_search.retrieval import (
     RetrievalTrace,
 )
 from conversational_search.service import ConversationalSearchAgent
-from conversational_search.strategy import RouteWeights
+from conversational_search.strategy import EQUAL_RRF_POLICY, RouteWeights
 
 
 class _ExactEvidenceRetriever:
@@ -33,8 +39,12 @@ class _ExactEvidenceRetriever:
         *,
         capable: bool = True,
         evidence_error: bool = False,
+        dense_ids: tuple[str, ...] | None = None,
+        dense_scores: tuple[float, ...] = (),
     ) -> None:
         self._ids = tuple(cards)
+        self._dense_ids = self._ids if dense_ids is None else dense_ids
+        self._dense_scores = dense_scores
         self._cards = cards
         self._capable = capable
         self._evidence_error = evidence_error
@@ -71,11 +81,12 @@ class _ExactEvidenceRetriever:
             recommendations=self._ids[:top_k],
             trace=RetrievalTrace(
                 bm25_ids=self._ids,
-                dense_ids=self._ids if use_dense else (),
+                dense_ids=self._dense_ids if use_dense else (),
                 fused_ids=self._ids,
                 bm25_status="ok",
                 dense_status="ok" if use_dense else "skipped",
                 used_fallback=False,
+                dense_scores=self._dense_scores if use_dense else (),
             ),
         )
 
@@ -111,12 +122,100 @@ class _ExactEvidenceRetriever:
             for parent_asin in parent_asins
         )
 
-
 def _response_ids(response: dict) -> tuple[str, ...]:
     return tuple(item["parent_asin"] for item in response["recommendations"])
 
 
 class ServiceExactEvidenceTests(unittest.TestCase):
+    def test_ambiguous_top1_preview_tracks_only_the_exposed_product(self) -> None:
+        cards = {
+            "P0": ("blue",),
+            "P1": ("red",),
+            "P2": ("green",),
+            "P3": ("black",),
+        }
+        agent = ConversationalSearchAgent(
+            "unused.jsonl",
+            retriever=_ExactEvidenceRetriever(cards),
+            ranking_policy=LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
+            evidence_exposure_policy=(
+                BUYING_TOP3_AMBIGUOUS_TOP1_EXPOSURE_POLICY
+            ),
+        )
+        agent.reset("session", {})
+
+        preview = agent.respond(
+            "session",
+            "I'm looking for Shoes, but I'm still exploring.",
+            1,
+            10,
+        )
+
+        self.assertEqual(_response_ids(preview), ("P0",))
+        self.assertEqual(preview["ask_attribute"], "other")
+        self.assertEqual(agent._slates["session"].shown_ids, ("P0",))
+        self.assertEqual(
+            agent.evidence_exposure_health["ambiguous_top1_preview"],
+            1,
+        )
+
+        refined = agent.respond(
+            "session",
+            "For that, what matters is: green.",
+            2,
+            10,
+        )
+
+        self.assertEqual(_response_ids(refined)[0], "P2")
+
+    def test_dense_tiebreak_reorders_an_exact_best_tier(self) -> None:
+        cards = {
+            "LEXICAL_FIRST": ("cotton",),
+            "DENSE_FIRST": ("cotton",),
+            "LOWER_TIER": ("leather",),
+        }
+        retriever = _ExactEvidenceRetriever(
+            cards,
+            dense_ids=("DENSE_FIRST", "LEXICAL_FIRST", "LOWER_TIER"),
+            dense_scores=(0.8, 0.6, 0.4),
+        )
+        agent = ConversationalSearchAgent(
+            "unused.jsonl",
+            retriever=retriever,
+            fusion_policy=EQUAL_RRF_POLICY,
+            ranking_policy=LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
+            semantic_tiebreak_policy=DENSE_CONFIDENT_BEST_TIER_POLICY,
+        )
+        agent.reset("session", {})
+
+        response = agent.respond(
+            "session",
+            "I'm looking for Shoes. A key requirement is: cotton.",
+            1,
+            10,
+        )
+
+        self.assertEqual(
+            _response_ids(response),
+            ("DENSE_FIRST", "LEXICAL_FIRST", "LOWER_TIER"),
+        )
+        self.assertEqual(agent.semantic_tiebreak_health["attempts"], 1)
+        self.assertEqual(agent.semantic_tiebreak_health["reordered"], 1)
+        self.assertEqual(
+            agent.semantic_tiebreak_health[
+                "validation_or_execution_fallbacks"
+            ],
+            0,
+        )
+
+    def test_semantic_tiebreak_requires_exact_ranking(self) -> None:
+        with self.assertRaisesRegex(ValueError, "require lexicographic"):
+            ConversationalSearchAgent(
+                "unused.jsonl",
+                retriever=_ExactEvidenceRetriever({"ONLY": ("cotton",)}),
+                semantic_tiebreak_policy=DENSE_CONFIDENT_BEST_TIER_POLICY,
+            )
+
     def test_exact_policy_reorders_after_stage_a_without_changing_question(self) -> None:
         cards = {
             "BASE_FIRST": ("leather",),
