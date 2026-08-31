@@ -178,11 +178,13 @@ The evaluator:
 
 ### Run the test suite
 
+**Linux / macOS:**
 ```bash
-# Linux / macOS
 .venv-runtime/bin/python -m unittest discover -s tests
+```
 
-# Windows (PowerShell)
+**Windows (PowerShell):**
+```bash
 .venv-runtime\Scripts\python.exe -m unittest discover -s tests
 ```
 
