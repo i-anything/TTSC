@@ -1,3 +1,18 @@
+"""Stateful conversational-search core assembled from swappable policies.
+
+``ConversationalSearchAgent`` owns the complete session pipeline: intent
+reduction, retrieval-route planning, hybrid BM25+dense retrieval with
+weighted RRF fusion, Stage-A and exact-evidence reranking, full-catalog
+protocol fusion, exposure gating, and novelty-aware slate selection.  Every
+stage is selected through an injected policy constant, so bounded
+alternatives stay available for reproducible ablation while one released
+configuration serves the competition adapter in ``starter.agent``.
+
+Ranked results are cached and reused only while the exact ranking-relevant
+dependency digest is unchanged, and every failure path fails open to the
+deterministic hybrid result described in ``docs/ARCHITECTURE.md``.
+"""
+
 from __future__ import annotations
 
 import hashlib

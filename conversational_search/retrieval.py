@@ -1,3 +1,16 @@
+"""One-load hybrid retrieval: in-memory SQLite FTS5 BM25 plus dense shards.
+
+``HybridRetriever`` builds the FTS5 catalog once, executes the lexical and
+dense routes independently, sanitizes each route to unique catalog IDs, and
+fuses them with weighted reciprocal-rank fusion.  Route failures are
+isolated: a failed or empty route degrades to the surviving route, and
+complete failure returns a deterministic catalog-valid fallback.  Every
+executed route is recorded in a ``RetrievalTrace`` for auditing.
+
+Optional bounded experiments live here as disabled policies: catalog-IDF
+requirement probes and the semantic-to-lexical rescue.
+"""
+
 from __future__ import annotations
 
 import json

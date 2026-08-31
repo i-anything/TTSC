@@ -1,3 +1,19 @@
+"""Deterministic intent state and reduction of user messages.
+
+``IntentState`` is the immutable, session-local record of the conversation:
+the active category, positive requirements with value provenance and
+ordinal importance, exclusions, no-preference attributes, and the last
+asked attribute.  Each user message reduces to a new state through
+``apply_user_message`` instead of mutating the old one; reductions are
+classified by ``IntentReductionStatus`` and validated for turn order,
+types, and bounded collections.  Unsupported prose is preserved as soft
+free-text evidence rather than discarded.
+
+The module also renders the per-route queries (``render_lexical_query``
+for SQLite FTS5 BM25, ``render_dense_query`` for the BGE encoder) and the
+bounded parsing behaviors exposed by ``IntentParsingPolicy``.
+"""
+
 from __future__ import annotations
 
 import re

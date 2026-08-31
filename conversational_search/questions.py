@@ -1,3 +1,12 @@
+"""Fixed clarifying-question text and deterministic asking order.
+
+Questions are drawn only from the contract-valid ``QUESTION_TEXT`` set.  A
+``QuestionPolicy`` selects the next attribute from its priority tuple,
+optionally re-queueing an interrupted question; the wildcard variant
+repeats ``other`` so the simulator can drain the remaining disclosure card
+without naming an attribute.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
