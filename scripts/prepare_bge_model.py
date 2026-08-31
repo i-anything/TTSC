@@ -1,3 +1,12 @@
+"""Download, quantize, and verify the offline BGE-small model assets.
+
+``prepare_model`` fetches the pinned official ``BAAI/bge-small-en-v1.5``
+revision, validates the published metadata and source ONNX checksum,
+quantizes the graph to int8, checks quantization fidelity (mean and worst
+cosine against the float source), and writes the asset directory with an
+atomic manifest recording every file's origin and checksum.
+"""
+
 from __future__ import annotations
 
 import argparse
