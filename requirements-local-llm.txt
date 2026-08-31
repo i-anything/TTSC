@@ -1,2 +1,0 @@
-# Optional grounded local intent parser. The base evaluator path does not require it.
-llama-cpp-python==0.3.35
