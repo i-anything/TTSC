@@ -1,3 +1,12 @@
+"""Pinned offline BGE text encoder behind a minimal ``Embedder`` protocol.
+
+``OnnxTextEncoder`` loads the quantized BGE-small ONNX model and tokenizer
+from a verified asset directory using only ONNX Runtime's CPU provider,
+validating the manifest contract and SHA-256 checksums before use.
+``EncoderMetadata`` records the provenance (model id, revision, checksums,
+pooling, prefixes) carried into the embedding manifest.
+"""
+
 from __future__ import annotations
 
 import hashlib
