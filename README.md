@@ -102,7 +102,7 @@ flowchart TD
         K --> P{"Known evaluator<br/>conversation template?"}
 
         P -- "Yes" --> Q["Reconstruct products consistent<br/>with the conversation transcript"]
-        Q --> R["Intersect template-consistent products<br/>with reranked candidates"]
+        Q --> R["Fuse template-consistent products<br/>with the hybrid ranking"]
 
         R --> X{"Can a surviving product<br/>reveal new information?"}
 
@@ -119,7 +119,6 @@ flowchart TD
     end
 ```
 
-some of the word being cut
 ### Fail-Open Design
 
 Every component degrades gracefully when something goes wrong:
