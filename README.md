@@ -119,7 +119,6 @@ flowchart TD
     end
 ```
 
-some of the word being cut
 ### Fail-Open Design
 
 Every component degrades gracefully when something goes wrong:
