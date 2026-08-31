@@ -166,17 +166,25 @@ docs/                       architecture, evaluation evidence, competition spec
 **Linux / macOS:**
 ```bash
 python3.13 --version
-python3.13 -m venv .venv-runtime
+python3.13 -m venv --clear .venv-runtime
+.venv-runtime/bin/python --version
 .venv-runtime/bin/python -m pip install --upgrade pip
 .venv-runtime/bin/python -m pip install -r requirements-runtime.txt
 ```
 
 **Windows (PowerShell):**
 ```powershell
-py -3.13 -m venv .venv-runtime
+py -3.13 -m venv --clear .venv-runtime
+.venv-runtime\Scripts\python.exe --version
 .venv-runtime\Scripts\python.exe -m pip install --upgrade pip
 .venv-runtime\Scripts\python.exe -m pip install -r requirements-runtime.txt
 ```
+
+The environment's reported version must be Python 3.13.x before installing.
+The `--clear` flag is intentional: Python's `venv` command does not reliably
+replace the interpreter in an existing environment. Without it, a
+`.venv-runtime` previously created by Python 3.14 can remain on Python 3.14 even
+when the command is invoked through `python3.13`.
 
 Do not use an unqualified `python3 -m venv` until `python3 --version` has
 confirmed Python 3.10–3.13. On systems where `python3` resolves to Python 3.14,
