@@ -157,24 +157,31 @@ docs/                       architecture, evaluation evidence, competition spec
 
 ### Prerequisites
 
-- **Python 3.10–3.13**
+- **Python 3.10–3.13**. Python 3.14 is not supported because the pinned
+  `onnxruntime==1.23.2` release does not provide Python 3.14 wheels.
 - No GPU required; the entire pipeline runs on CPU.
 
 ### 1. Create a virtual environment and install dependencies
 
-```bash
-python3 -m venv .venv-runtime
-```
-
 **Linux / macOS:**
 ```bash
-.venv-runtime/bin/pip install -r requirements-runtime.txt
+python3.13 --version
+python3.13 -m venv .venv-runtime
+.venv-runtime/bin/python -m pip install --upgrade pip
+.venv-runtime/bin/python -m pip install -r requirements-runtime.txt
 ```
 
 **Windows (PowerShell):**
 ```powershell
-.venv-runtime\Scripts\pip install -r requirements-runtime.txt
+py -3.13 -m venv .venv-runtime
+.venv-runtime\Scripts\python.exe -m pip install --upgrade pip
+.venv-runtime\Scripts\python.exe -m pip install -r requirements-runtime.txt
 ```
+
+Do not use an unqualified `python3 -m venv` until `python3 --version` has
+confirmed Python 3.10–3.13. On systems where `python3` resolves to Python 3.14,
+that command creates an incompatible environment even though Python 3.13 is
+installed separately.
 
 The runtime dependencies are minimal:
 
@@ -188,7 +195,7 @@ For preprocessing (building the dense index from scratch), additionally
 install:
 
 ```bash
-pip install -r requirements-preprocessing.txt
+.venv-runtime/bin/python -m pip install -r requirements-preprocessing.txt
 ```
 
 ### 2. Download the product catalog
@@ -276,7 +283,7 @@ The evaluator:
 If you need to regenerate the precomputed BGE embeddings:
 
 ```bash
-python -m scripts.preprocess_catalog build \
+.venv-runtime/bin/python -m scripts.preprocess_catalog build \
   --catalog data/catalog.jsonl \
   --model-assets assets/bge-small-en-v1.5-int8 \
   --output assets/search-index-bge-small-en-v1.5-v2
@@ -285,7 +292,7 @@ python -m scripts.preprocess_catalog build \
 ### (Optional) Prepare the BGE model from scratch
 
 ```bash
-python -m scripts.prepare_bge_model
+.venv-runtime/bin/python -m scripts.prepare_bge_model
 ```
 
 This downloads, quantizes to INT8, and verifies the offline BGE-small model
