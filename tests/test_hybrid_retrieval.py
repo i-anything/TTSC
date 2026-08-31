@@ -9,14 +9,12 @@ from pathlib import Path
 from unittest import mock
 
 from conversational_search.retrieval import (
-    FIELD_SEMANTIC_CAPABILITY,
     HybridRetriever,
     MAX_CANDIDATE_DOCUMENTS,
     PROTOCOL_EVIDENCE_CAPABILITY,
     RetrievalResult,
     RetrievalTrace,
 )
-from conversational_search.field_semantic import rank_field_semantic
 from conversational_search.protocol import (
     MAX_EVIDENCE_TEXT_CHARACTERS,
     DisclosureCard,
@@ -42,31 +40,6 @@ class FakeEncoder:
         if self.fail:
             raise RuntimeError("encoder unavailable")
         return [[0.25, 0.75]]
-
-
-class SemanticEncoder(FakeEncoder):
-    @staticmethod
-    def _vector(text: str) -> list[float]:
-        lowered = text.casefold()
-        if "waterproof" in lowered or "water resistant" in lowered:
-            return [1.0, 0.0, 0.0]
-        if "boots" in lowered:
-            return [0.0, 0.0, 1.0]
-        return [0.0, 1.0, 0.0]
-
-    def encode_queries(
-        self,
-        texts: list[str],
-        batch_size: int = 1,
-    ) -> list[list[float]]:
-        return [self._vector(text) for text in texts]
-
-    def encode(
-        self,
-        texts: list[str],
-        batch_size: int = 1,
-    ) -> list[list[float]]:
-        return [self._vector(text) for text in texts]
 
 
 class FakeDenseIndex:
@@ -154,37 +127,6 @@ class HybridRetrieverTest(unittest.TestCase):
         self.assertEqual(dense.calls, [([0.25, 0.75], 100)])
         self.assertEqual(len(result), len(set(result)))
         self.assertFalse(hasattr(retriever, "last_trace"))
-
-    def test_field_semantic_scores_typed_requirements_against_card_atoms(
-        self,
-    ) -> None:
-        retriever = HybridRetriever(
-            self.catalog_path,
-            SemanticEncoder(),
-            FakeDenseIndex([]),
-            protocol_evidence=True,
-        )
-
-        assessments = retriever.candidate_field_semantic_assessments(
-            ("B000000001", "B000000003"),
-            (("feature", "water resistant"),),
-            (),
-            "Boots",
-        )
-        ranking = rank_field_semantic(
-            ("B000000001", "B000000003"),
-            assessments,
-        )
-
-        self.assertIs(
-            retriever.field_semantic_capability,
-            FIELD_SEMANTIC_CAPABILITY,
-        )
-        self.assertEqual(ranking.ranked_ids[0], "B000000003")
-        self.assertGreater(
-            assessments[1].minimum_requirement_affinity,
-            assessments[0].minimum_requirement_affinity,
-        )
 
     def test_detailed_result_is_immutable_and_keeps_the_full_fused_union(self) -> None:
         encoder = FakeEncoder()

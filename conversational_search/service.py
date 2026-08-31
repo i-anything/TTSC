@@ -31,13 +31,6 @@ from conversational_search.exact_evidence import (
     SemanticTieBreakPolicy,
     SemanticTieBreakStatus,
 )
-from conversational_search.field_semantic import (
-    DISABLED_FIELD_SEMANTIC_POLICY,
-    MAX_FIELD_SEMANTIC_CANDIDATES,
-    MAX_FIELD_SEMANTIC_REQUIREMENTS,
-    FieldSemanticPolicy,
-    FieldSemanticStatus,
-)
 from conversational_search.intent import (
     LOSSLESS_MULTI_SLOT_INTENT_POLICY,
     ROBUST_INTENT_POLICY,
@@ -50,13 +43,6 @@ from conversational_search.intent import (
     render_dense_query,
     render_lexical_query,
     render_requirement_probe_candidates,
-)
-from conversational_search.local_intent import (
-    LlamaCppStructuredIntentParser,
-    LocalIntentTrigger,
-    StructuredIntentParseResult,
-    apply_structured_intent_delta,
-    local_intent_trigger,
 )
 from conversational_search.orchestration import (
     BackendSnapshotToken,
@@ -116,7 +102,6 @@ from conversational_search.retrieval import (
     MAX_CANDIDATE_DOCUMENTS,
     MAX_REQUIREMENT_PROBES,
     MAX_SEMANTIC_EXPANSION_TERMS,
-    FIELD_SEMANTIC_CAPABILITY,
     REQUIREMENT_PROBE_CAPABILITY,
     PROTOCOL_EVIDENCE_CAPABILITY,
     ROUTE_LIMIT,
@@ -178,12 +163,6 @@ DEFAULT_DENSE_INDEX = (
     REPOSITORY_ROOT
     / "assets"
     / "search-index-bge-small-en-v1.5-v2"
-)
-DEFAULT_LOCAL_INTENT_MODEL = (
-    REPOSITORY_ROOT
-    / "assets"
-    / "qwen3-1.7b-intent"
-    / "Qwen3-1.7B-Q4_K_M.gguf"
 )
 CACHEABLE_ROUTE_STATUSES = frozenset({"ok", "empty", "skipped"})
 DENSE_ALWAYS_RETRIEVAL_POLICY = "dense-always-v1"
@@ -396,9 +375,6 @@ class ConversationalSearchAgent:
         semantic_tiebreak_policy: SemanticTieBreakPolicy = (
             DISABLED_SEMANTIC_TIEBREAK_POLICY
         ),
-        field_semantic_policy: FieldSemanticPolicy = (
-            DISABLED_FIELD_SEMANTIC_POLICY
-        ),
         evidence_exposure_policy: EvidenceExposurePolicy = (
             DISABLED_EVIDENCE_EXPOSURE_POLICY
         ),
@@ -414,8 +390,6 @@ class ConversationalSearchAgent:
         ranking_cache_capacity: int = DEFAULT_RANKING_CACHE_CAPACITY,
         model_assets: str | Path = DEFAULT_MODEL_ASSETS,
         dense_index_path: str | Path = DEFAULT_DENSE_INDEX,
-        local_intent_parser: object | None = None,
-        local_intent_model_path: str | Path | None = None,
     ) -> None:
         if not isinstance(question_policy, QuestionPolicy):
             raise TypeError("question_policy must be a QuestionPolicy")
@@ -451,8 +425,6 @@ class ConversationalSearchAgent:
             raise TypeError(
                 "semantic_tiebreak_policy must be a SemanticTieBreakPolicy"
             )
-        if not isinstance(field_semantic_policy, FieldSemanticPolicy):
-            raise TypeError("field_semantic_policy must be a FieldSemanticPolicy")
         if not isinstance(evidence_exposure_policy, EvidenceExposurePolicy):
             raise TypeError(
                 "evidence_exposure_policy must be an EvidenceExposurePolicy"
@@ -545,22 +517,6 @@ class ConversationalSearchAgent:
                     "semantic policies and evidence exposure require "
                     "lexicographic exact evidence ranking"
                 )
-        if field_semantic_policy is not DISABLED_FIELD_SEMANTIC_POLICY:
-            if ranking_policy is not RankingPolicy.LEXICOGRAPHIC_EXACT_EVIDENCE:
-                raise ValueError(
-                    "field-semantic scoring requires lexicographic exact "
-                    "evidence ranking"
-                )
-            if decision_policy is not PROTECTED_DECISION_POLICY:
-                raise ValueError(
-                    "field-semantic scoring is isolated from protocol "
-                    "decision planners"
-                )
-            if decision_policy is not PROTECTED_DECISION_POLICY:
-                raise ValueError(
-                    "semantic policies and evidence exposure are isolated from "
-                    "protocol decision planners"
-                )
         if (
             decision_policy is PROTOCOL_UTILITY_DECISION_POLICY
             and ranking_policy is RankingPolicy.LEXICOGRAPHIC_EXACT_EVIDENCE
@@ -589,32 +545,6 @@ class ConversationalSearchAgent:
             raise ValueError(
                 "importance-aware satisfaction is an isolated reranker ablation"
             )
-        if local_intent_parser is not None and not callable(
-            getattr(local_intent_parser, "parse", None)
-        ):
-            raise TypeError("local_intent_parser must expose parse(...) or be None")
-        self.local_intent_initialization_error: str | None = None
-        if local_intent_parser is None and local_intent_model_path is not None:
-            local_model_path = Path(local_intent_model_path)
-            if local_model_path.is_file():
-                try:
-                    local_intent_parser = LlamaCppStructuredIntentParser(
-                        local_model_path
-                    )
-                except (ImportError, OSError, RuntimeError, ValueError) as error:
-                    self.local_intent_initialization_error = (
-                        f"{type(error).__name__}: {error}"
-                    )
-        self._local_intent_parser = local_intent_parser
-        self._local_intent_attempts = 0
-        self._local_intent_applied = 0
-        self._local_intent_no_delta = 0
-        self._local_intent_failures = 0
-        self._local_intent_free_text_attempts = 0
-        self._local_intent_complex_attempts = 0
-        self._local_intent_prompt_tokens = 0
-        self._local_intent_completion_tokens = 0
-        self._local_intent_semantic_sessions: set[str] = set()
         self.dense_initialization_error: str | None = None
         if retriever is None:
             try:
@@ -637,8 +567,6 @@ class ConversationalSearchAgent:
                     is FULL_TRANSCRIPT_PROTOCOL_CATALOG_POLICY
                     or retrieval_routing_policy
                     is SMART_HYBRID_RETRIEVAL_ROUTING_POLICY
-                    or field_semantic_policy
-                    is not DISABLED_FIELD_SEMANTIC_POLICY
                     or ranking_policy
                     in {
                         RankingPolicy.LEXICOGRAPHIC_EXACT_EVIDENCE,
@@ -658,7 +586,6 @@ class ConversationalSearchAgent:
         self._retrieval_route_outcome_counts = [0] * 10
         self._ranking_policy = ranking_policy
         self._semantic_tiebreak_policy = semantic_tiebreak_policy
-        self._field_semantic_policy = field_semantic_policy
         self._profile_policy = profile_policy
         self._slate_policy = slate_policy
         self._intent_policy = intent_policy
@@ -677,8 +604,6 @@ class ConversationalSearchAgent:
             self._semantic_tiebreak_counts = [
                 0
             ] * (len(SemanticTieBreakStatus) + 2)
-        if field_semantic_policy is not DISABLED_FIELD_SEMANTIC_POLICY:
-            self._field_semantic_counts = [0] * 7
         if ranking_policy is RankingPolicy.IMPORTANCE_AWARE_SATISFACTION:
             self._importance_satisfaction_counts = [0] * 15
         if (
@@ -786,7 +711,6 @@ class ConversationalSearchAgent:
         self._orchestrator.reset(session_id)
         self._sessions[session_id] = IntentState()
         self._slates[session_id] = SlateState()
-        self._local_intent_semantic_sessions.discard(session_id)
         if (
             self.decision_policy in PROTOCOL_DECISION_POLICIES
             or self.protocol_catalog_policy
@@ -842,48 +766,6 @@ class ConversationalSearchAgent:
                 turn,
                 policy=self._intent_policy,
             )
-        local_prompt_tokens = 0
-        local_completion_tokens = 0
-        try:
-            local_trigger = local_intent_trigger(state, user_message, turn)
-        except Exception:
-            local_trigger = None
-        if self._local_intent_parser is not None and local_trigger is not None:
-            self._local_intent_attempts += 1
-            if local_trigger is LocalIntentTrigger.FREE_TEXT:
-                self._local_intent_free_text_attempts += 1
-            else:
-                self._local_intent_complex_attempts += 1
-            try:
-                local_result = self._local_intent_parser.parse(
-                    prior_state,
-                    user_message,
-                    turn,
-                )
-                if not isinstance(local_result, StructuredIntentParseResult):
-                    raise TypeError(
-                        "local intent parser must return StructuredIntentParseResult"
-                    )
-                local_state = apply_structured_intent_delta(
-                    prior_state,
-                    state,
-                    local_result.delta,
-                    turn,
-                )
-            except Exception:
-                self._local_intent_failures += 1
-            else:
-                local_prompt_tokens = local_result.prompt_tokens
-                local_completion_tokens = local_result.completion_tokens
-                self._local_intent_prompt_tokens += local_prompt_tokens
-                self._local_intent_completion_tokens += local_completion_tokens
-                if local_state == state:
-                    self._local_intent_no_delta += 1
-                else:
-                    state = local_state
-                    intent_cacheable = False
-                    self._local_intent_applied += 1
-                    self._local_intent_semantic_sessions.add(session_id)
         try:
             retrieval_route_plan = plan_retrieval_route(
                 self.retrieval_routing_policy,
@@ -1308,15 +1190,6 @@ class ConversationalSearchAgent:
                 if retrieval_policy is None
                 else f"{retrieval_policy}|{semantic_tiebreak_dependency}"
             )
-        if self.field_semantic_policy is not DISABLED_FIELD_SEMANTIC_POLICY:
-            field_semantic_dependency = (
-                f"field-semantic:{self.field_semantic_policy.value}"
-            )
-            retrieval_policy = (
-                field_semantic_dependency
-                if retrieval_policy is None
-                else f"{retrieval_policy}|{field_semantic_dependency}"
-            )
         try:
             capability = getattr(self._retriever, "ranking_cache_capability")
             backend_cache_capable = capability is EXACT_RANKING_CACHE_CAPABILITY
@@ -1681,23 +1554,6 @@ class ConversationalSearchAgent:
                             bool(sanitized_ranked_ids)
                             and sanitized_ranked_ids == ranked.ranked_ids
                         )
-                        if (
-                            self.field_semantic_policy
-                            is not DISABLED_FIELD_SEMANTIC_POLICY
-                            and session_id
-                            in self._local_intent_semantic_sessions
-                            and sanitized_ranked_ids
-                        ):
-                            (
-                                sanitized_ranked_ids,
-                                field_semantic_cacheable,
-                            ) = self._apply_field_semantic_ranking(
-                                state,
-                                sanitized_ranked_ids,
-                            )
-                            ranking_cacheable = (
-                                ranking_cacheable and field_semantic_cacheable
-                            )
                         if (
                             self._ranking_policy
                             is RankingPolicy.LEXICOGRAPHIC_EXACT_EVIDENCE
@@ -2459,8 +2315,8 @@ class ConversationalSearchAgent:
                 {"parent_asin": parent_asin} for parent_asin in recommendations
             ],
             "usage": {
-                "prompt_tokens": local_prompt_tokens,
-                "completion_tokens": local_completion_tokens,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
             },
         }
 
@@ -2857,88 +2713,6 @@ class ConversationalSearchAgent:
         elif not result.consistent_support_ids:
             raise ValueError("applied exact evidence requires consistent support")
         return result
-
-    def _apply_field_semantic_ranking(
-        self,
-        state: IntentState,
-        base_ranked_ids: tuple[str, ...],
-    ) -> tuple[tuple[str, ...], bool]:
-        """Apply bounded card-atom semantics after Stage A and fail open."""
-
-        candidate_ids = base_ranked_ids[:MAX_FIELD_SEMANTIC_CANDIDATES]
-        typed_requirements = tuple(
-            (requirement.attribute, requirement.value)
-            for requirement in state.requirements
-            if requirement.source == "free_text"
-            and requirement.attribute is not None
-        )[-MAX_FIELD_SEMANTIC_REQUIREMENTS:]
-        exclusions = tuple(state.excluded)[-MAX_FIELD_SEMANTIC_REQUIREMENTS:]
-        category = state.category
-        if not typed_requirements and not exclusions and not category:
-            self._record_field_semantic_outcome(
-                "no_signal",
-                candidate_count=len(candidate_ids),
-            )
-            return base_ranked_ids, True
-
-        try:
-            capable = (
-                getattr(self._retriever, "field_semantic_capability")
-                is FIELD_SEMANTIC_CAPABILITY
-            )
-        except Exception:
-            capable = False
-        if not capable:
-            self._record_field_semantic_outcome(
-                "capability_unavailable",
-                candidate_count=len(candidate_ids),
-            )
-            return base_ranked_ids, False
-
-        try:
-            from conversational_search.field_semantic import (
-                FieldSemanticResult,
-                rank_field_semantic,
-            )
-
-            assessments = tuple(
-                self._retriever.candidate_field_semantic_assessments(
-                    candidate_ids,
-                    typed_requirements,
-                    exclusions,
-                    category,
-                )
-            )
-            result = rank_field_semantic(candidate_ids, assessments)
-            if not isinstance(result, FieldSemanticResult):
-                raise TypeError("field-semantic ranking returned an invalid result")
-            if (
-                len(result.ranked_ids) != len(candidate_ids)
-                or len(set(result.ranked_ids)) != len(candidate_ids)
-                or set(result.ranked_ids) != set(candidate_ids)
-            ):
-                raise ValueError(
-                    "field-semantic ranking must preserve the candidate prefix"
-                )
-        except Exception:
-            self._record_field_semantic_outcome(
-                "scoring_error",
-                candidate_count=len(candidate_ids),
-            )
-            return base_ranked_ids, False
-
-        outcome = (
-            "reordered"
-            if result.status is FieldSemanticStatus.REORDERED
-            else "no_signal"
-            if result.status is FieldSemanticStatus.NO_SIGNAL
-            else "unchanged"
-        )
-        self._record_field_semantic_outcome(
-            outcome,
-            candidate_count=len(candidate_ids),
-        )
-        return (*result.ranked_ids, *base_ranked_ids[len(candidate_ids) :]), True
 
     def _apply_exact_evidence_ranking(
         self,
@@ -3933,37 +3707,6 @@ class ConversationalSearchAgent:
         counts[7] += candidate_count
         counts[8] += consistent_count
 
-    def _record_field_semantic_outcome(
-        self,
-        outcome: str,
-        *,
-        candidate_count: int,
-    ) -> None:
-        outcomes = (
-            "reordered",
-            "unchanged",
-            "no_signal",
-            "capability_unavailable",
-            "scoring_error",
-        )
-        if outcome not in outcomes:
-            raise ValueError("unknown field-semantic outcome")
-        if (
-            type(candidate_count) is not int
-            or not 0 <= candidate_count <= MAX_FIELD_SEMANTIC_CANDIDATES
-        ):
-            raise ValueError("field-semantic candidate count is out of bounds")
-        counts = getattr(self, "_field_semantic_counts", None)
-        if (
-            type(counts) is not list
-            or len(counts) != 7
-            or any(type(value) is not int or value < 0 for value in counts)
-        ):
-            raise RuntimeError("field-semantic counter state is invalid")
-        counts[0] += 1
-        counts[outcomes.index(outcome) + 1] += 1
-        counts[6] += candidate_count
-
     def _record_semantic_tiebreak_status(
         self,
         status: SemanticTieBreakStatus | None,
@@ -4375,57 +4118,6 @@ class ConversationalSearchAgent:
             "executed_hybrid": outcomes[7],
             "fallbacks_or_execution_errors": outcomes[8],
             "degraded_route_outcomes": outcomes[9],
-        }
-
-    @property
-    def local_intent_health(self) -> dict[str, int | str | bool | None]:
-        """Return aggregate-only local parser outcomes without message content."""
-
-        return {
-            "enabled": self._local_intent_parser is not None,
-            "initialization_error": self.local_intent_initialization_error,
-            "attempts": self._local_intent_attempts,
-            "applied": self._local_intent_applied,
-            "no_delta": self._local_intent_no_delta,
-            "failures": self._local_intent_failures,
-            "free_text_attempts": self._local_intent_free_text_attempts,
-            "complex_language_attempts": self._local_intent_complex_attempts,
-            "prompt_tokens": self._local_intent_prompt_tokens,
-            "completion_tokens": self._local_intent_completion_tokens,
-        }
-
-    @property
-    def field_semantic_policy(self) -> FieldSemanticPolicy:
-        policy = getattr(
-            self,
-            "_field_semantic_policy",
-            DISABLED_FIELD_SEMANTIC_POLICY,
-        )
-        if not isinstance(policy, FieldSemanticPolicy):
-            raise RuntimeError("field-semantic policy state is invalid")
-        return policy
-
-    @property
-    def field_semantic_health(self) -> dict[str, int | str]:
-        """Return aggregate-only local-intent semantic scoring outcomes."""
-
-        raw_counts = getattr(self, "_field_semantic_counts", None)
-        counts = (
-            tuple(raw_counts)
-            if type(raw_counts) is list
-            and len(raw_counts) == 7
-            and all(type(value) is int and value >= 0 for value in raw_counts)
-            else (0,) * 7
-        )
-        return {
-            "policy": self.field_semantic_policy.value,
-            "attempts": counts[0],
-            "reordered": counts[1],
-            "unchanged": counts[2],
-            "no_signal": counts[3],
-            "capability_unavailable": counts[4],
-            "scoring_errors": counts[5],
-            "candidate_ids_examined": counts[6],
         }
 
     @property
