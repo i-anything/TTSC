@@ -364,6 +364,56 @@ class IntentStateTest(unittest.TestCase):
         self.assertEqual([item.value for item in state.requirements], ["wool"])
         self.assertEqual(state.intent_version, 2)
 
+    def test_grounded_override_paraphrases_use_the_robust_fallback(self) -> None:
+        messages = (
+            "My priorities have changed: drop what I said before and "
+            "prioritize cotton.",
+            "Please replace the earlier preference; the requirement now is "
+            "cotton.",
+            "Revise the search by removing the prior preference and applying "
+            "cotton.",
+            "The earlier preference no longer applies; use cotton as the "
+            "replacement.",
+            "I have changed my mind—set aside the old preference and focus on "
+            "cotton.",
+            "Change of plan—discard my previous preference and use cotton "
+            "instead.",
+            "Update my request: supersede the previous preference with cotton.",
+            "Treat my prior preference as withdrawn; the new condition is "
+            "cotton.",
+        )
+        for message in messages:
+            with self.subTest(message=message):
+                initial = apply_user_message(
+                    IntentState(),
+                    "I'm looking for Shirts. A key requirement is: leather.",
+                    1,
+                )
+                updated = apply_user_message(initial, message, 2)
+
+                self.assertEqual(
+                    [item.value for item in updated.requirements],
+                    ["cotton"],
+                )
+                self.assertEqual(updated.requirements[0].source, "override")
+                self.assertEqual(updated.intent_version, 1)
+
+    def test_ambiguous_override_language_still_fails_open(self) -> None:
+        initial = apply_user_message(
+            IntentState(),
+            "I'm looking for Shirts. A key requirement is: leather.",
+            1,
+        )
+        updated = apply_user_message(
+            initial,
+            "I might change my mind and focus on cotton later.",
+            2,
+        )
+
+        self.assertEqual(updated.requirements[0], initial.requirements[0])
+        self.assertEqual(updated.requirements[-1].source, "free_text")
+        self.assertEqual(updated.intent_version, 0)
+
     def test_replace_override_preserves_unrelated_answers_and_strips_scaffold(self) -> None:
         state = apply_user_message(
             IntentState(),

@@ -463,6 +463,31 @@ _ROBUST_OVERRIDE_RES = (
         r"with\s+(?P<value>.+?)\.?$",
         re.IGNORECASE,
     ),
+    re.compile(
+        r"^(?:my\s+priorities\s+have\s+changed\s*:\s*drop\s+what\s+i\s+"
+        r"said\s+before\s+and\s+prioritize|"
+        r"please\s+replace\s+the\s+earlier\s+preference\s*;\s*the\s+"
+        r"requirement\s+now\s+is|"
+        r"revise\s+the\s+search\s+by\s+removing\s+the\s+prior\s+preference\s+"
+        r"and\s+applying|"
+        r"i\s+have\s+changed\s+my\s+mind\s*[\u2014-]\s*set\s+aside\s+the\s+"
+        r"old\s+preference\s+and\s+focus\s+on|"
+        r"update\s+my\s+request\s*:\s*supersede\s+the\s+previous\s+"
+        r"preference\s+with|"
+        r"treat\s+my\s+prior\s+preference\s+as\s+withdrawn\s*;\s*the\s+new\s+"
+        r"condition\s+is)\s+(?P<value>.+?)\.?$",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"^the\s+earlier\s+preference\s+no\s+longer\s+applies\s*;\s*use\s+"
+        r"(?P<value>.+?)\s+as\s+the\s+replacement\.?$",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"^change\s+of\s+plan\s*[\u2014-]\s*discard\s+my\s+previous\s+"
+        r"preference\s+and\s+use\s+(?P<value>.+?)\s+instead\.?$",
+        re.IGNORECASE,
+    ),
 )
 _ROBUST_SCRATCH_OVERRIDE_RE = re.compile(
     r"^(?:actually,?\s*)?scratch\s+that\.\s*"
