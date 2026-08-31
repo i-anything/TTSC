@@ -1,3 +1,13 @@
+"""Competition API adapter selecting the released agent configuration.
+
+``Agent`` subclasses ``ConversationalSearchAgent`` and pins the policy set
+evaluated for submission: smart hybrid retrieval routing, lexicographic
+exact-evidence ranking, full-transcript protocol resolution with eligible
+continuation refutation, the wildcard ``other`` question policy,
+metric-aware exposure, exact-ranking reuse orchestration, and
+intent-epoch novelty slates.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
