@@ -227,21 +227,6 @@ da979b05a68af864cb0dcf9ee6a81c010c7e66a57978ad286c7a2e005fc69a67
 The active dense index is checksum-bound to this exact catalog. A mismatch
 disables dense initialization rather than silently mixing incompatible assets.
 
-### 3. (Optional) Reproducibility environment variables
-
-For maximally repeatable single-threaded measurements:
-
-```bash
-export OMP_NUM_THREADS=1
-export OPENBLAS_NUM_THREADS=1
-export MKL_NUM_THREADS=1
-export VECLIB_MAXIMUM_THREADS=1
-export NUMEXPR_NUM_THREADS=1
-export TOKENIZERS_PARALLELISM=false
-```
-
-No other environment variables are required.
-
 ## Steps to Reproduce Results
 
 ### Run the evaluation
