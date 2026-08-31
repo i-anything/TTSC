@@ -1,3 +1,15 @@
+"""Local replay of the published public-set evaluation protocol.
+
+The evaluator drives ``starter.agent.Agent`` through simulated shopping
+sessions derived from ``data/public_set.jsonl``: it materializes each
+sample's hidden intent card and behavior from the frozen catalog, plays
+the customer side (opening message, clarification answers, one-time
+boundary refusals, scheduled intent overrides), and scores the agent's
+recommendation slates.  The report covers Hit Rate@10, MRR, MTTC, the
+derived efficiency and recommended technical score, per-scenario
+breakdowns, and the agent's reported token usage.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -25,6 +37,7 @@ COLOR_RE = re.compile(r"\b(black|white|blue|red|pink|green|brown|gray|grey|purpl
 
 
 def searchable_text(product: dict) -> str:
+    """Join a product's searchable fields into one whitespace-normalized string."""
     parts: list[str] = []
     for field in SEARCH_FIELDS:
         value = product.get(field)
@@ -50,6 +63,13 @@ def _clean_constraint(value: str, limit: int) -> str:
 
 
 def intent_card(product: dict, limit: int = 180) -> dict:
+    """Derive a sample's hidden intent card from a target product.
+
+    Detected material and color lead the constraint candidates, followed by
+    feature and detail values plus an approximate budget.  The first two
+    cleaned values become hard constraints; soft preferences take the next
+    two, falling back to the first value.
+    """
     title = _clean_constraint(str(product.get("title") or "product"), limit)
     candidates = [*_flatten_values(product.get("features")), *_flatten_values(product.get("details"))]
     corpus = searchable_text(product)
@@ -72,6 +92,7 @@ def intent_card(product: dict, limit: int = 180) -> dict:
 
 
 def behavior_for(scenario: str, card: dict, rng: random.Random) -> dict:
+    """Build the scripted per-scenario behavior; only intent overrides carry one."""
     behavior: dict = {"scenario_type": scenario}
     if scenario == "intent_override":
         hard = card["hard_constraints"]
@@ -88,11 +109,13 @@ def behavior_for(scenario: str, card: dict, rng: random.Random) -> dict:
 
 
 def load_jsonl(path: str | Path) -> list[dict]:
+    """Load a JSONL file into a list of parsed records."""
     with Path(path).open(encoding="utf-8") as handle:
         return [json.loads(line) for line in handle if line.strip()]
 
 
 def normalize_recommendations(payload: object, catalog_ids: set[str]) -> list[str]:
+    """Sanitize a recommendation payload to at most ``TOP_K`` unique catalog IDs."""
     if not isinstance(payload, list):
         return []
     result: list[str] = []
@@ -110,6 +133,7 @@ def normalize_recommendations(payload: object, catalog_ids: set[str]) -> list[st
 
 
 def catalog_index(catalog_path: str | Path) -> tuple[set[str], dict[str, list[str]], dict[str, dict]]:
+    """Index the catalog into its ID set, per-ASIN categories, and raw products."""
     identifiers: set[str] = set()
     categories: dict[str, list[str]] = {}
     products: dict[str, dict] = {}
@@ -124,6 +148,7 @@ def catalog_index(catalog_path: str | Path) -> tuple[set[str], dict[str, list[st
 
 
 def coarse_category(values: list[str]) -> str:
+    """Reduce full category paths to a coarse user-facing category phrase."""
     excluded = {"clothing", "clothing shoes & jewelry", "clothing, shoes & jewelry"}
     cleaned: list[str] = []
     for value in values:
@@ -135,6 +160,7 @@ def coarse_category(values: list[str]) -> str:
 
 
 def classify_constraint(value: str) -> str:
+    """Classify one constraint string into the closest allowed attribute."""
     lowered = value.lower()
     if "budget" in lowered or re.search(r"(?:\$|<=|under)\s*\d", lowered):
         return "budget"
@@ -152,6 +178,7 @@ def classify_constraint(value: str) -> str:
 
 
 def initial_message(sample: dict, category: str, disclosed: set[str]) -> str:
+    """Render the opening customer message, disclosing the first hard constraint."""
     scenario = sample["scenario_type"]
     if scenario == "buying" and sample["intent_card"].get("hard_constraints"):
         constraint = str(sample["intent_card"]["hard_constraints"][0])
@@ -164,6 +191,13 @@ def initial_message(sample: dict, category: str, disclosed: set[str]) -> str:
 
 
 def customer_reply(sample: dict, ask_attribute: object, disclosed: set[str], boundary_used: bool) -> tuple[str, bool]:
+    """Simulate the customer's reply to one clarification question.
+
+    Boundary samples spend a single no-preference refusal; other samples
+    disclose up to two undisclosed constraints matching the asked attribute
+    (any constraint for ``other``).  Returns the reply and the updated
+    boundary flag.
+    """
     attribute = ask_attribute if isinstance(ask_attribute, str) else None
     if sample["scenario_type"] == "boundary" and not boundary_used and attribute:
         return f"I don't have a preference for {attribute}; please use your judgment.", True
@@ -186,6 +220,7 @@ def customer_reply(sample: dict, ask_attribute: object, disclosed: set[str], bou
 
 
 def metric_summary(sessions: list[dict]) -> dict:
+    """Aggregate per-session outcomes into the headline metrics."""
     if not sessions:
         return {"sample_count": 0, "hit_rate_at_10": 0.0, "mrr": 0.0, "mttc": None}
     hit_rate = sum(int(item["hit"]) for item in sessions) / len(sessions)
@@ -202,6 +237,11 @@ def metric_summary(sessions: list[dict]) -> dict:
 
 
 def materialize_hidden_fields(sample: dict, products: dict[str, dict]) -> tuple[dict, dict]:
+    """Return a sample's intent card and behavior.
+
+    Both are derived deterministically (sample-seeded RNG) from the target
+    product when the sample does not ship them.
+    """
     if "intent_card" in sample and "behavior" in sample:
         return sample["intent_card"], sample["behavior"]
     target = str(sample["ground_truth"]["parent_asin"])
@@ -220,6 +260,12 @@ def evaluate(
     categories: dict[str, list[str]],
     products: dict[str, dict],
 ) -> dict:
+    """Run every sample against the agent and compute the full metric report.
+
+    Sessions stop at the first turn whose slate contains the target, with
+    intent-override samples only counting hits after their scripted
+    override; misses count ``MAX_TURNS + 1`` toward MTTC.
+    """
     sessions: list[dict] = []
     total_prompt_tokens = 0
     total_completion_tokens = 0
@@ -296,6 +342,7 @@ def evaluate(
 
 
 def main() -> None:
+    """Load catalog and dataset, evaluate the agent, and write the JSON report."""
     parser = argparse.ArgumentParser(description="TechJam public-set local evaluator")
     parser.add_argument("--catalog", default="data/catalog.jsonl")
     parser.add_argument("--dataset", default="data/public_set.jsonl")
