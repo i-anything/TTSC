@@ -39,13 +39,17 @@ model/index assets.
 2. SQLite FTS5 BM25 and the local BGE-small INT8 ONNX encoder retrieve products.
    Exact, complete narrow support can avoid unnecessary dense inference.
 3. Evidence ranking distinguishes confirmed, unknown, and contradicted
-   requirements. Generic profile themes remain a bounded secondary signal.
+   requirements. Once product evidence exists, catalog review counts resolve
+   equal evidence tiers; stronger requirements still take priority. Generic
+   profile themes remain a bounded secondary signal.
 4. For supported dialogue shapes, complete transcript replay reconstructs
    candidate support from the full catalog. Continuation eliminates only
    previously shown candidates eligible under that transcript.
-5. The planner chooses a question and recommendation width using the published
-   score and remaining turns. Exact dependency caching and intent-aware slate
-   novelty avoid redundant work and repeated suggestions.
+5. Question selection follows possible catalog-derived replies through later
+   turns, using a reciprocal-rank prior and the published scoring utility.
+   Recommendation widths balance rank against remaining opportunities to find
+   the product. Exact dependency caching and intent-aware slate novelty avoid
+   redundant work and repeated suggestions.
 
 Unrecognized language, incomplete evidence, or unsupported transcripts use
 ordinary hybrid retrieval. Normalizing a sentence never establishes catalog
@@ -96,7 +100,9 @@ release.
 
 Language coverage is bounded, not unrestricted conversational understanding.
 The strongest planning path depends on the published dialogue contract and
-catalog-derived disclosure cards. Catalog ambiguity, absent product facts,
+catalog-derived disclosure cards. Rollouts retain current candidate order and
+use heuristic rank weights; their values are not calibrated probabilities.
+Catalog ambiguity, absent product facts,
 unfamiliar phrasing, and a different hidden-target distribution can reduce
 performance. Public and synthetic results do not establish private-final
 performance.

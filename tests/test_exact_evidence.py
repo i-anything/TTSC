@@ -454,7 +454,7 @@ class ExactEvidenceRankingTests(unittest.TestCase):
         self.assertEqual(result.ranked_ids[0], "CONJUNCTION")
         self.assertEqual(result.consistent_support_ids, ("CONJUNCTION",))
 
-    def test_customer_evidence_then_base_order_dominate_popularity(self) -> None:
+    def test_popularity_resolves_only_equal_product_evidence(self) -> None:
         stronger_candidates = (
             _evidence("POPULAR", text="cotton shoe", popularity=10**18),
             _evidence("STRONGER", text="waterproof cotton shoe", popularity=0),
@@ -494,7 +494,7 @@ class ExactEvidenceRankingTests(unittest.TestCase):
 
         self.assertEqual(stronger_result.ranked_ids[0], "STRONGER")
         self.assertEqual(unsignaled_result.ranked_ids[0], "HYBRID_FIRST")
-        self.assertEqual(signaled_result.ranked_ids[0], "HYBRID_FIRST")
+        self.assertEqual(signaled_result.ranked_ids[0], "POPULAR_SECOND")
 
     def test_category_only_browsing_preserves_selected_route_order(self) -> None:
         candidates = (

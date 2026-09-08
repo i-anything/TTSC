@@ -63,7 +63,9 @@ class ServiceProtocolCatalogTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-    def _agent(self, *, normalize_language: bool = False) -> ConversationalSearchAgent:
+    def _agent(
+        self, *, normalize_language: bool = False, metric_aware: bool = False,
+    ) -> ConversationalSearchAgent:
         retriever = HybridRetriever(
             self.catalog_path,
             None,
@@ -76,13 +78,44 @@ class ServiceProtocolCatalogTest(unittest.TestCase):
             retriever=retriever,
             normalize_language=normalize_language,
             ranking_policy=LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
-            evidence_exposure_policy=PROTOCOL_POSTERIOR_EXPOSURE_POLICY,
+            evidence_exposure_policy=(
+                PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY
+                if metric_aware else PROTOCOL_POSTERIOR_EXPOSURE_POLICY
+            ),
             protocol_catalog_policy=FULL_TRANSCRIPT_PROTOCOL_CATALOG_POLICY,
             protocol_refutation_policy=(
                 ELIGIBLE_CONTINUATION_REFUTATION_POLICY
             ),
             slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
         )
+
+    def test_rollout_question_reaches_service_and_preserves_override_guard(self) -> None:
+        products = [
+            {
+                "parent_asin": f"P{i}", "title": f"Shoe {i}",
+                "categories": ["Shoes"],
+                "features": ["cotton", "color: black", f"special property {i}", "warm"],
+                "rating_number": 100 - i,
+            }
+            for i in range(8)
+        ]
+        self.catalog_path.write_text(
+            "".join(json.dumps(product) + "\n" for product in products),
+            encoding="utf-8",
+        )
+        agent = self._agent(metric_aware=True)
+        agent.reset("browse", {})
+        first = agent.respond("browse", "I'm looking for Shoes, but I'm still exploring.", 1, 10)
+        self.assertEqual(first["ask_attribute"], "feature")
+        self.assertEqual(len(first["recommendations"]), 1)
+        second = agent.respond("browse", "For that, what matters is: special property 7; warm.", 2, 10)
+        self.assertEqual(second["recommendations"], [{"parent_asin": "P7"}])
+        self.assertIsNone(second["ask_attribute"])
+
+        agent.reset("override", {})
+        pending = agent.respond("override", "I'm looking for Shoes. warm", 1, 10)
+        self.assertEqual(pending["ask_attribute"], "other")
+        self.assertFalse(agent._protocol_pending_refutable["override"])
 
     def test_continuation_refutes_only_the_prior_score_eligible_product(self) -> None:
         agent = self._agent()

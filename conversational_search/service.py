@@ -3467,7 +3467,7 @@ class ConversationalSearchAgent:
                 result.presentation_ids != ranked_ids[:1]
                 or result.width != 1
                 or result.plausible_count <= 1
-                or result.question != "other"
+                or result.question not in QUESTION_TEXT
                 or current_turn >= 10
             ):
                 raise ValueError("posterior probe is outside its safe bound")

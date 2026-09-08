@@ -308,8 +308,10 @@ def rank_exact_evidence(
         )
         sort_key = (
             *evidence_tier,
-            -original_rank,
+            # Popularity only resolves equal catalog evidence. Putting the
+            # unique base rank first would make this prior ineffective.
             popularity_ordinals[original_rank] if has_product_evidence else 0,
+            -original_rank,
         )
         assessments.append(
             _Assessment(

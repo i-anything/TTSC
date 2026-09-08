@@ -4,8 +4,8 @@
 evaluated for submission: shared dialogue-envelope normalization, smart
 hybrid retrieval routing, lexicographic exact-evidence ranking,
 full-transcript protocol resolution with eligible
-continuation refutation, the wildcard ``other`` question policy,
-metric-aware exposure, exact-ranking reuse orchestration, and
+continuation refutation, disclosure-utility question selection with a wildcard
+``other`` fallback, rank-aware exposure, exact-ranking reuse orchestration, and
 intent-epoch novelty slates.
 """
 

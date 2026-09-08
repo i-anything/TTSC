@@ -22,6 +22,10 @@ from conversational_search.exact_evidence import (
     ExactEvidenceStatus,
 )
 from conversational_search.intent import IntentState, active_attributes
+from conversational_search.disclosure_planner import (
+    plan_disclosure_question,
+    plan_ranked_enumeration_width,
+)
 from conversational_search.protocol import (
     CandidateReplySignature,
     CandidateReplyStatus,
@@ -136,6 +140,10 @@ def plan_evidence_gated_exposure(
             requested_top_k=requested_top_k,
             metric_aware_enumeration=metric_aware_protocol_enumeration,
             reply_tree_planning=reply_tree_protocol_planning,
+            pending_override=any(
+                requirement.source == "initial_tentative"
+                for requirement in state.requirements
+            ),
         )
     if current_turn >= 10:
         return EvidenceExposureDecision(
@@ -256,6 +264,7 @@ def _plan_protocol_posterior_exposure(
     requested_top_k: int,
     metric_aware_enumeration: bool,
     reply_tree_planning: bool,
+    pending_override: bool = False,
 ) -> EvidenceExposureDecision:
     """Expose a rank-one probe until the complete posterior is exhausted."""
 
@@ -283,6 +292,11 @@ def _plan_protocol_posterior_exposure(
     if current_turn < 10:
         question = protocol_probe_question(resolution)
         if question is not None:
+            if metric_aware_enumeration and not reply_tree_planning and not pending_override:
+                question = plan_disclosure_question(
+                    ranked_ids, resolution,
+                    current_turn=current_turn, top_k=requested_top_k,
+                )
             if reply_tree_planning:
                 width = plan_protocol_reply_tree_width(
                     ranked_ids,
@@ -306,7 +320,11 @@ def _plan_protocol_posterior_exposure(
             )
         if metric_aware_enumeration:
             top_k = min(requested_top_k, len(ranked_ids))
-            width = plan_protocol_enumeration_width(
+            width_planner = (
+                plan_protocol_enumeration_width
+                if reply_tree_planning else plan_ranked_enumeration_width
+            )
+            width = width_planner(
                 support_count,
                 current_turn=current_turn,
                 top_k=top_k,

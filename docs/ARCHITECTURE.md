@@ -41,8 +41,10 @@ lexical route covers it. Missing or inconsistent support restores hybrid
 retrieval.
 
 `exact_evidence.py` ranks confirmed evidence above unknown evidence and
-contradictions. Profile themes are bounded secondary evidence; they cannot
-overrule explicit constraints. Cache reuse requires equality of every
+contradictions. With product evidence present, catalog review counts resolve
+equal evidence tiers before the original hybrid order. Category-only browsing
+retains the hybrid order. Profile themes are bounded secondary evidence; they
+cannot overrule explicit constraints. Cache reuse requires equality of every
 ranking-relevant dependency, including intent and backend identity.
 
 ## Dialogue planning
@@ -57,8 +59,18 @@ Eligible continuation refutation removes only previously displayed products
 when the transcript permits that inference. Tentative intent before a
 scheduled override does not trigger premature refutation.
 
-`exposure.py` selects questions and slate widths using remaining disclosures,
-remaining turns, and the published scoring utility. `slates.py` preserves
+`disclosure_planner.py` compares valid questions by rolling each possible reply
+forward through wildcard disclosures and ranked enumeration to the turn limit.
+It retains the current rank-one preview, includes the complete catalog support,
+and groups replies by their exact visible strings. Candidate weights follow
+the reciprocal-rank prior used by exact-evidence beliefs. Ties retain `other`;
+pending overrides retain the wildcard policy. The agent replans after each
+actual reply, so the rollout's fixed future ordering remains an approximation.
+
+`exposure.py` uses this question choice and selects recommendation widths by
+balancing immediate rank utility against later opportunities under the same
+rank prior. During enumeration, it reserves enough remaining slots to cover
+all reachable survivors by the deadline. `slates.py` preserves
 novelty within an intent epoch. `service.py` validates the response and reports
 the executed planner outcome, normalization flag, question, and presented
 width through an optional diagnostic hook.
