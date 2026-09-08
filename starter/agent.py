@@ -1,8 +1,9 @@
 """Competition API adapter selecting the released agent configuration.
 
 ``Agent`` subclasses ``ConversationalSearchAgent`` and pins the policy set
-evaluated for submission: smart hybrid retrieval routing, lexicographic
-exact-evidence ranking, full-transcript protocol resolution with eligible
+evaluated for submission: shared dialogue-envelope normalization, smart
+hybrid retrieval routing, lexicographic exact-evidence ranking,
+full-transcript protocol resolution with eligible
 continuation refutation, the wildcard ``other`` question policy,
 metric-aware exposure, exact-ranking reuse orchestration, and
 intent-epoch novelty slates.
@@ -42,6 +43,7 @@ class Agent(ConversationalSearchAgent):
     def __init__(self, catalog_path: str | Path = DEFAULT_CATALOG_PATH) -> None:
         super().__init__(
             catalog_path,
+            normalize_language=True,
             evidence_exposure_policy=PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY,
             orchestration_policy=EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
             protocol_catalog_policy=FULL_TRANSCRIPT_PROTOCOL_CATALOG_POLICY,

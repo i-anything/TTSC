@@ -1442,6 +1442,7 @@ class ConversationalSearchAgentTest(unittest.TestCase):
             Agent()
         initialize.assert_called_once_with(
             DEFAULT_CATALOG_PATH,
+            normalize_language=True,
             evidence_exposure_policy=PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY,
             orchestration_policy=EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
             protocol_catalog_policy=FULL_TRANSCRIPT_PROTOCOL_CATALOG_POLICY,

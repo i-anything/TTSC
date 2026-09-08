@@ -10,6 +10,7 @@ data/releases/
 assets/.*.partial-*/
 /benchmarks/
 /artifacts/
+/output/
 # Organizer-only code, private evaluation data, manifests, and build reports.
 organizer/
 secure/

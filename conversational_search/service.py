@@ -405,7 +405,11 @@ class ConversationalSearchAgent:
         ranking_cache_capacity: int = DEFAULT_RANKING_CACHE_CAPACITY,
         model_assets: str | Path = DEFAULT_MODEL_ASSETS,
         dense_index_path: str | Path = DEFAULT_DENSE_INDEX,
+        normalize_language: bool = False,
     ) -> None:
+        if type(normalize_language) is not bool:
+            raise TypeError("normalize_language must be a boolean")
+        self._normalize_language = normalize_language
         if not isinstance(question_policy, QuestionPolicy):
             raise TypeError("question_policy must be a QuestionPolicy")
         if not isinstance(fusion_policy, FusionPolicy):
@@ -761,6 +765,15 @@ class ConversationalSearchAgent:
             raise TypeError("top_k must be an integer")
 
         prior_state = self._sessions[session_id]
+        language_normalized = False
+        if self._normalize_language:
+            from conversational_search.language import normalize_dialogue_envelope
+
+            interpreted_message = normalize_dialogue_envelope(
+                user_message, turn, prior_state.last_asked_attribute,
+            )
+            language_normalized = interpreted_message != user_message
+            user_message = interpreted_message
         intent_cacheable = True
         if self._intent_policy is LOSSLESS_MULTI_SLOT_INTENT_POLICY:
             reduction = apply_user_message_with_trace(
@@ -1953,6 +1966,7 @@ class ConversationalSearchAgent:
             protocol_outcome = "candidate_or_evidence_error"
 
         exposure_applied = False
+        exposure_outcome: str | None = None
         exposure_withheld = False
         if (
             self.evidence_exposure_policy in {
@@ -2070,6 +2084,7 @@ class ConversationalSearchAgent:
                 )
             else:
                 self._record_evidence_exposure_status(exposure_decision.status)
+                exposure_outcome = exposure_decision.status.value
                 if exposure_decision.status is EvidenceExposureStatus.TOP3_CONFIDENT:
                     full_ranked_ids = exposure_decision.presentation_ids
                     parent_asins = full_ranked_ids
@@ -2228,8 +2243,18 @@ class ConversationalSearchAgent:
                 self._protocol_shown_ids[session_id] = tuple(
                     dict.fromkeys((*prior_protocol_shown, *recommendations))
                 )
+            actual_outcome = (
+                exposure_outcome if exposure_applied
+                else protocol_outcome or "candidate_or_evidence_error"
+            )
+            protocol_exposure_applied = bool(
+                exposure_applied
+                and protocol_resolution is not None
+                and protocol_resolution.exact
+            )
             self._record_protocol_decision_outcome(
-                protocol_outcome or "candidate_or_evidence_error",
+                "applied" if protocol_exposure_applied
+                else protocol_outcome or "candidate_or_evidence_error",
                 requested_count=result_count,
                 presented_count=len(recommendations),
                 question=ask_attribute,
@@ -2237,7 +2262,7 @@ class ConversationalSearchAgent:
             self._protocol_action_traces[session_id] = {
                 "protocol_mode": (
                     "applied"
-                    if protocol_applied
+                    if protocol_applied or protocol_exposure_applied
                     else "eligible_fail_open"
                     if protocol_turn_eligible
                     else "free_form_fail_open"
@@ -2261,9 +2286,9 @@ class ConversationalSearchAgent:
                     if retrieval is not None
                     else "not_executed"
                 ),
-                "planner_outcome": (
-                    protocol_outcome or "candidate_or_evidence_error"
-                ),
+                "planner_outcome": actual_outcome,
+                "exposure_applied": exposure_applied,
+                "language_normalized": language_normalized,
                 "question": ask_attribute,
                 "requested_width": result_count,
                 "presented_width": len(recommendations),
