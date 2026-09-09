@@ -70,6 +70,7 @@ def plan_disclosure_question(
     *,
     current_turn: int,
     top_k: int,
+    prefer_wildcard_near_tie: bool = False,
 ) -> str:
     """Compare a question's replies through the remaining conversation.
 
@@ -79,6 +80,8 @@ def plan_disclosure_question(
     products outside the bounded retrieval prefix. Exact ties retain ``other``.
     """
 
+    if type(prefer_wildcard_near_tie) is not bool:
+        raise TypeError("prefer_wildcard_near_tie must be a boolean")
     if not resolution.exact or not ranked_ids or current_turn >= MAX_TURN:
         return "other"
     groups = resolution.groups
@@ -138,11 +141,27 @@ def plan_disclosure_question(
         )
 
     best_question, best_value = "other", -1.0
+    other_value = -1.0
     for question in ("other", *(q for q in QUESTION_TEXT if q != "other")):
         value = sum(
             continuation(branch, current_turn + 1)
             for branch in branches(hypotheses[1:], question)
         )
+        if question == "other":
+            other_value = value
         if value > best_value + 1e-12:
             best_question, best_value = question, value
+    # Rollouts retain today's order while the live system re-ranks after the
+    # answer.  When a specific question's modeled edge is smaller than the
+    # value of moving the highest unshown hypothesis by one turn, prefer the
+    # wildcard: it reveals up to two values and is less exposed to that
+    # approximation.  This bound comes directly from the metric and the
+    # reciprocal-rank prior (0.02 turn value times rank-two weight 1/2).
+    ordering_uncertainty = 0.01
+    if (
+        prefer_wildcard_near_tie
+        and best_question != "other"
+        and best_value - other_value <= ordering_uncertainty
+    ):
+        return "other"
     return best_question

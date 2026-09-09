@@ -117,6 +117,41 @@ class ServiceProtocolCatalogTest(unittest.TestCase):
         self.assertEqual(pending["ask_attribute"], "other")
         self.assertFalse(agent._protocol_pending_refutable["override"])
 
+    def test_initial_browsing_uses_catalog_prior_before_product_evidence(self) -> None:
+        products = [
+            {
+                "parent_asin": f"B{index}",
+                "title": f"Ordinary shoe {index}",
+                "categories": ["Shoes"],
+                "features": ["fabric", f"color: blue", f"detail {index}"],
+                "rating_number": 8 - index,
+            }
+            for index in range(8)
+        ]
+        products.append({
+            "parent_asin": "A",
+            "title": "Catalog favorite shoe",
+            "categories": ["Shoes"],
+            "features": ["fabric", "color: blue", "favorite detail"],
+            "rating_number": 1_000,
+        })
+        self.catalog_path.write_text(
+            "".join(json.dumps(product) + "\n" for product in products),
+            encoding="utf-8",
+        )
+        agent = self._agent(metric_aware=True)
+        agent.reset("cold-browse", {})
+
+        response = agent.respond(
+            "cold-browse",
+            "I'm looking for Shoes, but I'm still exploring.",
+            1,
+            10,
+        )
+
+        self.assertEqual(response["recommendations"], [{"parent_asin": "A"}])
+        self.assertIsNotNone(response["ask_attribute"])
+
     def test_continuation_refutes_only_the_prior_score_eligible_product(self) -> None:
         agent = self._agent()
         agent.reset("session", {})

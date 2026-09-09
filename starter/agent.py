@@ -2,10 +2,12 @@
 
 ``Agent`` subclasses ``ConversationalSearchAgent`` and pins the policy set
 evaluated for submission: shared dialogue-envelope normalization, smart
-hybrid retrieval routing, lexicographic exact-evidence ranking,
+hybrid retrieval routing with a catalog cold-start prior, lexicographic
+exact-evidence ranking,
 full-transcript protocol resolution with eligible
-continuation refutation, disclosure-utility question selection with a wildcard
-``other`` fallback, rank-aware exposure, exact-ranking reuse orchestration, and
+continuation refutation, metric-bounded disclosure-utility question selection
+with a wildcard ``other`` fallback, rank-aware exposure, exact-ranking reuse
+orchestration, and
 intent-epoch novelty slates.
 """
 

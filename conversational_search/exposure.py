@@ -144,6 +144,10 @@ def plan_evidence_gated_exposure(
                 requirement.source == "initial_tentative"
                 for requirement in state.requirements
             ),
+            initial_explicit=any(
+                requirement.source == "initial_explicit"
+                for requirement in state.requirements
+            ),
         )
     if current_turn >= 10:
         return EvidenceExposureDecision(
@@ -265,6 +269,7 @@ def _plan_protocol_posterior_exposure(
     metric_aware_enumeration: bool,
     reply_tree_planning: bool,
     pending_override: bool = False,
+    initial_explicit: bool = False,
 ) -> EvidenceExposureDecision:
     """Expose a rank-one probe until the complete posterior is exhausted."""
 
@@ -295,7 +300,11 @@ def _plan_protocol_posterior_exposure(
             if metric_aware_enumeration and not reply_tree_planning and not pending_override:
                 question = plan_disclosure_question(
                     ranked_ids, resolution,
-                    current_turn=current_turn, top_k=requested_top_k,
+                    current_turn=current_turn,
+                    top_k=requested_top_k,
+                    prefer_wildcard_near_tie=(
+                        current_turn == 1 and initial_explicit
+                    ),
                 )
             if reply_tree_planning:
                 width = plan_protocol_reply_tree_width(

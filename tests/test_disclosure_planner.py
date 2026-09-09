@@ -37,6 +37,45 @@ class DisclosurePlannerTests(unittest.TestCase):
             support.candidate_ids, support, current_turn=1, top_k=10,
         ), "feature")
 
+    def test_initial_explicit_near_tie_prefers_broader_wildcard(self):
+        support = resolution([
+            DisclosureCard("one", ("cotton", "color: blue"), ("machine wash", "Imported")),
+            DisclosureCard("two", ("cotton", "color: blue"), ("rubber sole", "special a")),
+            DisclosureCard("three", ("cotton", "color: blue"), ("rubber sole", "lightweight")),
+            DisclosureCard("four", ("cotton", "color: red"), ("special a", "special b")),
+        ], disclosed=True)
+
+        self.assertEqual(
+            plan_disclosure_question(
+                support.candidate_ids,
+                support,
+                current_turn=1,
+                top_k=10,
+            ),
+            "feature",
+        )
+        self.assertEqual(
+            plan_disclosure_question(
+                support.candidate_ids,
+                support,
+                current_turn=1,
+                top_k=10,
+                prefer_wildcard_near_tie=True,
+            ),
+            "other",
+        )
+
+    def test_wildcard_preference_flag_requires_a_boolean(self):
+        support = resolution([DisclosureCard("one", ("cotton",), ("warm",))])
+        with self.assertRaises(TypeError):
+            plan_disclosure_question(
+                support.candidate_ids,
+                support,
+                current_turn=1,
+                top_k=10,
+                prefer_wildcard_near_tie=1,
+            )
+
     def test_full_support_is_retained_outside_search_prefix(self):
         support = resolution([
             DisclosureCard(f"shoe {i}", ("cotton", "color: black"), (f"special property {i}",))

@@ -11,7 +11,7 @@ on that unmodified set using the official scoring formula.
 
 | Sessions | Hit Rate@10 | MRR | MTTC | TechnicalScore |
 | ---: | ---: | ---: | ---: | ---: |
-| 200 | 1.000000 | 1.000000 | 2.0850 | 0.978300 |
+| 200 | 1.000000 | 1.000000 | 1.9850 | 0.980300 |
 
 The submission finds all 200 targets at rank one. These are public development
 results, not private-final scores.
@@ -20,18 +20,18 @@ results, not private-final scores.
 
 These sessions were generated locally from other catalog products. They are
 not additional organizer-provided sessions or the organizer's private set.
-The runtime was frozen before two fresh 1,200-target evaluations. Targets were
-excluded from the public set and known earlier development and validation
-selections. Scenario proportions match the published protocol; profiles are
-neutral. One set samples uniformly over eligible catalog products. The other
-samples without replacement using catalog review counts as a proxy for purchase
-frequency. The sets have no targets in common; neither reproduces the organizer's
-private purchase history.
+The release was checked on two frozen 1,200-target regression suites created
+before this change. Targets were excluded from the public set and known earlier
+development and validation selections. Scenario proportions match the published
+protocol; profiles are neutral. One set samples uniformly over eligible catalog
+products. The other samples without replacement using catalog review counts as
+a proxy for purchase frequency. The sets have no targets in common; neither
+reproduces the organizer's private purchase history.
 
 | Sampling | Sessions | Hit Rate@10 | MRR | MTTC | TechnicalScore |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Uniform catalog | 1,200 | 0.995000 | 0.984239 | 2.655833 | 0.959655 |
-| Purchase proxy | 1,200 | 1.000000 | 0.996688 | 2.267500 | 0.973656 |
+| Uniform catalog | 1,200 | 0.995000 | 0.984378 | 2.650000 | 0.959813 |
+| Purchase proxy | 1,200 | 1.000000 | 0.997146 | 2.215833 | 0.974827 |
 
 Synthetic distributions do not establish private-final performance. The rank
 prior is a heuristic, and results depend on the target distribution and catalog
@@ -39,7 +39,7 @@ facts.
 
 ## Runtime and release checks
 
-- 383 unit tests passed, including serialized-reply ambiguity, question
+- 386 unit tests passed, including serialized-reply ambiguity, question
   selection through the service, override protection, and deadline coverage.
 - The offline submission check verified catalog/index checksums, loaded all
   intended backends, exercised dense inference, and confirmed reset replay.
@@ -48,8 +48,8 @@ facts.
 - Three bounded paraphrase families on the same 200 public targets reproduced
   the canonical responses exactly, including questions and recommendation order.
 - The official public run used zero prompt/completion tokens and no model APIs.
-  Local measurement: about 3.9 seconds initialization, 69 ms respond p95, and
-  626 MiB process peak RSS. RSS includes evaluator data and retained sessions;
+  Guarded local measurement: about 5.9 seconds initialization, 109 ms respond
+  p95, and 616 MiB process peak RSS. RSS includes evaluator data and retained sessions;
   it is not isolated agent memory. Final-host timings may differ.
 
 Reproduce the submission checks and official score with:

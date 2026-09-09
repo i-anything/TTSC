@@ -12,7 +12,9 @@ flowchart TD
     C --> R[Smart BM25 and dense retrieval]
     R --> E[Confirmed / unknown / contradicted evidence]
     T --> P[Full catalog transcript replay]
-    P --> W[Question and slate-width planner]
+    P --> B[Evidence-aware catalog prior]
+    R --> B
+    B --> W[Question and slate-width planner]
     E --> W
     W --> N[Intent-aware novelty]
     N --> A[Validated API response]
@@ -42,10 +44,13 @@ retrieval.
 
 `exact_evidence.py` ranks confirmed evidence above unknown evidence and
 contradictions. With product evidence present, catalog review counts resolve
-equal evidence tiers before the original hybrid order. Category-only browsing
-retains the hybrid order. Profile themes are bounded secondary evidence; they
-cannot overrule explicit constraints. Cache reuse requires equality of every
-ranking-relevant dependency, including intent and backend identity.
+equal evidence tiers before the original hybrid order. On the first
+category-only browsing turn, `service.py` uses the same catalog prior directly;
+there is no product evidence for semantic retrieval to rank yet. After the
+first reply, transcript evidence and hybrid retrieval regain control. Profile
+themes are bounded secondary evidence; they cannot overrule explicit
+constraints. Cache reuse requires equality of every ranking-relevant
+dependency, including intent and backend identity.
 
 ## Dialogue planning
 
@@ -64,8 +69,11 @@ forward through wildcard disclosures and ranked enumeration to the turn limit.
 It retains the current rank-one preview, includes the complete catalog support,
 and groups replies by their exact visible strings. Candidate weights follow
 the reciprocal-rank prior used by exact-evidence beliefs. Ties retain `other`;
-pending overrides retain the wildcard policy. The agent replans after each
-actual reply, so the rollout's fixed future ordering remains an approximation.
+pending overrides retain the wildcard policy. For a first-turn request that
+already supplies a hard requirement, a specific question must beat `other` by
+more than one rank-two, one-turn utility quantum; otherwise the wildcard's
+two-value disclosure is preferred. The agent replans after each actual reply,
+so the rollout's fixed future ordering remains an approximation.
 
 `exposure.py` uses this question choice and selects recommendation widths by
 balancing immediate rank utility against later opportunities under the same

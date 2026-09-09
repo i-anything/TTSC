@@ -37,7 +37,10 @@ model/index assets.
    preference changes, and declines. It preserves product values and shares
    its interpretation between immutable intent state and transcript replay.
 2. SQLite FTS5 BM25 and the local BGE-small INT8 ONNX encoder retrieve products.
-   Exact, complete narrow support can avoid unnecessary dense inference.
+   Exact, complete narrow support can avoid unnecessary dense inference. Before
+   an exploratory shopper supplies product evidence, catalog rating volume is
+   used as the cold-start prior; later turns return to evidence-aware hybrid
+   ranking.
 3. Evidence ranking distinguishes confirmed, unknown, and contradicted
    requirements. Once product evidence exists, catalog review counts resolve
    equal evidence tiers; stronger requirements still take priority. Generic
@@ -47,6 +50,8 @@ model/index assets.
    previously shown candidates eligible under that transcript.
 5. Question selection follows possible catalog-derived replies through later
    turns, using a reciprocal-rank prior and the published scoring utility.
+   A metric-bounded near tie on an initial explicit request favors the wildcard
+   question because it can reveal two additional facts at once.
    Recommendation widths balance rank against remaining opportunities to find
    the product. Exact dependency caching and intent-aware slate novelty avoid
    redundant work and repeated suggestions.

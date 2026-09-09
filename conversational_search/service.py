@@ -1740,10 +1740,22 @@ class ConversationalSearchAgent:
                         self._protocol_refuted_ids.get(session_id, ())
                     ),
                 )
-                protocol_pool = fuse_protocol_candidates(
-                    resolution,
-                    protected_ranked_ids,
-                    limit=MAX_CANDIDATE_DOCUMENTS,
+                protocol_events = self._protocol_events.get(session_id, ())
+                from conversational_search.protocol import ProtocolEventKind
+
+                initial_browsing = bool(
+                    len(protocol_events) == 1
+                    and protocol_events[0].kind
+                    is ProtocolEventKind.INITIAL_BROWSING
+                )
+                protocol_pool = (
+                    resolution.candidate_ids[:MAX_CANDIDATE_DOCUMENTS]
+                    if initial_browsing
+                    else fuse_protocol_candidates(
+                        resolution,
+                        protected_ranked_ids,
+                        limit=MAX_CANDIDATE_DOCUMENTS,
+                    )
                 )
                 if not resolution.exact or not protocol_pool:
                     raise ValueError("full protocol resolution has no support")
