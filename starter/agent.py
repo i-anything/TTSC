@@ -3,18 +3,20 @@
 ``Agent`` subclasses ``ConversationalSearchAgent`` and pins the policy set
 evaluated for submission: shared dialogue-envelope normalization, smart
 hybrid retrieval routing with a catalog cold-start prior, lexicographic
-exact-evidence ranking,
-full-transcript protocol resolution with eligible
+exact-evidence ranking, full-transcript protocol resolution with eligible
 continuation refutation, metric-bounded disclosure-utility question selection
 with a wildcard ``other`` fallback and stable enumeration commitment,
-rank-aware exposure, exact-ranking reuse orchestration, and
-intent-epoch novelty slates.
+rank-aware exposure, answer-conditioned next-turn slate scheduling,
+exact-ranking reuse orchestration, and intent-epoch novelty slates.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
+from conversational_search.dynamic_slate import (
+    NEXT_TURN_RECOVERABILITY_SLATE_POLICY,
+)
 from conversational_search.exposure_policy import (
     PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY,
 )
@@ -58,4 +60,5 @@ class Agent(ConversationalSearchAgent):
                 SMART_HYBRID_RETRIEVAL_ROUTING_POLICY
             ),
             slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
+            dynamic_slate_policy=NEXT_TURN_RECOVERABILITY_SLATE_POLICY,
         )
