@@ -2125,6 +2125,7 @@ class ConversationalSearchAgent:
                         and active_protocol_events[-1].kind
                         is ProtocolEventKind.NEED_ATTRIBUTE
                     ),
+                    neutral_profile_prior=profile_prior.is_neutral,
                 )
                 exposure_decision = self._validate_evidence_exposure_decision(
                     exposure_decision,
@@ -3235,6 +3236,7 @@ class ConversationalSearchAgent:
                 protocol_enumeration_committed=(
                     event.kind is ProtocolEventKind.NEED_ATTRIBUTE
                 ),
+                neutral_profile_prior=profile_prior.is_neutral,
             )
             next_ids = next_exposure.presentation_ids
             if next_exposure.width > 0:

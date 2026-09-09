@@ -84,8 +84,12 @@ actual reply, so the rollout's fixed future ordering remains an approximation.
 
 `exposure.py` uses this question choice and selects recommendation widths by
 balancing immediate rank utility against later opportunities under the same
-rank prior. During enumeration, it reserves enough remaining slots to cover
-all reachable survivors by the deadline. `slates.py` preserves
+rank prior. Products with different hidden titles but identical visible cards
+remain one observable group. If such a group exceeds the slate capacity and
+the shopper profile is neutral, exact reply-tree planning uses a uniform
+posterior; an informative profile retains the ranked prior. During exhausted
+enumeration, the planner reserves enough remaining slots to cover all reachable
+survivors by the deadline. `slates.py` preserves
 novelty within an intent epoch. `service.py` validates the response and reports
 the executed planner outcome, normalization flag, question, and presented
 width through an optional diagnostic hook.

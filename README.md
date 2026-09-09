@@ -55,6 +55,9 @@ model/index assets.
    question because it can reveal two additional facts at once.
    A rank-one stop decision commits to enumeration until new shopper evidence
    arrives, preventing late oscillation back to an exhausted question.
+   When more observationally identical candidates remain than one slate can
+   hold, a neutral shopper profile activates exact uniform reply-tree planning;
+   an informative profile retains rank-aware planning.
    Recommendation widths balance rank against remaining opportunities to find
    the product. Exact dependency caching and intent-aware slate novelty avoid
    redundant work and repeated suggestions.

@@ -72,6 +72,7 @@ def plan_evidence_gated_exposure(
     metric_aware_protocol_enumeration: bool = False,
     reply_tree_protocol_planning: bool = False,
     protocol_enumeration_committed: bool = False,
+    neutral_profile_prior: bool = False,
 ) -> EvidenceExposureDecision:
     """Expose only when the best structural tier fits inside the API prefix.
 
@@ -124,6 +125,8 @@ def plan_evidence_gated_exposure(
         raise TypeError("reply_tree_protocol_planning must be a boolean")
     if type(protocol_enumeration_committed) is not bool:
         raise TypeError("protocol_enumeration_committed must be a boolean")
+    if type(neutral_profile_prior) is not bool:
+        raise TypeError("neutral_profile_prior must be a boolean")
     if reply_tree_protocol_planning and not metric_aware_protocol_enumeration:
         raise ValueError("reply-tree planning requires metric-aware enumeration")
     ranked_ids = exact_result.ranked_ids
@@ -153,6 +156,7 @@ def plan_evidence_gated_exposure(
                 for requirement in state.requirements
             ),
             enumeration_committed=protocol_enumeration_committed,
+            neutral_profile_prior=neutral_profile_prior,
         )
     if current_turn >= 10:
         return EvidenceExposureDecision(
@@ -276,6 +280,7 @@ def _plan_protocol_posterior_exposure(
     pending_override: bool = False,
     initial_explicit: bool = False,
     enumeration_committed: bool = False,
+    neutral_profile_prior: bool = False,
 ) -> EvidenceExposureDecision:
     """Choose a probe or ranked enumeration over the complete posterior."""
 
@@ -301,13 +306,58 @@ def _plan_protocol_posterior_exposure(
             1,
         )
     if current_turn < 10:
+        probe_question = protocol_probe_question(resolution)
+        observable_group_sizes: Counter[
+            tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]
+        ] = Counter()
+        for group in resolution.groups:
+            # The evaluator never reveals target_category, so titles cannot
+            # separate products that expose the same card values and replies.
+            signature = (
+                group.card.hard_constraints,
+                group.card.soft_preferences,
+                group.disclosed_values,
+            )
+            observable_group_sizes[signature] += len(group.parent_asins)
+        oversized_indistinguishable_group = bool(
+            observable_group_sizes
+            and max(observable_group_sizes.values()) > requested_top_k
+        )
         question = (
             None
             if enumeration_committed
-            else protocol_probe_question(resolution)
+            else probe_question
         )
         if question is not None:
-            if metric_aware_enumeration and not reply_tree_planning and not pending_override:
+            if (
+                oversized_indistinguishable_group
+                and (
+                    reply_tree_planning
+                    or (
+                        metric_aware_enumeration
+                        and neutral_profile_prior
+                    )
+                )
+            ):
+                width = plan_protocol_reply_tree_width(
+                    ranked_ids,
+                    resolution,
+                    current_turn=current_turn,
+                    top_k=min(requested_top_k, len(ranked_ids)),
+                )
+                return EvidenceExposureDecision(
+                    EvidenceExposureStatus.POSTERIOR_REPLY_TREE,
+                    ranked_ids,
+                    width,
+                    question,
+                    support_count,
+                )
+            if (
+                metric_aware_enumeration
+                and not reply_tree_planning
+                and not pending_override
+                and not oversized_indistinguishable_group
+            ):
                 question = plan_disclosure_question(
                     ranked_ids, resolution,
                     current_turn=current_turn,
@@ -369,7 +419,14 @@ def _plan_protocol_posterior_exposure(
             top_k = min(requested_top_k, len(ranked_ids))
             width_planner = (
                 plan_protocol_enumeration_width
-                if reply_tree_planning else plan_ranked_enumeration_width
+                if (
+                    reply_tree_planning
+                    or (
+                        probe_question is None
+                        and support_count > top_k
+                    )
+                )
+                else plan_ranked_enumeration_width
             )
             width = width_planner(
                 support_count,

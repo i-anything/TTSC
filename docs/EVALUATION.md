@@ -11,7 +11,7 @@ on that unmodified set using the official scoring formula.
 
 | Sessions | Hit Rate@10 | MRR | MTTC | TechnicalScore |
 | ---: | ---: | ---: | ---: | ---: |
-| 200 | 1.000000 | 1.000000 | 1.9800 | 0.980400 |
+| 200 | 1.000000 | 1.000000 | 1.9750 | 0.980500 |
 
 The submission finds all 200 targets at rank one. These are public development
 results, not private-final scores.
@@ -30,8 +30,8 @@ reproduces the organizer's private purchase history.
 
 | Sampling | Sessions | Hit Rate@10 | MRR | MTTC | TechnicalScore |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Uniform catalog | 1,200 | 0.995000 | 0.984378 | 2.650000 | 0.959813 |
-| Purchase proxy | 1,200 | 1.000000 | 0.997146 | 2.215833 | 0.974827 |
+| Uniform catalog | 1,200 | 0.995000 | 0.982514 | 2.602500 | 0.960204 |
+| Purchase proxy | 1,200 | 1.000000 | 0.992681 | 2.180000 | 0.974204 |
 
 Synthetic distributions do not establish private-final performance. The rank
 prior is a heuristic, and results depend on the target distribution and catalog
@@ -39,7 +39,7 @@ facts.
 
 ## Runtime and release checks
 
-- 389 unit tests passed, including serialized-reply ambiguity, question
+- 398 unit tests passed, including serialized-reply ambiguity, question
   selection through the service, override protection, and deadline coverage.
 - The offline submission check verified catalog/index checksums, loaded all
   intended backends, exercised dense inference, and confirmed reset replay.
