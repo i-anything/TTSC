@@ -7,6 +7,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+from conversational_search.dynamic_slate import (
+    NEXT_TURN_RECOVERABILITY_SLATE_POLICY,
+)
 from conversational_search.exposure_policy import (
     PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY,
 )
@@ -1430,6 +1433,16 @@ class ConversationalSearchAgentTest(unittest.TestCase):
             "search-index-bge-small-en-v1.5-v2",
         )
 
+    def test_dynamic_slate_requires_the_exact_protocol_pipeline(self) -> None:
+        with self.assertRaisesRegex(ValueError, "dynamic slate planning"):
+            ConversationalSearchAgent(
+                "unused.jsonl",
+                retriever=RecordingRetriever(),
+                dynamic_slate_policy=(
+                    NEXT_TURN_RECOVERABILITY_SLATE_POLICY
+                ),
+            )
+
     def test_default_agent_catalog_path_is_working_directory_independent(self) -> None:
         from starter.agent import Agent, DEFAULT_CATALOG_PATH
 
@@ -1442,6 +1455,7 @@ class ConversationalSearchAgentTest(unittest.TestCase):
             Agent()
         initialize.assert_called_once_with(
             DEFAULT_CATALOG_PATH,
+            normalize_language=True,
             evidence_exposure_policy=PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY,
             orchestration_policy=EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
             protocol_catalog_policy=FULL_TRANSCRIPT_PROTOCOL_CATALOG_POLICY,
@@ -1454,6 +1468,7 @@ class ConversationalSearchAgentTest(unittest.TestCase):
                 SMART_HYBRID_RETRIEVAL_ROUTING_POLICY
             ),
             slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
+            dynamic_slate_policy=NEXT_TURN_RECOVERABILITY_SLATE_POLICY,
         )
 
 

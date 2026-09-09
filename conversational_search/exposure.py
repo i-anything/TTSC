@@ -22,6 +22,10 @@ from conversational_search.exact_evidence import (
     ExactEvidenceStatus,
 )
 from conversational_search.intent import IntentState, active_attributes
+from conversational_search.disclosure_planner import (
+    plan_disclosure_question,
+    plan_ranked_enumeration_width,
+)
 from conversational_search.protocol import (
     CandidateReplySignature,
     CandidateReplyStatus,
@@ -30,6 +34,7 @@ from conversational_search.protocol import (
     remaining_reply,
 )
 from conversational_search.protocol_index import (
+    MAX_PROTOCOL_OUTPUT_CANDIDATES,
     ProtocolResolution,
     protocol_probe_question,
 )
@@ -66,6 +71,8 @@ def plan_evidence_gated_exposure(
     protocol_resolution: ProtocolResolution | None = None,
     metric_aware_protocol_enumeration: bool = False,
     reply_tree_protocol_planning: bool = False,
+    protocol_enumeration_committed: bool = False,
+    neutral_profile_prior: bool = False,
 ) -> EvidenceExposureDecision:
     """Expose only when the best structural tier fits inside the API prefix.
 
@@ -116,6 +123,10 @@ def plan_evidence_gated_exposure(
         raise TypeError("metric_aware_protocol_enumeration must be a boolean")
     if type(reply_tree_protocol_planning) is not bool:
         raise TypeError("reply_tree_protocol_planning must be a boolean")
+    if type(protocol_enumeration_committed) is not bool:
+        raise TypeError("protocol_enumeration_committed must be a boolean")
+    if type(neutral_profile_prior) is not bool:
+        raise TypeError("neutral_profile_prior must be a boolean")
     if reply_tree_protocol_planning and not metric_aware_protocol_enumeration:
         raise ValueError("reply-tree planning requires metric-aware enumeration")
     ranked_ids = exact_result.ranked_ids
@@ -136,6 +147,16 @@ def plan_evidence_gated_exposure(
             requested_top_k=requested_top_k,
             metric_aware_enumeration=metric_aware_protocol_enumeration,
             reply_tree_planning=reply_tree_protocol_planning,
+            pending_override=any(
+                requirement.source == "initial_tentative"
+                for requirement in state.requirements
+            ),
+            initial_explicit=any(
+                requirement.source == "initial_explicit"
+                for requirement in state.requirements
+            ),
+            enumeration_committed=protocol_enumeration_committed,
+            neutral_profile_prior=neutral_profile_prior,
         )
     if current_turn >= 10:
         return EvidenceExposureDecision(
@@ -256,8 +277,12 @@ def _plan_protocol_posterior_exposure(
     requested_top_k: int,
     metric_aware_enumeration: bool,
     reply_tree_planning: bool,
+    pending_override: bool = False,
+    initial_explicit: bool = False,
+    enumeration_committed: bool = False,
+    neutral_profile_prior: bool = False,
 ) -> EvidenceExposureDecision:
-    """Expose a rank-one probe until the complete posterior is exhausted."""
+    """Choose a probe or ranked enumeration over the complete posterior."""
 
     support_count = resolution.support_count
     if (
@@ -281,8 +306,80 @@ def _plan_protocol_posterior_exposure(
             1,
         )
     if current_turn < 10:
-        question = protocol_probe_question(resolution)
+        probe_question = protocol_probe_question(resolution)
+        observable_group_sizes: Counter[
+            tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]
+        ] = Counter()
+        for group in resolution.groups:
+            # The evaluator never reveals target_category, so titles cannot
+            # separate products that expose the same card values and replies.
+            signature = (
+                group.card.hard_constraints,
+                group.card.soft_preferences,
+                group.disclosed_values,
+            )
+            observable_group_sizes[signature] += len(group.parent_asins)
+        oversized_indistinguishable_group = bool(
+            observable_group_sizes
+            and max(observable_group_sizes.values()) > requested_top_k
+        )
+        question = (
+            None
+            if enumeration_committed
+            else probe_question
+        )
         if question is not None:
+            if (
+                oversized_indistinguishable_group
+                and (
+                    reply_tree_planning
+                    or (
+                        metric_aware_enumeration
+                        and neutral_profile_prior
+                    )
+                )
+            ):
+                width = plan_protocol_reply_tree_width(
+                    ranked_ids,
+                    resolution,
+                    current_turn=current_turn,
+                    top_k=min(requested_top_k, len(ranked_ids)),
+                )
+                return EvidenceExposureDecision(
+                    EvidenceExposureStatus.POSTERIOR_REPLY_TREE,
+                    ranked_ids,
+                    width,
+                    question,
+                    support_count,
+                )
+            if (
+                metric_aware_enumeration
+                and not reply_tree_planning
+                and not pending_override
+                and not oversized_indistinguishable_group
+            ):
+                question = plan_disclosure_question(
+                    ranked_ids, resolution,
+                    current_turn=current_turn,
+                    top_k=requested_top_k,
+                    prefer_wildcard_near_tie=(
+                        current_turn == 1 and initial_explicit
+                    ),
+                )
+            if question is None:
+                top_k = min(requested_top_k, len(ranked_ids))
+                width = plan_ranked_enumeration_width(
+                    support_count,
+                    current_turn=current_turn,
+                    top_k=top_k,
+                )
+                return EvidenceExposureDecision(
+                    EvidenceExposureStatus.POSTERIOR_ENUMERATION,
+                    ranked_ids,
+                    width,
+                    None,
+                    support_count,
+                )
             if reply_tree_planning:
                 width = plan_protocol_reply_tree_width(
                     ranked_ids,
@@ -297,16 +394,41 @@ def _plan_protocol_posterior_exposure(
                     question,
                     support_count,
                 )
+            width = 1
+            if (
+                metric_aware_enumeration
+                and not pending_override
+                and current_turn >= 2
+            ):
+                width = _capacity_preserving_probe_width(
+                    ranked_ids,
+                    resolution,
+                    question=question,
+                    current_turn=current_turn,
+                    top_k=min(requested_top_k, len(ranked_ids)),
+                    initial_explicit=initial_explicit,
+                )
             return EvidenceExposureDecision(
                 EvidenceExposureStatus.POSTERIOR_PROBE,
-                ranked_ids[:1],
-                1,
+                ranked_ids[:width],
+                width,
                 question,
                 support_count,
             )
         if metric_aware_enumeration:
             top_k = min(requested_top_k, len(ranked_ids))
-            width = plan_protocol_enumeration_width(
+            width_planner = (
+                plan_protocol_enumeration_width
+                if (
+                    reply_tree_planning
+                    or (
+                        probe_question is None
+                        and support_count > top_k
+                    )
+                )
+                else plan_ranked_enumeration_width
+            )
+            width = width_planner(
                 support_count,
                 current_turn=current_turn,
                 top_k=top_k,
@@ -326,6 +448,86 @@ def _plan_protocol_posterior_exposure(
         None,
         support_count,
     )
+
+
+def _capacity_preserving_probe_width(
+    ranked_ids: tuple[str, ...],
+    resolution: ProtocolResolution,
+    *,
+    question: str,
+    current_turn: int,
+    top_k: int,
+    initial_explicit: bool,
+) -> int:
+    """Widen only an exhausted reply branch beyond a reachable window."""
+
+    future_capacity = top_k * (MAX_TURN - current_turn)
+    group_by_id = {
+        parent_asin: group
+        for group in resolution.groups
+        for parent_asin in group.parent_asins
+    }
+    try:
+        signatures: dict[str, str] = {}
+        counts: Counter[str] = Counter()
+        branches_with_future_disclosure: set[str] = set()
+        for parent_asin in resolution.candidate_ids:
+            group = group_by_id[parent_asin]
+            reply = remaining_reply(
+                group.card,
+                question,
+                group.disclosed_values,
+            )
+            disclosed = group.disclosed_values
+            if reply.status is CandidateReplyStatus.DISCLOSURE:
+                disclosed = tuple(sorted(set(disclosed).union(reply.values)))
+            signatures[parent_asin] = reply.reply_text
+            counts[reply.reply_text] += 1
+            if (
+                remaining_reply(group.card, "other", disclosed).status
+                is CandidateReplyStatus.DISCLOSURE
+            ):
+                branches_with_future_disclosure.add(reply.reply_text)
+    except (KeyError, TypeError, ValueError):
+        return 1
+    protocol_window_pressure = {
+        signature: count
+        for signature, count in counts.items()
+        if signature not in branches_with_future_disclosure
+        and count > MAX_PROTOCOL_OUTPUT_CANDIDATES
+    }
+    pressured_counts = Counter(protocol_window_pressure)
+    if not pressured_counts and not initial_explicit:
+        session_capacity = top_k * MAX_TURN
+        pressured_counts = Counter(
+            {
+                signature: count
+                for signature, count in counts.items()
+                if signature not in branches_with_future_disclosure
+                and count > session_capacity
+            }
+        )
+        prefix_signatures = {
+            signatures.get(parent_asin)
+            for parent_asin in ranked_ids[:top_k]
+        }
+        if (
+            None in prefix_signatures
+            or len(prefix_signatures) != 1
+            or next(iter(prefix_signatures)) not in pressured_counts
+        ):
+            return 1
+    if not pressured_counts:
+        return 1
+    for width, parent_asin in enumerate(ranked_ids[:top_k], start=1):
+        signature = signatures.get(parent_asin)
+        if signature is None:
+            return 1
+        if signature in pressured_counts:
+            pressured_counts[signature] -= 1
+        if max(pressured_counts.values()) <= future_capacity:
+            return width
+    return top_k
 
 
 def plan_protocol_enumeration_width(

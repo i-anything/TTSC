@@ -1,17 +1,23 @@
 """Competition API adapter selecting the released agent configuration.
 
 ``Agent`` subclasses ``ConversationalSearchAgent`` and pins the policy set
-evaluated for submission: smart hybrid retrieval routing, lexicographic
+evaluated for submission: shared dialogue-envelope normalization, smart
+hybrid retrieval routing with a catalog cold-start prior, lexicographic
 exact-evidence ranking, full-transcript protocol resolution with eligible
-continuation refutation, the wildcard ``other`` question policy,
-metric-aware exposure, exact-ranking reuse orchestration, and
-intent-epoch novelty slates.
+continuation refutation, metric-bounded disclosure-utility question selection
+with a wildcard ``other`` fallback and stable enumeration commitment,
+profile-aware ranked or uniform reply-tree exposure, answer-conditioned
+next-turn slate scheduling,
+exact-ranking reuse orchestration, and intent-epoch novelty slates.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
+from conversational_search.dynamic_slate import (
+    NEXT_TURN_RECOVERABILITY_SLATE_POLICY,
+)
 from conversational_search.exposure_policy import (
     PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY,
 )
@@ -42,6 +48,7 @@ class Agent(ConversationalSearchAgent):
     def __init__(self, catalog_path: str | Path = DEFAULT_CATALOG_PATH) -> None:
         super().__init__(
             catalog_path,
+            normalize_language=True,
             evidence_exposure_policy=PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY,
             orchestration_policy=EXACT_RANKING_REUSE_ORCHESTRATION_POLICY,
             protocol_catalog_policy=FULL_TRANSCRIPT_PROTOCOL_CATALOG_POLICY,
@@ -54,4 +61,5 @@ class Agent(ConversationalSearchAgent):
                 SMART_HYBRID_RETRIEVAL_ROUTING_POLICY
             ),
             slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
+            dynamic_slate_policy=NEXT_TURN_RECOVERABILITY_SLATE_POLICY,
         )

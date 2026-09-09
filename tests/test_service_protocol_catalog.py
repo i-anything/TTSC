@@ -63,7 +63,9 @@ class ServiceProtocolCatalogTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-    def _agent(self) -> ConversationalSearchAgent:
+    def _agent(
+        self, *, normalize_language: bool = False, metric_aware: bool = False,
+    ) -> ConversationalSearchAgent:
         retriever = HybridRetriever(
             self.catalog_path,
             None,
@@ -74,14 +76,81 @@ class ServiceProtocolCatalogTest(unittest.TestCase):
         return ConversationalSearchAgent(
             self.catalog_path,
             retriever=retriever,
+            normalize_language=normalize_language,
             ranking_policy=LEXICOGRAPHIC_EXACT_EVIDENCE_RANKING_POLICY,
-            evidence_exposure_policy=PROTOCOL_POSTERIOR_EXPOSURE_POLICY,
+            evidence_exposure_policy=(
+                PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY
+                if metric_aware else PROTOCOL_POSTERIOR_EXPOSURE_POLICY
+            ),
             protocol_catalog_policy=FULL_TRANSCRIPT_PROTOCOL_CATALOG_POLICY,
             protocol_refutation_policy=(
                 ELIGIBLE_CONTINUATION_REFUTATION_POLICY
             ),
             slate_policy=INTENT_EPOCH_NOVELTY_SLATE_POLICY,
         )
+
+    def test_rollout_question_reaches_service_and_preserves_override_guard(self) -> None:
+        products = [
+            {
+                "parent_asin": f"P{i}", "title": f"Shoe {i}",
+                "categories": ["Shoes"],
+                "features": ["cotton", "color: black", f"special property {i}", "warm"],
+                "rating_number": 100 - i,
+            }
+            for i in range(8)
+        ]
+        self.catalog_path.write_text(
+            "".join(json.dumps(product) + "\n" for product in products),
+            encoding="utf-8",
+        )
+        agent = self._agent(metric_aware=True)
+        agent.reset("browse", {})
+        first = agent.respond("browse", "I'm looking for Shoes, but I'm still exploring.", 1, 10)
+        self.assertEqual(first["ask_attribute"], "feature")
+        self.assertEqual(len(first["recommendations"]), 1)
+        second = agent.respond("browse", "For that, what matters is: special property 7; warm.", 2, 10)
+        self.assertEqual(second["recommendations"], [{"parent_asin": "P7"}])
+        self.assertIsNone(second["ask_attribute"])
+
+        agent.reset("override", {})
+        pending = agent.respond("override", "I'm looking for Shoes. warm", 1, 10)
+        self.assertEqual(pending["ask_attribute"], "other")
+        self.assertFalse(agent._protocol_pending_refutable["override"])
+
+    def test_initial_browsing_uses_catalog_prior_before_product_evidence(self) -> None:
+        products = [
+            {
+                "parent_asin": f"B{index}",
+                "title": f"Ordinary shoe {index}",
+                "categories": ["Shoes"],
+                "features": ["fabric", f"color: blue", f"detail {index}"],
+                "rating_number": 8 - index,
+            }
+            for index in range(8)
+        ]
+        products.append({
+            "parent_asin": "A",
+            "title": "Catalog favorite shoe",
+            "categories": ["Shoes"],
+            "features": ["fabric", "color: blue", "favorite detail"],
+            "rating_number": 1_000,
+        })
+        self.catalog_path.write_text(
+            "".join(json.dumps(product) + "\n" for product in products),
+            encoding="utf-8",
+        )
+        agent = self._agent(metric_aware=True)
+        agent.reset("cold-browse", {})
+
+        response = agent.respond(
+            "cold-browse",
+            "I'm looking for Shoes, but I'm still exploring.",
+            1,
+            10,
+        )
+
+        self.assertEqual(response["recommendations"], [{"parent_asin": "A"}])
+        self.assertIsNotNone(response["ask_attribute"])
 
     def test_continuation_refutes_only_the_prior_score_eligible_product(self) -> None:
         agent = self._agent()
@@ -105,6 +174,55 @@ class ServiceProtocolCatalogTest(unittest.TestCase):
         self.assertEqual(second["recommendations"], [{"parent_asin": "B"}])
         self.assertIsNone(second["ask_attribute"])
         self.assertEqual(agent._protocol_refuted_ids["session"], ("A",))
+
+    def test_paraphrased_transcript_preserves_actions_state_and_refutation(self) -> None:
+        agent = self._agent(normalize_language=True)
+        canonical = (
+            "I'm looking for Shoes. warm",
+            "For that, what matters is: waterproof; wide.",
+            "Actually, ignore my earlier preference. What I need is: waterproof.",
+            "For that, what matters is: warm.",
+        )
+        paraphrased = (
+            "Please help me find Shoes. One tentative preference is: warm.",
+            "My priorities are: waterproof; wide.",
+            "I changed my mind. Please prioritize: waterproof.",
+            "For that attribute, I prefer warm.",
+        )
+        agent.reset("canonical", {})
+        agent.reset("paraphrased", {})
+        for turn, (original, variant) in enumerate(zip(canonical, paraphrased), 1):
+            with self.subTest(turn=turn):
+                expected = agent.respond("canonical", original, turn, 10)
+                actual = agent.respond("paraphrased", variant, turn, 10)
+                self.assertEqual(actual, expected)
+                self.assertEqual(agent.session_state("canonical"), agent.session_state("paraphrased"))
+                self.assertEqual(agent._protocol_events["canonical"], agent._protocol_events["paraphrased"])
+                self.assertEqual(agent._protocol_refuted_ids["canonical"], agent._protocol_refuted_ids["paraphrased"])
+                trace = agent.last_action_trace("paraphrased")
+                self.assertTrue(trace["language_normalized"])
+                self.assertEqual(trace["protocol_mode"], "applied")
+                self.assertNotEqual(trace["planner_outcome"], "candidate_or_evidence_error")
+                self.assertEqual(trace["presented_width"], len(actual["recommendations"]))
+                self.assertEqual(trace["question"], actual["ask_attribute"])
+
+    def test_recognized_envelope_does_not_establish_catalog_support(self) -> None:
+        agent = self._agent(normalize_language=True)
+        agent.reset("unsupported", {})
+        agent.respond("unsupported", "I need Shoes. It must be invisible.", 1, 10)
+        self.assertFalse(agent._protocol_pending_refutable["unsupported"])
+        agent.respond("unsupported", "My priorities are: wide; warm.", 2, 10)
+        self.assertEqual(agent._protocol_refuted_ids["unsupported"], ())
+
+    def test_unsupported_turn_cannot_rejoin_a_partial_protocol_transcript(self) -> None:
+        agent = self._agent(normalize_language=True)
+        agent.reset("free", {})
+        agent.respond("free", "I need Shoes. It must be waterproof.", 1, 10)
+        agent.respond("free", "Can these shoes be repaired locally?", 2, 10)
+        agent.respond("free", "My priorities are: wide; warm.", 3, 10)
+        self.assertFalse(agent._protocol_consistency["free"])
+        self.assertFalse(agent._protocol_pending_refutable["free"])
+        self.assertEqual(agent._protocol_refuted_ids["free"], ())
 
     def test_pre_override_products_are_not_refuted(self) -> None:
         agent = self._agent()

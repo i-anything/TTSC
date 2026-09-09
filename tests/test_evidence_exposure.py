@@ -438,6 +438,331 @@ class EvidenceExposureTests(unittest.TestCase):
         self.assertEqual(decision.width, 1)
         self.assertIsNone(decision.question)
 
+    def test_large_exhausted_posterior_uses_uniform_metric_width(self) -> None:
+        evidence = tuple(_evidence(f"P{index}", "blue") for index in range(15))
+        ids = tuple(item.parent_asin for item in evidence)
+        events = (
+            ObservedProtocolEvent(
+                1,
+                ProtocolEventKind.INITIAL_EXPLICIT,
+                values=("waterproof",),
+            ),
+            ObservedProtocolEvent(
+                2,
+                ProtocolEventKind.DISCLOSURE,
+                "other",
+                reply_payload="color: blue",
+            ),
+        )
+        resolution = resolve_protocol_transcript(
+            evidence,
+            events,
+            observed_turn_count=2,
+        )
+        state = IntentState(category="Shoes", last_turn=2)
+        exact = rank_exact_evidence(ids, evidence, state, protocol_events=events)
+
+        decision = plan_evidence_gated_exposure(
+            state,
+            exact,
+            evidence,
+            current_turn=2,
+            requested_top_k=10,
+            protocol_resolution=resolution,
+            metric_aware_protocol_enumeration=True,
+        )
+
+        self.assertIs(
+            decision.status,
+            EvidenceExposureStatus.POSTERIOR_ENUMERATION,
+        )
+        self.assertEqual(
+            decision.width,
+            plan_protocol_enumeration_width(15, current_turn=2, top_k=10),
+        )
+        self.assertEqual(decision.width, 3)
+        self.assertIsNone(decision.question)
+
+    def test_neutral_prior_plans_over_hidden_title_collisions(self) -> None:
+        evidence = tuple(
+            ProductProtocolEvidence(
+                f"P{index}",
+                "Shoes",
+                DisclosureCard(
+                    f"different hidden title {index}",
+                    ("waterproof",),
+                    ("color: blue",),
+                ),
+            )
+            for index in range(15)
+        )
+        ids = tuple(item.parent_asin for item in evidence)
+        events = (
+            ObservedProtocolEvent(
+                1,
+                ProtocolEventKind.INITIAL_EXPLICIT,
+                values=("waterproof",),
+            ),
+        )
+        resolution = resolve_protocol_transcript(
+            evidence,
+            events,
+            observed_turn_count=1,
+        )
+        state = _state()
+        exact = rank_exact_evidence(ids, evidence, state)
+
+        ranked = plan_evidence_gated_exposure(
+            state,
+            exact,
+            evidence,
+            current_turn=1,
+            requested_top_k=10,
+            protocol_resolution=resolution,
+            metric_aware_protocol_enumeration=True,
+        )
+        uniform = plan_evidence_gated_exposure(
+            state,
+            exact,
+            evidence,
+            current_turn=1,
+            requested_top_k=10,
+            protocol_resolution=resolution,
+            metric_aware_protocol_enumeration=True,
+            neutral_profile_prior=True,
+        )
+
+        self.assertIs(ranked.status, EvidenceExposureStatus.POSTERIOR_PROBE)
+        self.assertEqual(ranked.width, 1)
+        self.assertIs(
+            uniform.status,
+            EvidenceExposureStatus.POSTERIOR_REPLY_TREE,
+        )
+        self.assertEqual(uniform.width, 3)
+        self.assertEqual(uniform.question, "other")
+
+    def test_probe_expands_only_beyond_the_complete_protocol_window(
+        self,
+    ) -> None:
+        evidence = tuple(
+            ProductProtocolEvidence(
+                f"P{index}",
+                "Shoes",
+                DisclosureCard(
+                    f"different hidden title {index}",
+                    ("waterproof",),
+                    ("color: blue",),
+                ),
+            )
+            for index in range(264)
+        )
+        ids = tuple(item.parent_asin for item in evidence)
+        events = (
+            ObservedProtocolEvent(
+                1,
+                ProtocolEventKind.INITIAL_EXPLICIT,
+                values=("waterproof",),
+            ),
+            ObservedProtocolEvent(2, ProtocolEventKind.NEED_ATTRIBUTE),
+        )
+        resolution = resolve_protocol_transcript(
+            evidence,
+            events,
+            observed_turn_count=2,
+        )
+        state = IntentState(category="Shoes", last_turn=2)
+        ranked_ids = ids[:200]
+        exact = rank_exact_evidence(
+            ranked_ids,
+            evidence[:200],
+            state,
+            protocol_events=events,
+        )
+
+        decision = plan_evidence_gated_exposure(
+            state,
+            exact,
+            evidence[:200],
+            current_turn=2,
+            requested_top_k=10,
+            protocol_resolution=resolution,
+            metric_aware_protocol_enumeration=True,
+        )
+
+        self.assertIs(decision.status, EvidenceExposureStatus.POSTERIOR_PROBE)
+        self.assertEqual(decision.presentation_ids, ranked_ids[:10])
+        self.assertEqual((decision.width, decision.question), (10, "other"))
+
+    def test_exploration_probe_uses_the_full_session_capacity(self) -> None:
+        evidence = tuple(
+            ProductProtocolEvidence(
+                f"P{index}",
+                "Shoes",
+                DisclosureCard(
+                    f"different hidden title {index}",
+                    ("waterproof",),
+                    ("color: blue",),
+                ),
+            )
+            for index in range(154)
+        )
+        ids = tuple(item.parent_asin for item in evidence)
+        def plan(*, explicit: bool):
+            events = (
+                ObservedProtocolEvent(
+                    1,
+                    (
+                        ProtocolEventKind.INITIAL_EXPLICIT
+                        if explicit
+                        else ProtocolEventKind.INITIAL_BROWSING
+                    ),
+                    values=("waterproof",) if explicit else (),
+                ),
+                ObservedProtocolEvent(2, ProtocolEventKind.NEED_ATTRIBUTE),
+            )
+            resolution = resolve_protocol_transcript(
+                evidence,
+                events,
+                observed_turn_count=2,
+            )
+            state = IntentState(
+                category="Shoes",
+                requirements=(
+                    (
+                        Requirement(
+                            "waterproof",
+                            "initial_explicit",
+                            1,
+                            "feature",
+                        ),
+                    )
+                    if explicit
+                    else ()
+                ),
+                last_turn=2,
+            )
+            exact = rank_exact_evidence(
+                ids,
+                evidence,
+                state,
+                protocol_events=events,
+            )
+            return plan_evidence_gated_exposure(
+                state,
+                exact,
+                evidence,
+                current_turn=2,
+                requested_top_k=10,
+                protocol_resolution=resolution,
+                metric_aware_protocol_enumeration=True,
+            )
+
+        exploratory = plan(explicit=False)
+        explicit = plan(explicit=True)
+
+        self.assertEqual((exploratory.width, exploratory.question), (10, "other"))
+        self.assertEqual((explicit.width, explicit.question), (1, "other"))
+
+    def test_exploration_probe_preserves_a_mixed_reply_prefix(self) -> None:
+        evidence = tuple(
+            ProductProtocolEvidence(
+                f"P{index}",
+                "Shoes",
+                DisclosureCard(
+                    f"different hidden title {index}",
+                    ("waterproof",),
+                    ("color: red" if index == 1 else "color: blue",),
+                ),
+            )
+            for index in range(111)
+        )
+        ids = tuple(item.parent_asin for item in evidence)
+        events = (
+            ObservedProtocolEvent(1, ProtocolEventKind.INITIAL_BROWSING),
+            ObservedProtocolEvent(2, ProtocolEventKind.NEED_ATTRIBUTE),
+        )
+        resolution = resolve_protocol_transcript(
+            evidence,
+            events,
+            observed_turn_count=2,
+        )
+        state = IntentState(category="Shoes", last_turn=2)
+        exact = rank_exact_evidence(
+            ids,
+            evidence,
+            state,
+            protocol_events=events,
+        )
+
+        decision = plan_evidence_gated_exposure(
+            state,
+            exact,
+            evidence,
+            current_turn=2,
+            requested_top_k=10,
+            protocol_resolution=resolution,
+            metric_aware_protocol_enumeration=True,
+        )
+
+        self.assertEqual((decision.width, decision.question), (1, "other"))
+
+    def test_committed_enumeration_does_not_resume_questioning(self) -> None:
+        evidence = tuple(
+            ProductProtocolEvidence(
+                f"P{index}",
+                "Shoes",
+                DisclosureCard(
+                    f"different hidden title {index}",
+                    ("waterproof", "color: blue"),
+                    ("machine wash", "Imported"),
+                ),
+            )
+            for index in range(100)
+        )
+        ids = tuple(item.parent_asin for item in evidence)
+        events = (
+            ObservedProtocolEvent(
+                1,
+                ProtocolEventKind.INITIAL_EXPLICIT,
+                values=("waterproof",),
+            ),
+            ObservedProtocolEvent(
+                2,
+                ProtocolEventKind.DISCLOSURE,
+                "other",
+                reply_payload="color: blue; machine wash",
+            ),
+            *tuple(
+                ObservedProtocolEvent(turn, ProtocolEventKind.NEED_ATTRIBUTE)
+                for turn in range(3, 10)
+            ),
+        )
+        resolution = resolve_protocol_transcript(
+            evidence,
+            events,
+            observed_turn_count=9,
+        )
+        state = IntentState(category="Shoes", last_turn=9)
+        exact = rank_exact_evidence(ids, evidence, state, protocol_events=events)
+
+        decision = plan_evidence_gated_exposure(
+            state,
+            exact,
+            evidence,
+            current_turn=9,
+            requested_top_k=10,
+            protocol_resolution=resolution,
+            metric_aware_protocol_enumeration=True,
+            protocol_enumeration_committed=True,
+        )
+
+        self.assertIs(
+            decision.status,
+            EvidenceExposureStatus.POSTERIOR_ENUMERATION,
+        )
+        self.assertEqual(decision.width, 10)
+        self.assertIsNone(decision.question)
+
     def test_metric_aware_width_is_derived_from_the_official_metric(self) -> None:
         self.assertEqual(
             plan_protocol_enumeration_width(3, current_turn=2, top_k=10),

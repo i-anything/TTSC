@@ -28,6 +28,10 @@ from conversational_search.decision_policy import (
     PROTOCOL_UTILITY_DECISION_POLICY,
     DecisionPolicy,
 )
+from conversational_search.dynamic_slate import (
+    DISABLED_DYNAMIC_SLATE_POLICY,
+    DynamicSlatePolicy,
+)
 from conversational_search.exposure_policy import (
     BUYING_ONLY_TOP3_PREFIX_EXPOSURE_POLICY,
     BUYING_ONLY_TOP3_STRUCTURAL_EXPOSURE_POLICY,
@@ -77,6 +81,7 @@ from conversational_search.profiles import (
     ProfilePrior,
     parse_profile_prior,
 )
+from conversational_search.protocol import ProtocolEventKind
 from conversational_search.protocol_index import (
     DISABLED_PROTOCOL_CATALOG_POLICY,
     DISABLED_PROTOCOL_REFUTATION_POLICY,
@@ -379,6 +384,9 @@ class ConversationalSearchAgent:
         ranking_policy: RankingPolicy = STAGE_A_RANKING_POLICY,
         profile_policy: ProfilePolicy = BOUNDED_RESIDUAL_PROFILE_POLICY,
         slate_policy: SlatePolicy = STAGNATION_AWARE_SLATE_POLICY,
+        dynamic_slate_policy: DynamicSlatePolicy = (
+            DISABLED_DYNAMIC_SLATE_POLICY
+        ),
         intent_policy: IntentParsingPolicy = ROBUST_INTENT_POLICY,
         decision_policy: DecisionPolicy = PROTECTED_DECISION_POLICY,
         requirement_probe_policy: RequirementProbePolicy = (
@@ -405,7 +413,11 @@ class ConversationalSearchAgent:
         ranking_cache_capacity: int = DEFAULT_RANKING_CACHE_CAPACITY,
         model_assets: str | Path = DEFAULT_MODEL_ASSETS,
         dense_index_path: str | Path = DEFAULT_DENSE_INDEX,
+        normalize_language: bool = False,
     ) -> None:
+        if type(normalize_language) is not bool:
+            raise TypeError("normalize_language must be a boolean")
+        self._normalize_language = normalize_language
         if not isinstance(question_policy, QuestionPolicy):
             raise TypeError("question_policy must be a QuestionPolicy")
         if not isinstance(fusion_policy, FusionPolicy):
@@ -420,6 +432,8 @@ class ConversationalSearchAgent:
             raise TypeError("profile_policy must be a ProfilePolicy")
         if not isinstance(slate_policy, SlatePolicy):
             raise TypeError("slate_policy must be a SlatePolicy")
+        if not isinstance(dynamic_slate_policy, DynamicSlatePolicy):
+            raise TypeError("dynamic_slate_policy must be a DynamicSlatePolicy")
         if not isinstance(intent_policy, IntentParsingPolicy):
             raise TypeError("intent_policy must be an IntentParsingPolicy")
         if not isinstance(decision_policy, DecisionPolicy):
@@ -484,6 +498,24 @@ class ConversationalSearchAgent:
             raise ValueError(
                 "metric-aware protocol enumeration requires continuation "
                 "refutation"
+            )
+        if dynamic_slate_policy is not DISABLED_DYNAMIC_SLATE_POLICY and (
+            evidence_exposure_policy is not PROTOCOL_METRIC_AWARE_EXPOSURE_POLICY
+            or protocol_catalog_policy
+            is not FULL_TRANSCRIPT_PROTOCOL_CATALOG_POLICY
+            or protocol_refutation_policy
+            is not ELIGIBLE_CONTINUATION_REFUTATION_POLICY
+            or ranking_policy is not RankingPolicy.LEXICOGRAPHIC_EXACT_EVIDENCE
+            or slate_policy is not INTENT_EPOCH_NOVELTY_SLATE_POLICY
+            or requirement_probe_policy
+            is not DISABLED_REQUIREMENT_PROBE_POLICY
+            or semantic_lexical_rescue_policy
+            is not DISABLED_SEMANTIC_LEXICAL_RESCUE_POLICY
+            or semantic_tiebreak_policy is not DISABLED_SEMANTIC_TIEBREAK_POLICY
+        ):
+            raise ValueError(
+                "dynamic slate planning requires the exact full-transcript "
+                "metric-aware pipeline"
             )
         if not isinstance(orchestration_policy, OrchestrationPolicy):
             raise TypeError("orchestration_policy must be an OrchestrationPolicy")
@@ -603,6 +635,11 @@ class ConversationalSearchAgent:
         self._semantic_tiebreak_policy = semantic_tiebreak_policy
         self._profile_policy = profile_policy
         self._slate_policy = slate_policy
+        self._dynamic_slate_policy = dynamic_slate_policy
+        self._counterfactual_rank_cache: dict[
+            tuple[IntentState, ProfilePrior, int],
+            tuple[tuple[str, ...], RouteWeights, str, str],
+        ] = {}
         self._intent_policy = intent_policy
         if (
             semantic_lexical_rescue_policy
@@ -761,6 +798,15 @@ class ConversationalSearchAgent:
             raise TypeError("top_k must be an integer")
 
         prior_state = self._sessions[session_id]
+        language_normalized = False
+        if self._normalize_language:
+            from conversational_search.language import normalize_dialogue_envelope
+
+            interpreted_message = normalize_dialogue_envelope(
+                user_message, turn, prior_state.last_asked_attribute,
+            )
+            language_normalized = interpreted_message != user_message
+            user_message = interpreted_message
         intent_cacheable = True
         if self._intent_policy is LOSSLESS_MULTI_SLOT_INTENT_POLICY:
             reduction = apply_user_message_with_trace(
@@ -847,7 +893,6 @@ class ConversationalSearchAgent:
                     protocol_state_is_consistent,
                     recognize_protocol_observation,
                 )
-                from conversational_search.protocol import ProtocolEventKind
             except Exception:
                 self._protocol_consistency[session_id] = False
                 protocol_outcome = "candidate_or_evidence_error"
@@ -1727,10 +1772,20 @@ class ConversationalSearchAgent:
                         self._protocol_refuted_ids.get(session_id, ())
                     ),
                 )
-                protocol_pool = fuse_protocol_candidates(
-                    resolution,
-                    protected_ranked_ids,
-                    limit=MAX_CANDIDATE_DOCUMENTS,
+                protocol_events = self._protocol_events.get(session_id, ())
+                initial_browsing = bool(
+                    len(protocol_events) == 1
+                    and protocol_events[0].kind
+                    is ProtocolEventKind.INITIAL_BROWSING
+                )
+                protocol_pool = (
+                    resolution.candidate_ids[:MAX_CANDIDATE_DOCUMENTS]
+                    if initial_browsing
+                    else fuse_protocol_candidates(
+                        resolution,
+                        protected_ranked_ids,
+                        limit=MAX_CANDIDATE_DOCUMENTS,
+                    )
                 )
                 if not resolution.exact or not protocol_pool:
                     raise ValueError("full protocol resolution has no support")
@@ -1953,7 +2008,9 @@ class ConversationalSearchAgent:
             protocol_outcome = "candidate_or_evidence_error"
 
         exposure_applied = False
+        exposure_outcome: str | None = None
         exposure_withheld = False
+        answer_conditioned_slate: tuple[str, ...] | None = None
         if (
             self.evidence_exposure_policy in {
                 TOP3_STRUCTURAL_EXPOSURE_POLICY,
@@ -2005,6 +2062,11 @@ class ConversationalSearchAgent:
                     or not exact_context.evidence
                 ):
                     raise ValueError("exact evidence context is unavailable")
+                active_protocol_events = getattr(
+                    self,
+                    "_protocol_events",
+                    {},
+                ).get(session_id, ())
                 exposure_decision = plan_evidence_gated_exposure(
                     state,
                     exact_context.result,
@@ -2056,6 +2118,14 @@ class ConversationalSearchAgent:
                         self.evidence_exposure_policy
                         is PROTOCOL_REPLY_TREE_EXPOSURE_POLICY
                     ),
+                    protocol_enumeration_committed=bool(
+                        protocol_resolution is not None
+                        and protocol_resolution.exact
+                        and active_protocol_events
+                        and active_protocol_events[-1].kind
+                        is ProtocolEventKind.NEED_ATTRIBUTE
+                    ),
+                    neutral_profile_prior=profile_prior.is_neutral,
                 )
                 exposure_decision = self._validate_evidence_exposure_decision(
                     exposure_decision,
@@ -2063,6 +2133,35 @@ class ConversationalSearchAgent:
                     requested_top_k=result_count,
                     current_turn=turn,
                 )
+                if (
+                    self._dynamic_slate_policy
+                    is not DISABLED_DYNAMIC_SLATE_POLICY
+                    and exposure_decision.status
+                    is EvidenceExposureStatus.POSTERIOR_PROBE
+                    and exposure_decision.width > 1
+                    and exposure_decision.question is not None
+                    and protocol_resolution is not None
+                ):
+                    try:
+                        answer_conditioned_slate = (
+                            self._plan_answer_conditioned_probe_slate(
+                                session_id,
+                                state,
+                                exact_context.result,
+                                protocol_resolution,
+                                question=exposure_decision.question,
+                                current_turn=turn,
+                                width=exposure_decision.width,
+                                top_k=result_count,
+                                prior_slate_state=prior_slate_state,
+                                current_dense_query=dense_query,
+                                current_lexical_query=lexical_query,
+                                current_route_weights=route_weights,
+                                profile_prior=profile_prior,
+                            )
+                        )
+                    except Exception:
+                        answer_conditioned_slate = None
             except Exception:
                 self._record_evidence_exposure_status(
                     EvidenceExposureStatus.EVIDENCE_FAIL_OPEN,
@@ -2070,6 +2169,7 @@ class ConversationalSearchAgent:
                 )
             else:
                 self._record_evidence_exposure_status(exposure_decision.status)
+                exposure_outcome = exposure_decision.status.value
                 if exposure_decision.status is EvidenceExposureStatus.TOP3_CONFIDENT:
                     full_ranked_ids = exposure_decision.presentation_ids
                     parent_asins = full_ranked_ids
@@ -2081,7 +2181,11 @@ class ConversationalSearchAgent:
                     EvidenceExposureStatus.POSTERIOR_PROBE,
                     EvidenceExposureStatus.POSTERIOR_REPLY_TREE,
                 }:
-                    full_ranked_ids = exposure_decision.presentation_ids
+                    full_ranked_ids = (
+                        answer_conditioned_slate
+                        if answer_conditioned_slate is not None
+                        else exposure_decision.presentation_ids
+                    )
                     parent_asins = full_ranked_ids
                     output_count = exposure_decision.width
                     planned_question = exposure_decision.question
@@ -2228,8 +2332,18 @@ class ConversationalSearchAgent:
                 self._protocol_shown_ids[session_id] = tuple(
                     dict.fromkeys((*prior_protocol_shown, *recommendations))
                 )
+            actual_outcome = (
+                exposure_outcome if exposure_applied
+                else protocol_outcome or "candidate_or_evidence_error"
+            )
+            protocol_exposure_applied = bool(
+                exposure_applied
+                and protocol_resolution is not None
+                and protocol_resolution.exact
+            )
             self._record_protocol_decision_outcome(
-                protocol_outcome or "candidate_or_evidence_error",
+                "applied" if protocol_exposure_applied
+                else protocol_outcome or "candidate_or_evidence_error",
                 requested_count=result_count,
                 presented_count=len(recommendations),
                 question=ask_attribute,
@@ -2237,7 +2351,7 @@ class ConversationalSearchAgent:
             self._protocol_action_traces[session_id] = {
                 "protocol_mode": (
                     "applied"
-                    if protocol_applied
+                    if protocol_applied or protocol_exposure_applied
                     else "eligible_fail_open"
                     if protocol_turn_eligible
                     else "free_form_fail_open"
@@ -2261,9 +2375,9 @@ class ConversationalSearchAgent:
                     if retrieval is not None
                     else "not_executed"
                 ),
-                "planner_outcome": (
-                    protocol_outcome or "candidate_or_evidence_error"
-                ),
+                "planner_outcome": actual_outcome,
+                "exposure_applied": exposure_applied,
+                "language_normalized": language_normalized,
                 "question": ask_attribute,
                 "requested_width": result_count,
                 "presented_width": len(recommendations),
@@ -2358,7 +2472,6 @@ class ConversationalSearchAgent:
                 protocol_state_is_consistent,
                 recognize_protocol_observation,
             )
-            from conversational_search.protocol import ProtocolEventKind
         except Exception:
             self._protocol_consistency[session_id] = False
             return False, "candidate_or_evidence_error"
@@ -2877,6 +2990,314 @@ class ConversationalSearchAgent:
             exact_ranking.ranked_ids,
             semantic_cacheable,
         )
+
+    def _counterfactual_protected_ranking(
+        self,
+        state: IntentState,
+        profile_prior: ProfilePrior,
+        *,
+        top_k: int,
+    ) -> tuple[tuple[str, ...], RouteWeights, str, str]:
+        """Replay the live retrieval and ranking path without session mutation."""
+
+        cache_key = (state, profile_prior, top_k)
+        cached = self._counterfactual_rank_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        route_plan = plan_retrieval_route(
+            self.retrieval_routing_policy,
+            state,
+            self._retriever,
+            intent_cacheable=True,
+        )
+        route_weights = self._fusion_policy.choose(state)
+        dense_query = render_dense_query(state)
+        lexical_query = render_lexical_query(state)
+        dense_options: dict[str, object] = {}
+        if route_plan.mode is RetrievalRouteMode.BM25_FIRST:
+            dense_options = {
+                "use_dense": False,
+                "bm25_only_support_ids": route_plan.structural_support_ids,
+                "bm25_only_requires_all_support": True,
+            }
+        retrieval = self._retriever.search_with_trace(
+            dense_query,
+            lexical_query,
+            top_k=top_k,
+            route_weights=route_weights,
+            **dense_options,
+        )
+        if (
+            not isinstance(retrieval, RetrievalResult)
+            or retrieval.trace.used_fallback
+            or retrieval.trace.bm25_status in {"unavailable", "error"}
+            or retrieval.trace.dense_status == "error"
+            or not retrieval.trace.fused_ids
+        ):
+            raise ValueError("counterfactual retrieval is not exact")
+        documents = self._retriever.candidate_documents(
+            retrieval.trace.fused_ids
+        )
+        if not documents:
+            raise ValueError("counterfactual candidate documents are unavailable")
+        if self._profile_policy is ProfilePolicy.DISABLED:
+            ranked = rerank_stage_a(
+                state,
+                documents,
+                bm25_ids=retrieval.trace.bm25_ids,
+                dense_ids=retrieval.trace.dense_ids,
+                fused_ids=retrieval.trace.fused_ids,
+                route_weights=route_weights,
+            )
+        else:
+            ranked = rerank_stage_a_with_profile(
+                state,
+                documents,
+                bm25_ids=retrieval.trace.bm25_ids,
+                dense_ids=retrieval.trace.dense_ids,
+                fused_ids=retrieval.trace.fused_ids,
+                route_weights=route_weights,
+                profile_prior=profile_prior,
+                profile_policy=self._profile_policy,
+            ).ranking
+        base_ranked_ids = tuple(
+            self._sanitize(ranked.ranked_ids, MAX_CANDIDATE_DOCUMENTS)
+        )
+        if (
+            not base_ranked_ids
+            or base_ranked_ids != ranked.ranked_ids
+            or set(base_ranked_ids) != set(retrieval.trace.fused_ids)
+        ):
+            raise ValueError("counterfactual Stage-A ranking is incomplete")
+
+        from conversational_search.exact_evidence import rank_exact_evidence
+
+        evidence = tuple(
+            self._retriever.candidate_protocol_evidence(base_ranked_ids)
+        )
+        exact_result = rank_exact_evidence(
+            base_ranked_ids,
+            evidence,
+            state,
+        )
+        if set(exact_result.ranked_ids) != set(base_ranked_ids):
+            raise ValueError("counterfactual exact ranking is incomplete")
+        result = (
+            exact_result.ranked_ids,
+            route_weights,
+            dense_query,
+            lexical_query,
+        )
+        if len(self._counterfactual_rank_cache) >= DEFAULT_RANKING_CACHE_CAPACITY:
+            self._counterfactual_rank_cache.pop(
+                next(iter(self._counterfactual_rank_cache))
+            )
+        self._counterfactual_rank_cache[cache_key] = result
+        return result
+
+    def _plan_answer_conditioned_probe_slate(
+        self,
+        session_id: str,
+        state: IntentState,
+        exact_result: ExactEvidenceResult,
+        resolution: ProtocolResolution,
+        *,
+        question: str,
+        current_turn: int,
+        width: int,
+        top_k: int,
+        prior_slate_state: SlateState,
+        current_dense_query: str,
+        current_lexical_query: str,
+        current_route_weights: RouteWeights,
+        profile_prior: ProfilePrior,
+    ) -> tuple[str, ...] | None:
+        """Predict each answer branch and schedule hard-to-recover products."""
+
+        from conversational_search.decision import (
+            parse_protocol_event,
+            recognize_protocol_observation,
+        )
+        from conversational_search.dynamic_slate import (
+            plan_answer_conditioned_slate,
+        )
+        from conversational_search.exact_evidence import rank_exact_evidence
+        from conversational_search.exposure import plan_evidence_gated_exposure
+        from conversational_search.protocol import remaining_reply
+
+        if (
+            not resolution.exact
+            or current_turn >= 10
+            or not 1 < width <= top_k
+            or question not in QUESTION_TEXT
+            or not exact_result.beliefs
+        ):
+            return None
+        belief_ids = tuple(
+            belief.parent_asin for belief in exact_result.beliefs
+        )
+        group_by_id = {
+            parent_asin: group
+            for group in resolution.groups
+            for parent_asin in group.parent_asins
+        }
+        if not set(belief_ids).issubset(group_by_id):
+            raise ValueError("counterfactual beliefs exceed protocol support")
+        reply_by_id = {
+            parent_asin: remaining_reply(
+                group_by_id[parent_asin].card,
+                question,
+                group_by_id[parent_asin].disclosed_values,
+            ).reply_text
+            for parent_asin in belief_ids
+        }
+        branches: dict[str, list[str]] = {}
+        for parent_asin, reply_text in reply_by_id.items():
+            branches.setdefault(reply_text, []).append(parent_asin)
+        # At most one full API slate of observable branches is replayed.  More
+        # fragmented worlds retain the exact evidence prefix and its latency.
+        if not branches or len(branches) > top_k:
+            return None
+
+        category_evidence = tuple(
+            self._retriever.protocol_category_evidence(state.category or "")
+        )
+        protocol_events = tuple(self._protocol_events.get(session_id, ()))
+        refuted_ids = frozenset(
+            self._protocol_refuted_ids.get(session_id, ())
+        )
+        asked_state = record_question(state, question)
+        post_reply_rank: dict[str, int | None] = {
+            parent_asin: None for parent_asin in belief_ids
+        }
+        for reply_text, branch_ids in branches.items():
+            next_turn = current_turn + 1
+            next_state = apply_user_message(
+                asked_state,
+                reply_text,
+                next_turn,
+                policy=self._intent_policy,
+            )
+            observation = recognize_protocol_observation(
+                reply_text,
+                next_turn,
+            )
+            event = parse_protocol_event(
+                reply_text,
+                observation,
+                next_turn,
+                asked_attribute=next_state.last_asked_attribute,
+            )
+            next_events = (*protocol_events, event)
+            (
+                protected_ranked_ids,
+                next_route_weights,
+                next_dense_query,
+                next_lexical_query,
+            ) = self._counterfactual_protected_ranking(
+                next_state,
+                profile_prior,
+                top_k=top_k,
+            )
+            next_resolution = resolve_protocol_transcript(
+                category_evidence,
+                next_events,
+                observed_turn_count=next_turn,
+                refuted_ids=refuted_ids,
+            )
+            if not next_resolution.exact:
+                raise ValueError("counterfactual transcript has no exact support")
+            protocol_pool = fuse_protocol_candidates(
+                next_resolution,
+                protected_ranked_ids,
+                limit=MAX_CANDIDATE_DOCUMENTS,
+            )
+            next_evidence = tuple(
+                self._retriever.candidate_protocol_evidence(protocol_pool)
+            )
+            next_exact = rank_exact_evidence(
+                protocol_pool,
+                next_evidence,
+                next_state,
+                protocol_events=next_events,
+            )
+            if set(next_exact.ranked_ids) != set(protocol_pool):
+                raise ValueError("counterfactual protocol ranking is incomplete")
+            next_exposure = plan_evidence_gated_exposure(
+                next_state,
+                next_exact,
+                next_evidence,
+                current_turn=next_turn,
+                requested_top_k=top_k,
+                retrieval_fault_or_fallback=False,
+                protocol_resolution=next_resolution,
+                metric_aware_protocol_enumeration=True,
+                protocol_enumeration_committed=(
+                    event.kind is ProtocolEventKind.NEED_ATTRIBUTE
+                ),
+                neutral_profile_prior=profile_prior.is_neutral,
+            )
+            next_ids = next_exposure.presentation_ids
+            if next_exposure.width > 0:
+                next_signature = ranking_signature(
+                    next_state,
+                    next_dense_query,
+                    next_lexical_query,
+                    next_route_weights,
+                    self._ranking_policy.value,
+                    next_ids,
+                    top_k,
+                )
+                next_selected = select_slate_with_intent_epoch_novelty(
+                    prior_slate_state,
+                    next_signature,
+                    next_ids,
+                    next_exposure.width,
+                ).selection.selected_ids
+            else:
+                next_selected = ()
+            rank_by_id = {
+                parent_asin: rank
+                for rank, parent_asin in enumerate(next_selected, start=1)
+            }
+            for parent_asin in branch_ids:
+                post_reply_rank[parent_asin] = rank_by_id.get(parent_asin)
+
+        plan = plan_answer_conditioned_slate(
+            exact_result.ranked_ids,
+            exact_result.beliefs,
+            tuple(post_reply_rank.items()),
+            current_turn=current_turn,
+            width=width,
+            top_k=top_k,
+        )
+        if (
+            not plan.changed
+            or plan.selected_ids == exact_result.ranked_ids[:width]
+        ):
+            return None
+        # Bind the planned IDs to the same current ranking signature inputs the
+        # live selector will receive. Validation here catches malformed policy
+        # integration without persisting a speculative slate state.
+        current_signature = ranking_signature(
+            state,
+            current_dense_query,
+            current_lexical_query,
+            current_route_weights,
+            self._ranking_policy.value,
+            plan.selected_ids,
+            top_k,
+        )
+        projected = select_slate_with_intent_epoch_novelty(
+            prior_slate_state,
+            current_signature,
+            plan.selected_ids,
+            width,
+        ).selection.selected_ids
+        if projected != plan.selected_ids:
+            raise ValueError("counterfactual slate projection is unstable")
+        return plan.selected_ids
 
     def _apply_importance_aware_ranking(
         self,
@@ -3439,10 +3860,14 @@ class ConversationalSearchAgent:
                 raise ValueError("posterior singleton is outside its safe bound")
         elif result.status is EvidenceExposureStatus.POSTERIOR_PROBE:
             if (
-                result.presentation_ids != ranked_ids[:1]
-                or result.width != 1
+                not 1 <= result.width <= min(
+                    requested_top_k,
+                    len(ranked_ids),
+                    result.plausible_count,
+                )
+                or result.presentation_ids != ranked_ids[: result.width]
                 or result.plausible_count <= 1
-                or result.question != "other"
+                or result.question not in QUESTION_TEXT
                 or current_turn >= 10
             ):
                 raise ValueError("posterior probe is outside its safe bound")
