@@ -27,6 +27,38 @@ def resolution(cards, disclosed=False):
     )
 
 
+def indistinguishable_resolution(count):
+    evidence = tuple(
+        ProductProtocolEvidence(
+            f"P{index}",
+            "Shoes",
+            DisclosureCard(
+                f"different hidden title {index}",
+                ("cotton", "color: grey"),
+                ("machine wash", "Imported"),
+            ),
+        )
+        for index in range(count)
+    )
+    return resolve_protocol_transcript(
+        evidence,
+        (
+            ObservedProtocolEvent(
+                1,
+                ProtocolEventKind.INITIAL_EXPLICIT,
+                values=("cotton",),
+            ),
+            ObservedProtocolEvent(
+                2,
+                ProtocolEventKind.DISCLOSURE,
+                "other",
+                reply_payload="color: grey; machine wash",
+            ),
+        ),
+        observed_turn_count=2,
+    )
+
+
 class DisclosurePlannerTests(unittest.TestCase):
     def test_unique_feature_beats_two_shared_initial_disclosures(self):
         support = resolution([
@@ -61,6 +93,31 @@ class DisclosurePlannerTests(unittest.TestCase):
                 current_turn=1,
                 top_k=10,
                 prefer_wildcard_near_tie=True,
+            ),
+            "other",
+        )
+
+    def test_stops_questioning_when_rank_one_enumeration_is_equally_good(self):
+        support = indistinguishable_resolution(6)
+
+        self.assertIsNone(
+            plan_disclosure_question(
+                support.candidate_ids,
+                support,
+                current_turn=2,
+                top_k=10,
+            )
+        )
+
+    def test_keeps_question_when_stopping_would_expand_the_current_slate(self):
+        support = indistinguishable_resolution(100)
+
+        self.assertEqual(
+            plan_disclosure_question(
+                support.candidate_ids,
+                support,
+                current_turn=2,
+                top_k=10,
             ),
             "other",
         )

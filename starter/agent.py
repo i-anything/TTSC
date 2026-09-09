@@ -6,8 +6,8 @@ hybrid retrieval routing with a catalog cold-start prior, lexicographic
 exact-evidence ranking,
 full-transcript protocol resolution with eligible
 continuation refutation, metric-bounded disclosure-utility question selection
-with a wildcard ``other`` fallback, rank-aware exposure, exact-ranking reuse
-orchestration, and
+with a wildcard ``other`` fallback and stable enumeration commitment,
+rank-aware exposure, exact-ranking reuse orchestration, and
 intent-epoch novelty slates.
 """
 

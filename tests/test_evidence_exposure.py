@@ -438,6 +438,63 @@ class EvidenceExposureTests(unittest.TestCase):
         self.assertEqual(decision.width, 1)
         self.assertIsNone(decision.question)
 
+    def test_committed_enumeration_does_not_resume_questioning(self) -> None:
+        evidence = tuple(
+            ProductProtocolEvidence(
+                f"P{index}",
+                "Shoes",
+                DisclosureCard(
+                    f"different hidden title {index}",
+                    ("waterproof", "color: blue"),
+                    ("machine wash", "Imported"),
+                ),
+            )
+            for index in range(100)
+        )
+        ids = tuple(item.parent_asin for item in evidence)
+        events = (
+            ObservedProtocolEvent(
+                1,
+                ProtocolEventKind.INITIAL_EXPLICIT,
+                values=("waterproof",),
+            ),
+            ObservedProtocolEvent(
+                2,
+                ProtocolEventKind.DISCLOSURE,
+                "other",
+                reply_payload="color: blue; machine wash",
+            ),
+            *tuple(
+                ObservedProtocolEvent(turn, ProtocolEventKind.NEED_ATTRIBUTE)
+                for turn in range(3, 10)
+            ),
+        )
+        resolution = resolve_protocol_transcript(
+            evidence,
+            events,
+            observed_turn_count=9,
+        )
+        state = IntentState(category="Shoes", last_turn=9)
+        exact = rank_exact_evidence(ids, evidence, state, protocol_events=events)
+
+        decision = plan_evidence_gated_exposure(
+            state,
+            exact,
+            evidence,
+            current_turn=9,
+            requested_top_k=10,
+            protocol_resolution=resolution,
+            metric_aware_protocol_enumeration=True,
+            protocol_enumeration_committed=True,
+        )
+
+        self.assertIs(
+            decision.status,
+            EvidenceExposureStatus.POSTERIOR_ENUMERATION,
+        )
+        self.assertEqual(decision.width, 10)
+        self.assertIsNone(decision.question)
+
     def test_metric_aware_width_is_derived_from_the_official_metric(self) -> None:
         self.assertEqual(
             plan_protocol_enumeration_width(3, current_turn=2, top_k=10),

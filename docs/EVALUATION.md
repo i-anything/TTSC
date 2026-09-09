@@ -11,7 +11,7 @@ on that unmodified set using the official scoring formula.
 
 | Sessions | Hit Rate@10 | MRR | MTTC | TechnicalScore |
 | ---: | ---: | ---: | ---: | ---: |
-| 200 | 1.000000 | 1.000000 | 1.9850 | 0.980300 |
+| 200 | 1.000000 | 1.000000 | 1.9800 | 0.980400 |
 
 The submission finds all 200 targets at rank one. These are public development
 results, not private-final scores.
@@ -39,7 +39,7 @@ facts.
 
 ## Runtime and release checks
 
-- 386 unit tests passed, including serialized-reply ambiguity, question
+- 389 unit tests passed, including serialized-reply ambiguity, question
   selection through the service, override protection, and deadline coverage.
 - The offline submission check verified catalog/index checksums, loaded all
   intended backends, exercised dense inference, and confirmed reset replay.
@@ -48,8 +48,8 @@ facts.
 - Three bounded paraphrase families on the same 200 public targets reproduced
   the canonical responses exactly, including questions and recommendation order.
 - The official public run used zero prompt/completion tokens and no model APIs.
-  Guarded local measurement: about 5.9 seconds initialization, 109 ms respond
-  p95, and 616 MiB process peak RSS. RSS includes evaluator data and retained sessions;
+  Guarded local measurement: about 6.2 seconds initialization, 109 ms respond
+  p95, and 622 MiB process peak RSS. RSS includes evaluator data and retained sessions;
   it is not isolated agent memory. Final-host timings may differ.
 
 Reproduce the submission checks and official score with:

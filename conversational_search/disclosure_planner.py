@@ -71,8 +71,8 @@ def plan_disclosure_question(
     current_turn: int,
     top_k: int,
     prefer_wildcard_near_tie: bool = False,
-) -> str:
-    """Compare a question's replies through the remaining conversation.
+) -> str | None:
+    """Compare questions with direct ranked enumeration.
 
     The current rank-one preview is held fixed. Each possible answer is
     followed by wildcard disclosures and ranked enumeration until success or
@@ -147,10 +147,18 @@ def plan_disclosure_question(
             continuation(branch, current_turn + 1)
             for branch in branches(hypotheses[1:], question)
         )
+        value += hypotheses[0][2] * hit_utility(current_turn, 1)
         if question == "other":
             other_value = value
         if value > best_value + 1e-12:
             best_question, best_value = question, value
+    capacity = top_k * (MAX_TURN - current_turn + 1)
+    stop_weights = tuple(item[2] for item in hypotheses[:capacity])
+    stop_value, stop_width = _ranked_enumeration_plan(
+        stop_weights, current_turn, top_k,
+    )
+    if stop_width == 1 and stop_value >= best_value - 1e-12:
+        return None
     # Rollouts retain today's order while the live system re-ranks after the
     # answer.  When a specific question's modeled edge is smaller than the
     # value of moving the highest unshown hypothesis by one turn, prefer the

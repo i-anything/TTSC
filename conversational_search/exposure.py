@@ -70,6 +70,7 @@ def plan_evidence_gated_exposure(
     protocol_resolution: ProtocolResolution | None = None,
     metric_aware_protocol_enumeration: bool = False,
     reply_tree_protocol_planning: bool = False,
+    protocol_enumeration_committed: bool = False,
 ) -> EvidenceExposureDecision:
     """Expose only when the best structural tier fits inside the API prefix.
 
@@ -120,6 +121,8 @@ def plan_evidence_gated_exposure(
         raise TypeError("metric_aware_protocol_enumeration must be a boolean")
     if type(reply_tree_protocol_planning) is not bool:
         raise TypeError("reply_tree_protocol_planning must be a boolean")
+    if type(protocol_enumeration_committed) is not bool:
+        raise TypeError("protocol_enumeration_committed must be a boolean")
     if reply_tree_protocol_planning and not metric_aware_protocol_enumeration:
         raise ValueError("reply-tree planning requires metric-aware enumeration")
     ranked_ids = exact_result.ranked_ids
@@ -148,6 +151,7 @@ def plan_evidence_gated_exposure(
                 requirement.source == "initial_explicit"
                 for requirement in state.requirements
             ),
+            enumeration_committed=protocol_enumeration_committed,
         )
     if current_turn >= 10:
         return EvidenceExposureDecision(
@@ -270,8 +274,9 @@ def _plan_protocol_posterior_exposure(
     reply_tree_planning: bool,
     pending_override: bool = False,
     initial_explicit: bool = False,
+    enumeration_committed: bool = False,
 ) -> EvidenceExposureDecision:
-    """Expose a rank-one probe until the complete posterior is exhausted."""
+    """Choose a probe or ranked enumeration over the complete posterior."""
 
     support_count = resolution.support_count
     if (
@@ -295,7 +300,11 @@ def _plan_protocol_posterior_exposure(
             1,
         )
     if current_turn < 10:
-        question = protocol_probe_question(resolution)
+        question = (
+            None
+            if enumeration_committed
+            else protocol_probe_question(resolution)
+        )
         if question is not None:
             if metric_aware_enumeration and not reply_tree_planning and not pending_override:
                 question = plan_disclosure_question(
@@ -305,6 +314,20 @@ def _plan_protocol_posterior_exposure(
                     prefer_wildcard_near_tie=(
                         current_turn == 1 and initial_explicit
                     ),
+                )
+            if question is None:
+                top_k = min(requested_top_k, len(ranked_ids))
+                width = plan_ranked_enumeration_width(
+                    support_count,
+                    current_turn=current_turn,
+                    top_k=top_k,
+                )
+                return EvidenceExposureDecision(
+                    EvidenceExposureStatus.POSTERIOR_ENUMERATION,
+                    ranked_ids,
+                    width,
+                    None,
+                    support_count,
                 )
             if reply_tree_planning:
                 width = plan_protocol_reply_tree_width(

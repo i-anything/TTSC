@@ -77,6 +77,7 @@ from conversational_search.profiles import (
     ProfilePrior,
     parse_profile_prior,
 )
+from conversational_search.protocol import ProtocolEventKind
 from conversational_search.protocol_index import (
     DISABLED_PROTOCOL_CATALOG_POLICY,
     DISABLED_PROTOCOL_REFUTATION_POLICY,
@@ -860,7 +861,6 @@ class ConversationalSearchAgent:
                     protocol_state_is_consistent,
                     recognize_protocol_observation,
                 )
-                from conversational_search.protocol import ProtocolEventKind
             except Exception:
                 self._protocol_consistency[session_id] = False
                 protocol_outcome = "candidate_or_evidence_error"
@@ -1741,8 +1741,6 @@ class ConversationalSearchAgent:
                     ),
                 )
                 protocol_events = self._protocol_events.get(session_id, ())
-                from conversational_search.protocol import ProtocolEventKind
-
                 initial_browsing = bool(
                     len(protocol_events) == 1
                     and protocol_events[0].kind
@@ -2031,6 +2029,11 @@ class ConversationalSearchAgent:
                     or not exact_context.evidence
                 ):
                     raise ValueError("exact evidence context is unavailable")
+                active_protocol_events = getattr(
+                    self,
+                    "_protocol_events",
+                    {},
+                ).get(session_id, ())
                 exposure_decision = plan_evidence_gated_exposure(
                     state,
                     exact_context.result,
@@ -2081,6 +2084,13 @@ class ConversationalSearchAgent:
                     reply_tree_protocol_planning=(
                         self.evidence_exposure_policy
                         is PROTOCOL_REPLY_TREE_EXPOSURE_POLICY
+                    ),
+                    protocol_enumeration_committed=bool(
+                        protocol_resolution is not None
+                        and protocol_resolution.exact
+                        and active_protocol_events
+                        and active_protocol_events[-1].kind
+                        is ProtocolEventKind.NEED_ATTRIBUTE
                     ),
                 )
                 exposure_decision = self._validate_evidence_exposure_decision(
@@ -2395,7 +2405,6 @@ class ConversationalSearchAgent:
                 protocol_state_is_consistent,
                 recognize_protocol_observation,
             )
-            from conversational_search.protocol import ProtocolEventKind
         except Exception:
             self._protocol_consistency[session_id] = False
             return False, "candidate_or_evidence_error"

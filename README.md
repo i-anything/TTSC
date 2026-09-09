@@ -49,9 +49,12 @@ model/index assets.
    candidate support from the full catalog. Continuation eliminates only
    previously shown candidates eligible under that transcript.
 5. Question selection follows possible catalog-derived replies through later
-   turns, using a reciprocal-rank prior and the published scoring utility.
+   turns and compares their value with beginning ranked enumeration, using a
+   reciprocal-rank prior and the published scoring utility.
    A metric-bounded near tie on an initial explicit request favors the wildcard
    question because it can reveal two additional facts at once.
+   A rank-one stop decision commits to enumeration until new shopper evidence
+   arrives, preventing late oscillation back to an exhausted question.
    Recommendation widths balance rank against remaining opportunities to find
    the product. Exact dependency caching and intent-aware slate novelty avoid
    redundant work and repeated suggestions.

@@ -66,14 +66,21 @@ scheduled override does not trigger premature refutation.
 
 `disclosure_planner.py` compares valid questions by rolling each possible reply
 forward through wildcard disclosures and ranked enumeration to the turn limit.
-It retains the current rank-one preview, includes the complete catalog support,
-and groups replies by their exact visible strings. Candidate weights follow
-the reciprocal-rank prior used by exact-evidence beliefs. Ties retain `other`;
-pending overrides retain the wildcard policy. For a first-turn request that
-already supplies a hard requirement, a specific question must beat `other` by
-more than one rank-two, one-turn utility quantum; otherwise the wildcard's
-two-value disclosure is preferred. The agent replans after each actual reply,
-so the rollout's fixed future ordering remains an approximation.
+The planner also compares its best question with direct ranked enumeration. It
+may stop asking only when enumeration has at least as much modeled utility and
+keeps the current response at rank-one width. Once selected, enumeration
+continues while the shopper supplies no new evidence; a disclosure or override
+allows information gathering to be reconsidered. This commitment prevents a
+late return to an earlier question from shifting the deadline slate.
+
+The planner retains the current rank-one preview, includes the complete catalog
+support, and groups replies by their exact visible strings. Candidate weights
+follow the reciprocal-rank prior used by exact-evidence beliefs. Ties retain
+`other`; pending overrides retain the wildcard policy. For a first-turn request
+that already supplies a hard requirement, a specific question must beat
+`other` by more than one rank-two, one-turn utility quantum; otherwise the
+wildcard's two-value disclosure is preferred. The agent replans after each
+actual reply, so the rollout's fixed future ordering remains an approximation.
 
 `exposure.py` uses this question choice and selects recommendation widths by
 balancing immediate rank utility against later opportunities under the same
