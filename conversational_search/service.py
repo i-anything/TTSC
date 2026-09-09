@@ -3485,8 +3485,12 @@ class ConversationalSearchAgent:
                 raise ValueError("posterior singleton is outside its safe bound")
         elif result.status is EvidenceExposureStatus.POSTERIOR_PROBE:
             if (
-                result.presentation_ids != ranked_ids[:1]
-                or result.width != 1
+                not 1 <= result.width <= min(
+                    requested_top_k,
+                    len(ranked_ids),
+                    result.plausible_count,
+                )
+                or result.presentation_ids != ranked_ids[: result.width]
                 or result.plausible_count <= 1
                 or result.question not in QUESTION_TEXT
                 or current_turn >= 10

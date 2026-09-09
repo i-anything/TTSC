@@ -438,6 +438,58 @@ class EvidenceExposureTests(unittest.TestCase):
         self.assertEqual(decision.width, 1)
         self.assertIsNone(decision.question)
 
+    def test_probe_expands_only_beyond_the_complete_protocol_window(
+        self,
+    ) -> None:
+        evidence = tuple(
+            ProductProtocolEvidence(
+                f"P{index}",
+                "Shoes",
+                DisclosureCard(
+                    f"different hidden title {index}",
+                    ("waterproof",),
+                    ("color: blue",),
+                ),
+            )
+            for index in range(264)
+        )
+        ids = tuple(item.parent_asin for item in evidence)
+        events = (
+            ObservedProtocolEvent(
+                1,
+                ProtocolEventKind.INITIAL_EXPLICIT,
+                values=("waterproof",),
+            ),
+            ObservedProtocolEvent(2, ProtocolEventKind.NEED_ATTRIBUTE),
+        )
+        resolution = resolve_protocol_transcript(
+            evidence,
+            events,
+            observed_turn_count=2,
+        )
+        state = IntentState(category="Shoes", last_turn=2)
+        ranked_ids = ids[:200]
+        exact = rank_exact_evidence(
+            ranked_ids,
+            evidence[:200],
+            state,
+            protocol_events=events,
+        )
+
+        decision = plan_evidence_gated_exposure(
+            state,
+            exact,
+            evidence[:200],
+            current_turn=2,
+            requested_top_k=10,
+            protocol_resolution=resolution,
+            metric_aware_protocol_enumeration=True,
+        )
+
+        self.assertIs(decision.status, EvidenceExposureStatus.POSTERIOR_PROBE)
+        self.assertEqual(decision.presentation_ids, ranked_ids[:10])
+        self.assertEqual((decision.width, decision.question), (10, "other"))
+
     def test_committed_enumeration_does_not_resume_questioning(self) -> None:
         evidence = tuple(
             ProductProtocolEvidence(

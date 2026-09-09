@@ -34,6 +34,7 @@ from conversational_search.protocol import (
     remaining_reply,
 )
 from conversational_search.protocol_index import (
+    MAX_PROTOCOL_OUTPUT_CANDIDATES,
     ProtocolResolution,
     protocol_probe_question,
 )
@@ -343,10 +344,23 @@ def _plan_protocol_posterior_exposure(
                     question,
                     support_count,
                 )
+            width = 1
+            if (
+                metric_aware_enumeration
+                and not pending_override
+                and current_turn >= 2
+            ):
+                width = _capacity_preserving_probe_width(
+                    ranked_ids,
+                    resolution,
+                    question=question,
+                    current_turn=current_turn,
+                    top_k=min(requested_top_k, len(ranked_ids)),
+                )
             return EvidenceExposureDecision(
                 EvidenceExposureStatus.POSTERIOR_PROBE,
-                ranked_ids[:1],
-                1,
+                ranked_ids[:width],
+                width,
                 question,
                 support_count,
             )
@@ -376,6 +390,66 @@ def _plan_protocol_posterior_exposure(
         None,
         support_count,
     )
+
+
+def _capacity_preserving_probe_width(
+    ranked_ids: tuple[str, ...],
+    resolution: ProtocolResolution,
+    *,
+    question: str,
+    current_turn: int,
+    top_k: int,
+) -> int:
+    """Widen only an exhausted reply branch that exceeds the protocol window."""
+
+    future_capacity = top_k * (MAX_TURN - current_turn)
+    group_by_id = {
+        parent_asin: group
+        for group in resolution.groups
+        for parent_asin in group.parent_asins
+    }
+    try:
+        signatures: dict[str, str] = {}
+        counts: Counter[str] = Counter()
+        branches_with_future_disclosure: set[str] = set()
+        for parent_asin in resolution.candidate_ids:
+            group = group_by_id[parent_asin]
+            reply = remaining_reply(
+                group.card,
+                question,
+                group.disclosed_values,
+            )
+            disclosed = group.disclosed_values
+            if reply.status is CandidateReplyStatus.DISCLOSURE:
+                disclosed = tuple(sorted(set(disclosed).union(reply.values)))
+            signatures[parent_asin] = reply.reply_text
+            counts[reply.reply_text] += 1
+            if (
+                remaining_reply(group.card, "other", disclosed).status
+                is CandidateReplyStatus.DISCLOSURE
+            ):
+                branches_with_future_disclosure.add(reply.reply_text)
+    except (KeyError, TypeError, ValueError):
+        return 1
+    pressured_counts = Counter(
+        {
+            signature: count
+            for signature, count in counts.items()
+            if signature not in branches_with_future_disclosure
+            and count > MAX_PROTOCOL_OUTPUT_CANDIDATES
+        }
+    )
+    if not pressured_counts:
+        return 1
+    for width, parent_asin in enumerate(ranked_ids[:top_k], start=1):
+        signature = signatures.get(parent_asin)
+        if signature is None:
+            return 1
+        if signature in pressured_counts:
+            pressured_counts[signature] -= 1
+        if max(pressured_counts.values()) <= future_capacity:
+            return width
+    return top_k
 
 
 def plan_protocol_enumeration_width(
