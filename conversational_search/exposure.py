@@ -356,6 +356,7 @@ def _plan_protocol_posterior_exposure(
                     question=question,
                     current_turn=current_turn,
                     top_k=min(requested_top_k, len(ranked_ids)),
+                    initial_explicit=initial_explicit,
                 )
             return EvidenceExposureDecision(
                 EvidenceExposureStatus.POSTERIOR_PROBE,
@@ -399,8 +400,9 @@ def _capacity_preserving_probe_width(
     question: str,
     current_turn: int,
     top_k: int,
+    initial_explicit: bool,
 ) -> int:
-    """Widen only an exhausted reply branch that exceeds the protocol window."""
+    """Widen only an exhausted reply branch beyond a reachable window."""
 
     future_capacity = top_k * (MAX_TURN - current_turn)
     group_by_id = {
@@ -431,14 +433,33 @@ def _capacity_preserving_probe_width(
                 branches_with_future_disclosure.add(reply.reply_text)
     except (KeyError, TypeError, ValueError):
         return 1
-    pressured_counts = Counter(
-        {
-            signature: count
-            for signature, count in counts.items()
-            if signature not in branches_with_future_disclosure
-            and count > MAX_PROTOCOL_OUTPUT_CANDIDATES
+    protocol_window_pressure = {
+        signature: count
+        for signature, count in counts.items()
+        if signature not in branches_with_future_disclosure
+        and count > MAX_PROTOCOL_OUTPUT_CANDIDATES
+    }
+    pressured_counts = Counter(protocol_window_pressure)
+    if not pressured_counts and not initial_explicit:
+        session_capacity = top_k * MAX_TURN
+        pressured_counts = Counter(
+            {
+                signature: count
+                for signature, count in counts.items()
+                if signature not in branches_with_future_disclosure
+                and count > session_capacity
+            }
+        )
+        prefix_signatures = {
+            signatures.get(parent_asin)
+            for parent_asin in ranked_ids[:top_k]
         }
-    )
+        if (
+            None in prefix_signatures
+            or len(prefix_signatures) != 1
+            or next(iter(prefix_signatures)) not in pressured_counts
+        ):
+            return 1
     if not pressured_counts:
         return 1
     for width, parent_asin in enumerate(ranked_ids[:top_k], start=1):

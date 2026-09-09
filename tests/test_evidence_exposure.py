@@ -490,6 +490,119 @@ class EvidenceExposureTests(unittest.TestCase):
         self.assertEqual(decision.presentation_ids, ranked_ids[:10])
         self.assertEqual((decision.width, decision.question), (10, "other"))
 
+    def test_exploration_probe_uses_the_full_session_capacity(self) -> None:
+        evidence = tuple(
+            ProductProtocolEvidence(
+                f"P{index}",
+                "Shoes",
+                DisclosureCard(
+                    f"different hidden title {index}",
+                    ("waterproof",),
+                    ("color: blue",),
+                ),
+            )
+            for index in range(154)
+        )
+        ids = tuple(item.parent_asin for item in evidence)
+        def plan(*, explicit: bool):
+            events = (
+                ObservedProtocolEvent(
+                    1,
+                    (
+                        ProtocolEventKind.INITIAL_EXPLICIT
+                        if explicit
+                        else ProtocolEventKind.INITIAL_BROWSING
+                    ),
+                    values=("waterproof",) if explicit else (),
+                ),
+                ObservedProtocolEvent(2, ProtocolEventKind.NEED_ATTRIBUTE),
+            )
+            resolution = resolve_protocol_transcript(
+                evidence,
+                events,
+                observed_turn_count=2,
+            )
+            state = IntentState(
+                category="Shoes",
+                requirements=(
+                    (
+                        Requirement(
+                            "waterproof",
+                            "initial_explicit",
+                            1,
+                            "feature",
+                        ),
+                    )
+                    if explicit
+                    else ()
+                ),
+                last_turn=2,
+            )
+            exact = rank_exact_evidence(
+                ids,
+                evidence,
+                state,
+                protocol_events=events,
+            )
+            return plan_evidence_gated_exposure(
+                state,
+                exact,
+                evidence,
+                current_turn=2,
+                requested_top_k=10,
+                protocol_resolution=resolution,
+                metric_aware_protocol_enumeration=True,
+            )
+
+        exploratory = plan(explicit=False)
+        explicit = plan(explicit=True)
+
+        self.assertEqual((exploratory.width, exploratory.question), (10, "other"))
+        self.assertEqual((explicit.width, explicit.question), (1, "other"))
+
+    def test_exploration_probe_preserves_a_mixed_reply_prefix(self) -> None:
+        evidence = tuple(
+            ProductProtocolEvidence(
+                f"P{index}",
+                "Shoes",
+                DisclosureCard(
+                    f"different hidden title {index}",
+                    ("waterproof",),
+                    ("color: red" if index == 1 else "color: blue",),
+                ),
+            )
+            for index in range(111)
+        )
+        ids = tuple(item.parent_asin for item in evidence)
+        events = (
+            ObservedProtocolEvent(1, ProtocolEventKind.INITIAL_BROWSING),
+            ObservedProtocolEvent(2, ProtocolEventKind.NEED_ATTRIBUTE),
+        )
+        resolution = resolve_protocol_transcript(
+            evidence,
+            events,
+            observed_turn_count=2,
+        )
+        state = IntentState(category="Shoes", last_turn=2)
+        exact = rank_exact_evidence(
+            ids,
+            evidence,
+            state,
+            protocol_events=events,
+        )
+
+        decision = plan_evidence_gated_exposure(
+            state,
+            exact,
+            evidence,
+            current_turn=2,
+            requested_top_k=10,
+            protocol_resolution=resolution,
+            metric_aware_protocol_enumeration=True,
+        )
+
+        self.assertEqual((decision.width, decision.question), (1, "other"))
+
     def test_committed_enumeration_does_not_resume_questioning(self) -> None:
         evidence = tuple(
             ProductProtocolEvidence(
